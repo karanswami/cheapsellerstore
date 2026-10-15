@@ -150,7 +150,7 @@ export function SideNav({ groups }: { groups: SideNavGroup[] }) {
               aria-expanded={open}
               aria-controls={panelId}
               disabled={q.length > 0}
-              className="group/head flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11px] font-semibold tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
+              className="group/head flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
             >
               <span className="flex-1">{group.label}</span>
               {q.length === 0 ? (

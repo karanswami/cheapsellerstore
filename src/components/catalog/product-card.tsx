@@ -49,6 +49,7 @@ function ProductBanner({ product }: { product: ProductCardData }) {
           alt=""
           className={styles.mediaImage}
           decoding="async"
+          loading="lazy"
         />
       </div>
     );

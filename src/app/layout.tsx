@@ -7,7 +7,6 @@ import {
   InstallAppHelpDialog,
 } from "@/components/layout/install-app-ui";
 import { InteractionFeedbackProvider } from "@/components/layout/interaction-feedback-provider";
-import { LiveWaveBackground } from "@/components/layout/live-wave-background";
 import { MaintenanceGate } from "@/components/layout/maintenance-gate";
 import { NativeAppBootstrap } from "@/components/layout/native-app-bootstrap";
 import { NativeOfflineBanner } from "@/components/layout/native-offline-banner";
@@ -25,22 +24,24 @@ import "@/lib/fontawesome";
 import { isPublicProfilePath } from "@/lib/profile";
 import { getSiteIcons } from "@/lib/site-icons";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const displayFont = Bricolage_Grotesque({
+  variable: "--font-display",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const bodyFont = Figtree({
+  variable: "--font-body",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
-  themeColor: "#10b981",
+  themeColor: "#080a14",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
@@ -111,7 +112,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${displayFont.variable} ${bodyFont.variable} dark h-full antialiased`}
     >
       <body
         className="relative flex min-h-full flex-col bg-background text-foreground"
@@ -134,7 +135,6 @@ export default async function RootLayout({
               <PwaProvider>
                 <InteractionFeedbackProvider feedbackPack={feedbackPack}>
                   <NativeAppBootstrap />
-                  <LiveWaveBackground isBioInitial={isBioInitial} />
                   <AuthProvider>
                     <CartProvider>
                       <MaintenanceGate banner={<InstallAppBanner />}>

@@ -5,14 +5,8 @@
   flex-shrink: 0;
   /* Native APK sets --safe-area-top-pad:0 (status bar already reserved). */
   padding-top: var(--safe-area-top-pad, env(safe-area-inset-top, 0px));
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in oklab, var(--background) 92%, transparent);
-}
-
-@media (min-width: 768px) {
-  .header {
-    backdrop-filter: blur(10px);
-  }
+  background: var(--background);
+  box-shadow: 0 1px 0 var(--border);
 }
 
 .inner {

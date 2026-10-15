@@ -50,7 +50,7 @@ export function AppShell({
         className="min-h-svh flex-1"
         style={
           {
-            "--sidebar-width": "20rem",
+            "--sidebar-width": "16.5rem",
           } as React.CSSProperties
         }
       >

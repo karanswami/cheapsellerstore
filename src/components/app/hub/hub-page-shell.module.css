@@ -5,6 +5,7 @@
 }
 
 .ambient {
+  display: none;
   pointer-events: none;
   position: absolute;
   inset: -8% -12% auto;

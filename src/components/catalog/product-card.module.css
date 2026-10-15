@@ -3,10 +3,10 @@
   gap: 0;
   padding-block: 0;
   overflow: hidden;
-  border-radius: 1rem;
+  border-radius: 1.1rem;
   background: var(--card);
-  border: 1px solid color-mix(in oklab, var(--border) 88%, var(--primary) 12%);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--border);
+  box-shadow: none;
   transition:
     border-color var(--motion-fast, 150ms) ease,
     box-shadow var(--motion-fast, 150ms) ease;
@@ -23,8 +23,7 @@
 }
 
 .card:hover {
-  border-color: color-mix(in oklab, var(--primary) 42%, var(--border));
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.34);
+  border-color: var(--primary);
 }
 
 .mediaHit {
@@ -119,11 +118,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.625rem;
-  font-weight: 650;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: color-mix(in oklab, var(--primary) 88%, var(--foreground));
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
 }
 
 .title {
@@ -135,10 +132,11 @@
   overflow: hidden;
   min-width: 0;
   width: 100%;
-  font-size: 0.8125rem;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 0.9rem;
   font-weight: 700;
-  line-height: 1.28;
-  letter-spacing: -0.02em;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
   color: var(--card-foreground);
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -183,12 +181,13 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.35rem 0.5rem;
-  font-size: 0.9375rem;
-  font-weight: 750;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
-  color: var(--success, #22c55e);
+  color: var(--foreground);
 }
 
 .listPriceInline {
@@ -228,7 +227,6 @@
   border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
   white-space: nowrap;
   line-height: 1.25;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .meta {
@@ -253,8 +251,8 @@
   gap: 0.45rem;
   padding-top: 0.45rem;
   padding-bottom: 0.7rem;
-  border-top: 1px solid color-mix(in oklab, var(--border) 90%, var(--primary) 10%);
-  background: color-mix(in oklab, var(--muted) 55%, var(--card));
+  border-top: 0;
+  background: transparent;
 }
 
 .discountBadge {
@@ -288,16 +286,15 @@
   flex: 1;
   min-width: 0;
   border: 0;
-  background: #e11d2e;
-  color: #fff;
+  background: var(--secondary);
+  color: var(--foreground);
   font-weight: 650;
   letter-spacing: 0.01em;
 }
 
 .demoBtn:hover {
-  background: #c41626;
-  color: #fff;
-  filter: brightness(1.05);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 .buyNow {
@@ -306,9 +303,9 @@
   flex: 1;
   min-width: 0;
   border: 0;
-  background: var(--primary);
+  background: var(--gradient-primary);
   color: var(--primary-foreground);
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: 0.01em;
 }
 
@@ -364,8 +361,7 @@
 
 @media (hover: none) {
   .card:hover {
-    border-color: color-mix(in oklab, var(--border) 88%, var(--primary) 12%);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+    border-color: var(--border);
   }
 }
 

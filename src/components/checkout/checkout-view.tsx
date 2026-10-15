@@ -12,7 +12,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -160,10 +159,17 @@ export function CheckoutView({ user: serverUser }: CheckoutViewProps) {
     );
   }
 
+  const flashSaved = items.reduce((sum, item) => {
+    if (item.listPrice != null && item.listPrice > item.unitPrice) {
+      return sum + (item.listPrice - item.unitPrice) * item.quantity;
+    }
+    return sum;
+  }, 0);
+
   return (
     <main className="flex-1">
-      <div className="mx-auto w-full max-w-lg space-y-4 px-4 py-6 sm:py-10">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
+        <div className="mb-6 flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -173,71 +179,21 @@ export function CheckoutView({ user: serverUser }: CheckoutViewProps) {
           >
             <ArrowLeft className="size-4" />
           </Button>
-          <div className="min-w-0">
-            <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
-              Checkout
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Pay with wallet balance only
-            </p>
-          </div>
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Checkout
+          </h1>
         </div>
 
-        <Card size="sm" variant="hero">
-          <CardHeader className="border-b border-border/40">
-            <div className="flex items-start gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                <Wallet className="size-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <CardDescription>Wallet balance</CardDescription>
-                <CardTitle className="mt-1 text-2xl font-semibold tabular-nums text-success">
-                  {formatMoney(walletBalance, currency)}
-                </CardTitle>
-              </div>
-              <Badge variant={canPay ? "success" : "warning"}>
-                {canPay ? "Ready" : "Low"}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {canPay ? (
-              <p className="text-xs text-muted-foreground">
-                Enough balance to claim your keys.
-              </p>
-            ) : !stockReady ? (
-              <p className="text-xs text-muted-foreground">Checking stock…</p>
-            ) : !stockOk ? (
-              <Alert variant="warning">
-                <AlertCircle />
-                <AlertTitle>Out of stock</AlertTitle>
-                <AlertDescription>
-                  This item is sold out. Choose another product before
-                  paying.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <Alert variant="warning">
-                <AlertCircle />
-                <AlertTitle>Deposit required</AlertTitle>
-                <AlertDescription>
-                  Need {formatMoney(shortfall, currency)} more to checkout.
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card size="sm" variant="summary">
-          <CardHeader className="border-b border-border/40">
+        <div className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start">
+          <section className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-6">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle>Your order</CardTitle>
+              <h2 className="font-heading text-lg font-bold">
+                Your order
+              </h2>
               <Badge variant="secondary">
                 {items.length} item{items.length === 1 ? "" : "s"}
               </Badge>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <CheckoutOrderItems items={items} updateAndroidId={updateAndroidId} />
             <Separator />
             <CheckoutTotals
@@ -246,74 +202,98 @@ export function CheckoutView({ user: serverUser }: CheckoutViewProps) {
               total={total}
               currency={currency}
               promoCode={promo?.code}
-              flashSaved={items.reduce((sum, item) => {
-                if (
-                  item.listPrice != null &&
-                  item.listPrice > item.unitPrice
-                ) {
-                  return (
-                    sum + (item.listPrice - item.unitPrice) * item.quantity
-                  );
-                }
-                return sum;
-              }, 0)}
+              flashSaved={flashSaved}
             />
-          </CardContent>
-        </Card>
+          </section>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle />
-            <AlertTitle>Checkout failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        <Card size="sm" variant="action">
-          <CardFooter className="flex-col gap-3 border-0 bg-transparent p-(--card-spacing)">
-            {canPay ? (
-              <Button
-                type="button"
-                size="lg"
-                disabled={pending}
-                onClick={placeOrder}
-                className="w-full"
-              >
-                {pending ? "Claiming keys…" : "Pay with wallet"}
-              </Button>
-            ) : !stockOk ? (
-              <Button type="button" size="lg" asChild className="w-full">
-                <Link href="/app">Back to store</Link>
-              </Button>
-            ) : (
-              <>
-                {user.depositsEnabled ? (
-                  <>
-                    <Button type="button" size="lg" asChild className="w-full">
-                      <Link href="/app/deposit">
-                        <Wallet data-icon="inline-start" className="size-4" />
-                        Deposit to checkout
-                      </Link>
-                    </Button>
-                    <p className="text-center text-xs text-muted-foreground">
-                      Checkout uses wallet balance only — top up first.
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-center text-sm text-muted-foreground">
-                    {user.role === "RESELLER"
-                      ? "Not enough balance. Ask your seller to top up your wallet."
-                      : "Not enough balance. Self-serve deposits are disabled on this account."}
+          <aside className="space-y-4 lg:sticky lg:top-20">
+            <div className="rounded-2xl border border-border bg-[image:var(--gradient-card)] p-5">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Wallet className="size-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Wallet balance</p>
+                  <p className="font-heading text-2xl font-extrabold tabular-nums">
+                    {formatMoney(walletBalance, currency)}
                   </p>
+                </div>
+                <Badge variant={canPay ? "success" : "warning"}>
+                  {canPay ? "Enough" : "Low"}
+                </Badge>
+              </div>
+              <div className="mt-4">
+                {canPay ? (
+                  <p className="text-sm text-muted-foreground">
+                    You have enough to pay for this order.
+                  </p>
+                ) : !stockReady ? (
+                  <p className="text-sm text-muted-foreground">Checking stock…</p>
+                ) : !stockOk ? (
+                  <Alert variant="warning">
+                    <AlertCircle />
+                    <AlertTitle>Out of stock</AlertTitle>
+                    <AlertDescription>
+                      This item is sold out. Choose another product before
+                      paying.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert variant="warning">
+                    <AlertCircle />
+                    <AlertTitle>Deposit required</AlertTitle>
+                    <AlertDescription>
+                      Add {formatMoney(shortfall, currency)} to your wallet to pay.
+                    </AlertDescription>
+                  </Alert>
                 )}
-              </>
+              </div>
+            </div>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle />
+                <AlertTitle>Checkout failed</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-            <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="size-3.5 text-success" />
-              Instant key delivery after wallet payment
-            </p>
-          </CardFooter>
-        </Card>
+
+            <div className="space-y-3">
+              {canPay ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={pending}
+                  onClick={placeOrder}
+                  className="h-12 w-full rounded-full text-base font-bold"
+                >
+                  Pay {formatMoney(total, currency)}
+                </Button>
+              ) : !stockOk ? (
+                <Button type="button" size="lg" asChild className="h-12 w-full rounded-full">
+                  <Link href="/app">Back to store</Link>
+                </Button>
+              ) : user.depositsEnabled ? (
+                <Button type="button" size="lg" asChild className="h-12 w-full rounded-full text-base font-bold">
+                  <Link href="/app/deposit">
+                    <Wallet data-icon="inline-start" className="size-4" />
+                    Add funds
+                  </Link>
+                </Button>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  {user.role === "RESELLER"
+                    ? "Not enough balance. Ask your seller to top up your wallet."
+                    : "Not enough balance. Self-serve deposits are disabled on this account."}
+                </p>
+              )}
+              <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                <ShieldCheck className="size-3.5 text-success" />
+                Keys appear right after payment
+              </p>
+            </div>
+          </aside>
+        </div>
       </div>
     </main>
   );

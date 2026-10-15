@@ -38,7 +38,7 @@ export function CategoryTabs({
   return (
     <div
       className={cn(
-        "sticky z-30 -mx-4 border-b border-border bg-background max-md:bg-background md:bg-background/95 md:backdrop-blur md:supports-backdrop-filter:bg-background/80",
+        "sticky z-30 -mx-4 bg-background shadow-[0_1px_0_var(--border)]",
         inApp
           ? "top-16 group-has-data-[collapsible=icon]/sidebar-wrapper:top-12"
           : "top-14",
@@ -79,10 +79,10 @@ export function CategoryTabs({
                 onPrefetchCategory?.(tab.slug);
               }}
               className={cn(
-                "pressable inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all duration-150 active:scale-95",
+                "pressable inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors duration-150",
                 isActive
-                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "border-transparent bg-foreground text-background"
+                  : "border-border bg-transparent text-muted-foreground hover:border-primary/60 hover:text-foreground",
               )}
             >
               {isLoadingThisTab ? (

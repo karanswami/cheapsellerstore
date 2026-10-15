@@ -1,6 +1,5 @@
 "use client";
 
-import { LiveWaveBackground } from "@/components/layout/live-wave-background";
 import { Button } from "@/components/ui/button";
 import { useSiteConfig } from "@/components/theme/site-config-provider";
 import { brandInitial } from "@/types/site-config";
@@ -136,7 +135,6 @@ export function SystemStatusScreen({
       role="status"
       aria-live="polite"
     >
-      {!hideWave ? <LiveWaveBackground /> : null}
       <div className={styles.glow} aria-hidden />
       <div className={styles.grid} aria-hidden />
       <div className={styles.inner}>

@@ -49,7 +49,7 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-auto shrink-0 border-t border-white/[0.07] bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card)_55%,transparent)_0%,color-mix(in_oklab,var(--background)_92%,transparent)_100%)] pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.25rem))] backdrop-blur-sm lg:pb-7">
-      <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-6 sm:py-7">
+      <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-6 sm:py-7">
         {/* Brand + socials */}
         <div className="flex items-start justify-between gap-4">
           <Link href="/" className="group flex min-w-0 items-center gap-2.5">

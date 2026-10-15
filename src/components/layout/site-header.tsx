@@ -60,7 +60,7 @@ export function SiteHeader() {
 
   return (
     <header className={styles.header}>
-      <div className={cn(styles.inner, "mx-auto max-w-5xl")}>
+      <div className={cn(styles.inner, "mx-auto max-w-6xl")}>
         <Link
           href={user ? "/app" : "/"}
           className={styles.brand}

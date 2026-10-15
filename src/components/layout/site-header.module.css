@@ -4,14 +4,8 @@
   z-index: 40;
   /* Native APK sets --safe-area-top-pad:0 (status bar already reserved). */
   padding-top: var(--safe-area-top-pad, env(safe-area-inset-top, 0px));
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in oklab, var(--background) 92%, transparent);
-}
-
-@media (min-width: 768px) {
-  .header {
-    backdrop-filter: blur(10px);
-  }
+  background: var(--background);
+  box-shadow: 0 1px 0 var(--border);
 }
 
 .inner {
@@ -54,8 +48,8 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
-  background: var(--muted);
+  border-radius: 0.55rem;
+  background: var(--gradient-primary);
   overflow: hidden;
 }
 
@@ -66,26 +60,27 @@
 }
 
 .brandInitial {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--primary);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--primary-foreground);
 }
 
 .brandName {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   line-height: 1.2;
 }
 
 @media (min-width: 640px) {
   .brandName {
-    font-size: 0.98rem;
-    max-width: 12rem;
+    font-size: 1.15rem;
+    max-width: 13rem;
   }
 }
 
@@ -110,10 +105,10 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
-  padding-inline: 0.65rem;
-  font-size: 0.82rem;
-  font-weight: 500;
+  border-radius: 999px;
+  padding-inline: 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--muted-foreground);
   text-decoration: none;
   transition:
@@ -128,16 +123,7 @@
 
 .navLinkActive {
   color: var(--foreground);
-}
-
-.navLinkActive::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0.65rem;
-  bottom: -0.3rem;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--primary);
+  background: var(--accent);
 }
 
 .actions {
@@ -256,13 +242,16 @@
 }
 
 .authBtnPrimary {
-  background: var(--primary);
+  border-radius: 999px;
+  padding-inline: 0.95rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
   color: var(--primary-foreground);
 }
 
 .authBtnPrimary:hover {
-  background: var(--primary);
-  opacity: 0.9;
+  background: var(--gradient-primary);
+  opacity: 0.92;
 }
 
 .authLabel {
