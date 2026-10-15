@@ -14,14 +14,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCart } from "@/hooks/use-cart";
 import { cn } from "@/lib/utils";
 import {
   KeyRound,
   LayoutDashboard,
   LogIn,
   LogOut,
-  ShoppingCart,
   Smartphone,
 } from "lucide-react";
 import Link from "next/link";
@@ -40,7 +38,6 @@ function navActive(pathname: string, href: string, exact?: boolean) {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { itemCount, openCart } = useCart();
   const { user, loading, openAuth, logout } = useAuth();
   const { canInstall, install, isAndroid } = useInstallAppAction();
   const site = useSiteConfig();
@@ -96,20 +93,6 @@ export function SiteHeader() {
         </nav>
 
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={cn(styles.iconBtn, styles.cartBtn, "pressable")}
-            aria-label={`Open cart, ${itemCount} items`}
-            onClick={openCart}
-          >
-            <ShoppingCart />
-            {itemCount > 0 ? (
-              <span className={styles.cartBadge}>
-                {itemCount > 9 ? "9+" : itemCount}
-              </span>
-            ) : null}
-          </button>
-
           {canInstall ? (
             <button
               type="button"

@@ -23,7 +23,6 @@ import {
   History,
   LayoutDashboard,
   LogOut,
-  ShoppingCart,
   Smartphone,
   Wallet,
 } from "lucide-react";
@@ -33,12 +32,8 @@ import { useEffect, useState } from "react";
 
 export function ConsoleUserMenu({
   user,
-  cartCount = 0,
-  onOpenCart,
 }: {
   user: SafeUser;
-  cartCount?: number;
-  onOpenCart?: () => void;
 }) {
   const { logout } = useAuth();
   const pathname = usePathname();
@@ -58,24 +53,6 @@ export function ConsoleUserMenu({
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
-      {onOpenCart ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="relative size-9 rounded-[0.85rem] border-primary/25 bg-secondary/70 shadow-none hover:border-primary/45 hover:bg-primary/10 hover:shadow-[var(--glow-soft)]"
-          aria-label={`Open cart, ${cartCount} items`}
-          onClick={onOpenCart}
-        >
-          <ShoppingCart className="size-[1.15rem] transition-transform duration-300 ease-out group-hover/button:scale-110" />
-          {cartCount > 0 ? (
-            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-              {cartCount > 9 ? "9+" : cartCount}
-            </span>
-          ) : null}
-        </Button>
-      ) : null}
-
       <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenuTrigger asChild>
           <Button

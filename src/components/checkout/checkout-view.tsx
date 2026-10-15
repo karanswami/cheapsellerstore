@@ -41,7 +41,7 @@ type CheckoutViewProps = {
 export function CheckoutView({ user: serverUser }: CheckoutViewProps) {
   const { user: liveUser } = useAuth();
   const user = liveUser ?? serverUser;
-  const { items, subtotal, discount, total, promo, closeCart, stockOk, stockReady, refreshStock, updateAndroidId } =
+  const { items, subtotal, discount, total, promo, stockOk, stockReady, refreshStock, updateAndroidId } =
     useCart();
   const router = useRouter();
 
@@ -63,7 +63,7 @@ export function CheckoutView({ user: serverUser }: CheckoutViewProps) {
       const message = "One or more items are out of stock.";
       setError(message);
       toast.error(message, {
-        description: "Return to cart and update quantities.",
+        description: "Pick another product or try again later.",
       });
       return;
     }
@@ -116,12 +116,11 @@ export function CheckoutView({ user: serverUser }: CheckoutViewProps) {
         void refreshStock();
         return;
       }
-      closeCart();
       toast.success("Order placed", {
         id: loadingId,
         description: "Your keys are ready.",
       });
-      // Keep pending UI until navigate; cart clears on the success page.
+      // Keep pending UI until navigate; checkout clears on the success page.
       router.replace(
         `/order/${json.data!.orderId}?token=${json.data!.accessToken}`,
       );
@@ -213,7 +212,7 @@ export function CheckoutView({ user: serverUser }: CheckoutViewProps) {
                 <AlertCircle />
                 <AlertTitle>Out of stock</AlertTitle>
                 <AlertDescription>
-                  One or more cart items are sold out. Update your cart before
+                  This item is sold out. Choose another product before
                   paying.
                 </AlertDescription>
               </Alert>

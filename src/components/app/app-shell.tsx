@@ -13,7 +13,6 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useCart } from "@/hooks/use-cart";
 import {
   consoleSubtitle,
   consoleTitle,
@@ -43,7 +42,6 @@ export function AppShell({
     liveUser && liveUser.id === serverUser.id
       ? pagesEnabled.giftCodes
       : giftCodesEnabled;
-  const { itemCount, openCart } = useCart();
   const showStoreFooter = pathname === "/app";
 
   return (
@@ -69,11 +67,7 @@ export function AppShell({
             storeHref="/app"
             storeLabel="Home"
             trailing={
-              <ConsoleUserMenu
-                user={user}
-                cartCount={itemCount}
-                onOpenCart={openCart}
-              />
+              <ConsoleUserMenu user={user} />
             }
           />
           <PageTransitionShell className="flex min-w-0 flex-1 flex-col overflow-x-clip">

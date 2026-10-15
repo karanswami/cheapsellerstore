@@ -34,16 +34,7 @@ type CartContextValue = {
   stockOk: boolean;
   applyPromo: (code: string) => Promise<boolean>;
   clearPromo: () => void;
-  isOpen: boolean;
-  openCart: () => void;
-  closeCart: () => void;
-  addItem: (
-    item: Omit<CartItem, "quantity">,
-    quantity?: number,
-    options?: { directCheckout?: boolean },
-  ) => void;
-  removeItem: (durationId: string) => void;
-  updateQuantity: (durationId: string, quantity: number) => void;
+  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
   updateAndroidId: (durationId: string, androidId: string) => void;
   clearCart: () => void;
   /** Re-quote live stock; returns whether every line still has enough. */
@@ -97,7 +88,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [promo, setPromo] = useState<AppliedPromo | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [stockByDuration, setStockByDuration] = useState<Record<
     string,
@@ -192,7 +182,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       if (removedSoldOut) {
-        toast.error("Removed sold-out items from cart");
+        toast.error("Item is sold out");
       } else if (cappedAny) {
         toast.message("Quantity updated", {
           description: `Only ${cappedAvailable} left for ${cappedTitle}.`,
@@ -281,7 +271,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, isOpen, durationIdsKey]);
+  }, [hydrated, durationIdsKey]);
 
   // Live stock when cart has items / opens / tab focuses.
   useEffect(() => {
@@ -297,7 +287,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!document.hidden) void refreshStock();
     };
     const id = window.setInterval(() => {
-      if (!document.hidden && isOpen) void refreshStock();
+      if (!document.hidden) void refreshStock();
     }, 5000);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
@@ -306,104 +296,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  }, [hydrated, durationIdsKey, isOpen, refreshStock]);
+  }, [hydrated, durationIdsKey, refreshStock]);
 
+  /** Buy-now: the checkout holds exactly one product at a time. */
   const addItem = useCallback(
-    (
-      item: Omit<CartItem, "quantity">,
-      quantity = 1,
-      options?: { directCheckout?: boolean },
-    ) => {
-      setItems((prev) => {
-        if (item.requiresAndroidId) {
-          // Device-bound Android ID items allow strictly 1 item per checkout
-          return [
-            {
-              ...item,
-              quantity: 1,
-              androidId: item.androidId?.trim(),
-            },
-          ];
-        }
-
-        // Keep cart clean: filter out any leftover device-bound items
-        const nonAndroid = prev.filter((r) => !r.requiresAndroidId);
-        const existing = nonAndroid.find((row) => row.durationId === item.durationId);
-        if (existing) {
-          return nonAndroid.map((row) =>
-            row.durationId === item.durationId
-              ? {
-                  ...row,
-                  quantity: row.quantity + quantity,
-                  ...(item.androidId ? { androidId: item.androidId.trim() } : {}),
-                }
-              : row,
-          );
-        }
-        return [
-          ...nonAndroid,
-          {
-            ...item,
-            quantity,
-            ...(item.androidId ? { androidId: item.androidId.trim() } : {}),
-          },
-        ];
-      });
-      if (options?.directCheckout) {
-        setIsOpen(false);
-      } else {
-        setIsOpen(true);
-      }
-      setStockReady(false);
-      toast.success(
-        options?.directCheckout ? "Proceeding to checkout…" : "Added to cart",
+    (item: Omit<CartItem, "quantity">, quantity = 1) => {
+      setItems([
         {
-          description: `${item.title} · ${item.durationLabel}`,
+          ...item,
+          quantity: item.requiresAndroidId ? 1 : quantity,
+          ...(item.androidId ? { androidId: item.androidId.trim() } : {}),
         },
-      );
+      ]);
+      setStockReady(false);
     },
     [],
-  );
-
-  const removeItem = useCallback((durationId: string) => {
-    setItems((prev) => {
-      const removed = prev.find((row) => row.durationId === durationId);
-      if (removed) {
-        toast.message("Removed from cart", {
-          description: removed.title,
-        });
-      }
-      return prev.filter((row) => row.durationId !== durationId);
-    });
-  }, []);
-
-  const updateQuantity = useCallback(
-    (durationId: string, quantity: number) => {
-      setItems((prev) =>
-        prev
-          .map((row) => {
-            if (row.durationId !== durationId) return row;
-            const stockMax =
-              stockByDuration != null
-                ? (stockByDuration[durationId] ?? 0)
-                : Number.POSITIVE_INFINITY;
-            const max = row.requiresAndroidId ? 1 : stockMax;
-            const nextQty = Math.min(quantity, max);
-            if (quantity > max && max >= 0) {
-              toast.message("Quantity limit reached", {
-                description: row.requiresAndroidId
-                  ? "Device-bound items are limited to 1 per checkout."
-                  : max <= 0
-                    ? "This item is sold out."
-                    : `Only ${max} available.`,
-              });
-            }
-            return { ...row, quantity: nextQty };
-          })
-          .filter((row) => row.quantity > 0),
-      );
-    },
-    [stockByDuration],
   );
 
   const updateAndroidId = useCallback(
@@ -431,9 +338,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setStockByDuration({});
     setStockReady(true);
   }, []);
-
-  const openCart = useCallback(() => setIsOpen(true), []);
-  const closeCart = useCallback(() => setIsOpen(false), []);
 
   const applyPromo = useCallback(async (code: string) => {
     try {
@@ -497,7 +401,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setPromo(null);
       setPromoError(null);
       toast.message("Promo removed", {
-        description: "No matching product left in cart.",
+        description: "No matching product selected.",
       });
     }
   }, [hydrated, items, promo]);
@@ -536,12 +440,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       stockOk,
       applyPromo,
       clearPromo,
-      isOpen,
-      openCart,
-      closeCart,
       addItem,
-      removeItem,
-      updateQuantity,
       updateAndroidId,
       clearCart,
       refreshStock,
@@ -560,12 +459,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       stockOk,
       applyPromo,
       clearPromo,
-      isOpen,
-      openCart,
-      closeCart,
       addItem,
-      removeItem,
-      updateQuantity,
       updateAndroidId,
       clearCart,
       refreshStock,

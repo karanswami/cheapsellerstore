@@ -24,7 +24,7 @@ import {
   type DurationOption,
   type ProductCardData,
 } from "@/types/product";
-import { Package, ShoppingBag, ShoppingCart, ChevronRight, Smartphone, Wrench } from "lucide-react";
+import { Package, ShoppingBag, ChevronRight, Smartphone, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -165,7 +165,7 @@ export function ProductSheet({
     setSelectedId(pickFirstDurationId(pool, null));
   }
 
-  function addSelected(andCheckout: boolean) {
+  function buyNow() {
     if (!product || product.isMaintenance || !selected || selected.stock <= 0 || selected.price == null)
       return;
 
@@ -179,8 +179,6 @@ export function ProductSheet({
       });
       return;
     }
-
-    const shouldCheckout = andCheckout || requiresAndroid;
 
     addItem(
       {
@@ -200,13 +198,9 @@ export function ProductSheet({
         androidId: requiresAndroid ? trimmedAndroidId : undefined,
       },
       1,
-      { directCheckout: shouldCheckout },
     );
     onOpenChange(false);
-    if (shouldCheckout) {
-      toast.message("Heading to checkout");
-      router.push("/checkout");
-    }
+    router.push("/checkout");
   }
 
   const displayRating = liveRating ?? product?.rating ?? 0;
@@ -392,42 +386,20 @@ export function ProductSheet({
                     </p>
                   ) : null}
                 </div>
-                {selected?.requiresAndroidId ? (
-                  <Button
-                    type="button"
-                    size="lg"
-                    disabled={!canPurchase}
-                    onClick={() => addSelected(true)}
-                    className="w-full bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold shadow-[var(--glow-soft)]"
-                  >
-                    <ShoppingBag data-icon="inline-start" />
-                    Proceed to Checkout
-                  </Button>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      size="lg"
-                      disabled={!canPurchase}
-                      onClick={() => addSelected(true)}
-                      className="w-full min-w-0"
-                    >
-                      <ShoppingBag data-icon="inline-start" />
-                      Buy now
-                    </Button>
-                    <Button
-                      type="button"
-                      size="lg"
-                      variant="outline"
-                      disabled={!canPurchase}
-                      onClick={() => addSelected(false)}
-                      className="w-full min-w-0"
-                    >
-                      <ShoppingCart data-icon="inline-start" />
-                      Add to cart
-                    </Button>
-                  </div>
-                )}
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={!canPurchase}
+                  onClick={buyNow}
+                  className={
+                    selected?.requiresAndroidId
+                      ? "w-full bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold shadow-[var(--glow-soft)]"
+                      : "w-full"
+                  }
+                >
+                  <ShoppingBag data-icon="inline-start" />
+                  Buy now
+                </Button>
               </div>
             </>
           ) : null}

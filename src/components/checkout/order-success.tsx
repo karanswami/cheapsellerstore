@@ -70,14 +70,13 @@ export function OrderSuccess({
   createdAt,
   items,
 }: OrderSuccessProps) {
-  const { clearCart, closeCart } = useCart();
+  const { clearCart } = useCart();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
 
   useEffect(() => {
     clearCart();
-    closeCart();
-  }, [clearCart, closeCart]);
+  }, [clearCart]);
 
   const codes = items.map((i) => i.code).filter((c): c is string => Boolean(c));
 

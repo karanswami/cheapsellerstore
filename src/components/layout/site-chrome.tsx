@@ -1,6 +1,5 @@
 "use client";
 
-import { CartSheet } from "@/components/cart/cart-sheet";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { PageTransitionShell } from "@/components/layout/page-transition-shell";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -41,7 +40,6 @@ export function SiteChrome({
     return (
       <div className="relative z-[1] flex min-h-dvh flex-col">
         {children}
-        <CartSheet />
       </div>
     );
   }
@@ -51,7 +49,6 @@ export function SiteChrome({
     return (
       <>
         {children}
-        <CartSheet />
       </>
     );
   }
@@ -66,7 +63,6 @@ export function SiteChrome({
       </PageTransitionShell>
       <SiteFooter />
       <SupportFab />
-      <CartSheet />
     </div>
   );
 }

@@ -57,9 +57,9 @@ export default function CheckoutPage() {
             <div className="mx-auto mb-1 flex size-12 items-center justify-center rounded-full bg-muted">
               <ShoppingBag className="size-5 text-muted-foreground" />
             </div>
-            <CardTitle>Cart is empty</CardTitle>
+            <CardTitle>Nothing to check out</CardTitle>
             <CardDescription>
-              Add a product before checking out.
+              Choose a product and press Buy now.
             </CardDescription>
           </CardHeader>
           <CardContent>

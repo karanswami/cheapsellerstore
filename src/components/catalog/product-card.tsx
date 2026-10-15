@@ -13,7 +13,7 @@ import { Card, CardFooter } from "@/components/ui/card";
 import { formatMoney } from "@/lib/currencies";
 import { cn } from "@/lib/utils";
 import type { ProductCardData } from "@/types/product";
-import { BadgeCheck, ShoppingCart, SquarePlay, Wrench } from "lucide-react";
+import { BadgeCheck, ShoppingBag, SquarePlay, Wrench } from "lucide-react";
 
 type StatusBadge = {
   label: string;
@@ -240,7 +240,7 @@ export function ProductCard({ product }: ProductCardProps) {
             }}
             className={styles.buyNow}
           >
-            <ShoppingCart
+            <ShoppingBag
               data-icon="inline-start"
               className="size-3.5"
             />
