@@ -188,7 +188,7 @@ export function GiftCodesView({
           <Input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="DRIP-XXXX-XXXX"
+            placeholder="CHEAP-XXXX-XXXX"
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}

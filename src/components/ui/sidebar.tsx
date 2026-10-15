@@ -23,7 +23,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { PanelLeftIcon } from "lucide-react"
-import sidebarSurface from "@/components/layout/console-sidebar.module.css"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -31,41 +30,6 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "20rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
-const SIDEBAR_WASH_VARIANTS = 4
-
-function useSidebarWash(isMobile: boolean, openMobile: boolean) {
-  // Start at 0 on server + first client paint (hydration-safe).
-  // Variety only after mount — never Math.random during render.
-  const [wash, setWash] = React.useState(0)
-  const mountedRef = React.useRef(false)
-
-  const pick = React.useCallback(() => {
-    setWash(Math.floor(Math.random() * SIDEBAR_WASH_VARIANTS))
-  }, [])
-
-  React.useEffect(() => {
-    mountedRef.current = true
-    pick()
-  }, [pick])
-
-  React.useEffect(() => {
-    if (!mountedRef.current) return
-    if (isMobile && openMobile) pick()
-  }, [isMobile, openMobile, pick])
-
-  return wash
-}
-
-/** Gradient overlay only — never apply layout CSS to Sheet/fixed roots. */
-function SidebarWash({ variant }: { variant: number }) {
-  return (
-    <div
-      aria-hidden
-      data-wash={variant}
-      className={sidebarSurface.wash}
-    />
-  )
-}
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -203,7 +167,6 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
-  const wash = useSidebarWash(isMobile, openMobile)
 
   if (collapsible === "none") {
     return (
@@ -215,7 +178,6 @@ function Sidebar({
         )}
         {...props}
       >
-        <SidebarWash variant={wash} />
         <div className="relative z-[1] flex size-full min-h-0 flex-col overflow-hidden">
           {children}
         </div>
@@ -244,7 +206,6 @@ function Sidebar({
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
           <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
-            <SidebarWash variant={wash} />
             <div className="relative z-[1] flex min-h-0 flex-1 flex-col overflow-hidden">
               {children}
             </div>
@@ -293,7 +254,6 @@ function Sidebar({
           data-slot="sidebar-inner"
           className="relative flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
         >
-          <SidebarWash variant={wash} />
           <div className="relative z-[1] flex size-full min-h-0 flex-col overflow-hidden">
             {children}
           </div>

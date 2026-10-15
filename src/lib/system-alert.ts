@@ -63,7 +63,7 @@ export async function sendSystemAlert(input: SystemAlertInput): Promise<void> {
     severity === "CRITICAL" ? "🚨" : severity === "WARNING" ? "⚠️" : "ℹ️";
 
   const lines: string[] = [
-    `${icon} ${severity} SYSTEM ALERT — DRIP`,
+    `${icon} ${severity} SYSTEM ALERT — CHEAP SELLER`,
     "",
     `• Source: ${input.source}`,
     `• Action: ${input.action}`,

@@ -24,7 +24,6 @@ export type LeaderboardBoardEntry = {
   username: string;
   name: string;
   avatarUrl: string | null;
-  isPremium: boolean;
   emailVerified: boolean;
   emojiStatus: string | null;
   isViewer: boolean;
@@ -159,7 +158,6 @@ function PodiumCard({
         <p className={styles.handle}>@{entry.username}</p>
         <div className={styles.badges}>
           <LeaderboardTrustBadges
-            isPremium={entry.isPremium}
             emailVerified={entry.emailVerified}
             isYou={entry.isViewer}
           />
@@ -206,7 +204,6 @@ function RankRow({ entry }: { entry: LeaderboardBoardEntry }) {
         <div className={styles.rowTop}>
           <p className={styles.rowHandle}>@{entry.username}</p>
           <LeaderboardTrustBadges
-            isPremium={entry.isPremium}
             emailVerified={entry.emailVerified}
             isYou={entry.isViewer}
           />

@@ -11,13 +11,13 @@ const PAGES = [
   {
     slug: "privacy-policy",
     title: "Privacy Policy",
-    seoTitle: "Privacy Policy | Drip",
+    seoTitle: "Privacy Policy | Cheap Seller",
     seoDescription:
-      "How Drip collects, uses, and protects your account and payment information.",
+      "How Cheap Seller collects, uses, and protects your account and payment information.",
     sortOrder: 10,
     content: `Last updated: July 26, 2026
 
-Drip (“we”, “us”) operates a digital product storefront. This Privacy Policy explains what information we collect and how we use it.
+Cheap Seller (“we”, “us”) operates a digital product storefront. This Privacy Policy explains what information we collect and how we use it.
 
 1. Information we collect
 • Account details — name, email, username, and password (hashed).
@@ -58,18 +58,18 @@ We use industry-standard practices (hashed passwords, httpOnly session cookies, 
 8. Contact
 Questions about privacy? Open Support from the store or your dashboard, or reach us through the channels listed on the site.
 
-By using Drip, you agree to this Privacy Policy.`,
+By using Cheap Seller, you agree to this Privacy Policy.`,
   },
   {
     slug: "payment-policy",
     title: "Payment Policy",
-    seoTitle: "Payment Policy | Drip",
+    seoTitle: "Payment Policy | Cheap Seller",
     seoDescription:
-      "How deposits, wallet balance, and checkout work on Drip (USD only).",
+      "How deposits, wallet balance, and checkout work on Cheap Seller (USD only).",
     sortOrder: 20,
     content: `Last updated: July 26, 2026
 
-Drip uses a wallet-based checkout. All catalog prices and balances are in United States Dollars (USD).
+Cheap Seller uses a wallet-based checkout. All catalog prices and balances are in United States Dollars (USD).
 
 1. Wallet balance
 • Your balance is stored in USD and shown in your account.
@@ -106,13 +106,13 @@ For payment or deposit help, open Support and choose Deposits & wallet, or submi
   {
     slug: "terms-of-service",
     title: "Terms of Service",
-    seoTitle: "Terms of Service | Drip",
+    seoTitle: "Terms of Service | Cheap Seller",
     seoDescription:
-      "Rules for using the Drip digital key store, accounts, and purchases.",
+      "Rules for using the Cheap Seller digital key store, accounts, and purchases.",
     sortOrder: 30,
     content: `Last updated: July 26, 2026
 
-Welcome to Drip. By creating an account or buying from our store, you agree to these Terms of Service.
+Welcome to Cheap Seller. By creating an account or buying from our store, you agree to these Terms of Service.
 
 1. Eligibility
 • You must be able to form a binding agreement and comply with applicable laws where you live.
@@ -124,7 +124,7 @@ Welcome to Drip. By creating an account or buying from our store, you agree to t
 • Impersonation, shared seller abuse, or attempts to bypass security are prohibited.
 
 3. Products
-• Drip sells digital license keys and related digital goods (such as mods, tools, or spoofers where offered).
+• Cheap Seller sells digital license keys and related digital goods (such as mods, tools, or spoofers where offered).
 • Descriptions, durations, and stock are provided as accurately as practical; availability can change.
 • Keys are delivered digitally after a successful purchase — there is no physical shipping.
 
@@ -135,7 +135,7 @@ Welcome to Drip. By creating an account or buying from our store, you agree to t
 
 5. Acceptable use
 • Use products only in ways that are legal in your jurisdiction.
-• Do not attack, scrape, or disrupt Drip systems.
+• Do not attack, scrape, or disrupt Cheap Seller systems.
 • Do not resell keys in violation of product or reseller program rules.
 
 6. Reseller program
@@ -144,7 +144,7 @@ Welcome to Drip. By creating an account or buying from our store, you agree to t
 
 7. Changes
 • We may update these Terms; the “Last updated” date will change when we do.
-• Continued use of Drip after updates means you accept the revised Terms.
+• Continued use of Cheap Seller after updates means you accept the revised Terms.
 
 8. Contact
 Questions? Open Support from the site or your account hub.`,
@@ -152,13 +152,13 @@ Questions? Open Support from the site or your account hub.`,
   {
     slug: "refund-policy",
     title: "Refund Policy",
-    seoTitle: "Refund Policy | Drip",
+    seoTitle: "Refund Policy | Cheap Seller",
     seoDescription:
-      "When refunds or wallet credits may apply for digital key purchases on Drip.",
+      "When refunds or wallet credits may apply for digital key purchases on Cheap Seller.",
     sortOrder: 40,
     content: `Last updated: July 26, 2026
 
-Drip sells digital goods that are delivered instantly. Please read this policy before purchasing.
+Cheap Seller sells digital goods that are delivered instantly. Please read this policy before purchasing.
 
 1. General rule
 • Because keys are digital and revealed immediately after payment, all sales are generally final.
@@ -184,7 +184,7 @@ We may offer a replacement key, wallet credit, or other remedy at our discretion
 
 5. Deposit disputes
 • Pending deposits are not refunds — they are awaiting review.
-• Rejected deposits mean funds were not credited to Drip; resolve with your payment method if money left your account incorrectly.
+• Rejected deposits mean funds were not credited to Cheap Seller; resolve with your payment method if money left your account incorrectly.
 
 6. Final decisions
 • Approved remedies are applied as wallet credit or key replacement unless we state otherwise.
@@ -195,13 +195,13 @@ Contact Support anytime from the store or your dashboard.`,
   {
     slug: "delivery-policy",
     title: "Delivery Policy",
-    seoTitle: "Key Delivery Policy | Drip",
+    seoTitle: "Key Delivery Policy | Cheap Seller",
     seoDescription:
-      "How digital keys are delivered after wallet checkout on Drip.",
+      "How digital keys are delivered after wallet checkout on Cheap Seller.",
     sortOrder: 50,
     content: `Last updated: July 26, 2026
 
-Drip delivers digital license keys online — there is no physical shipping.
+Cheap Seller delivers digital license keys online — there is no physical shipping.
 
 1. How delivery works
 • Add products to your cart and checkout with a sufficient USD wallet balance.
@@ -234,13 +234,13 @@ Need help? Open Support and choose Keys & delivery, or submit a KEY report from 
   {
     slug: "disclaimer",
     title: "Disclaimer",
-    seoTitle: "Disclaimer | Drip",
+    seoTitle: "Disclaimer | Cheap Seller",
     seoDescription:
-      "Important legal and product-use disclaimers for the Drip store.",
+      "Important legal and product-use disclaimers for the Cheap Seller store.",
     sortOrder: 60,
     content: `Last updated: July 26, 2026
 
-Please read this disclaimer before using Drip or any digital products purchased here.
+Please read this disclaimer before using Cheap Seller or any digital products purchased here.
 
 1. Informational storefront
 • Product descriptions, ratings, and support answers are provided to help you choose — they are not a guarantee of uninterrupted performance on every device, game version, or region.
@@ -248,7 +248,7 @@ Please read this disclaimer before using Drip or any digital products purchased 
 2. Your responsibility
 • You are solely responsible for how you use purchased software, keys, mods, tools, or spoofers.
 • You must comply with the laws, game terms, and platform rules that apply to you.
-• Drip is not liable for bans, hardware issues, account losses, or third-party enforcement actions resulting from product use.
+• Cheap Seller is not liable for bans, hardware issues, account losses, or third-party enforcement actions resulting from product use.
 
 3. No warranty beyond delivery
 • Except where we confirm a store-side delivery error (see Refund Policy), products are provided as delivered digital goods.
@@ -258,14 +258,14 @@ Please read this disclaimer before using Drip or any digital products purchased 
 • Deposits, OAuth (Google), email OTP, and similar services are provided by third parties. Their outages or policies may affect login or top-ups temporarily.
 
 5. Limitation of liability
-• To the fullest extent permitted by law, Drip and its operators are not liable for indirect, incidental, or consequential damages arising from store use or product use.
+• To the fullest extent permitted by law, Cheap Seller and its operators are not liable for indirect, incidental, or consequential damages arising from store use or product use.
 • Our total liability related to a purchase is limited to the amount paid for that order, except where law requires otherwise.
 
 6. Support scope
 • Support can help with deposits, account access, and key delivery issues.
 • Support cannot guarantee game outcomes, bypass vendor bans, or restore keys lost through sharing.
 
-By purchasing or using Drip, you acknowledge this Disclaimer together with our Terms, Privacy, Payment, Refund, and Delivery policies.`,
+By purchasing or using Cheap Seller, you acknowledge this Disclaimer together with our Terms, Privacy, Payment, Refund, and Delivery policies.`,
   },
 ] as const;
 

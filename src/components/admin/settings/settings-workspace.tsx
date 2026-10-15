@@ -71,7 +71,6 @@ import {
   Handshake,
   Headphones,
   CreditCard,
-  Crown,
   ImagePlus,
   KeyRound,
   KeySquare,
@@ -125,9 +124,7 @@ type Settings = {
   resellerApplyMinBalance: number;
   resellerCreateMinFunding: number;
   resellerAutoApprove: boolean;
-  premiumPriceUsd: number;
   developerProfitSharePercent: number;
-  premiumDeveloperSharePercent: number;
   specialStockDeveloperSharePercent: number;
   supplierBuyPricePercent: number;
   googleClientId: string;
@@ -172,7 +169,6 @@ type EditSection =
   | "referral"
   | "shares"
   | "reseller"
-  | "premium"
   | "auth"
   | "paymentKeys"
   | "apiSandbox"
@@ -319,7 +315,6 @@ export function SettingsWorkspace() {
   });
   const [sharesDraft, setSharesDraft] = useState({
     developerProfitSharePercent: 10,
-    premiumDeveloperSharePercent: 50,
     specialStockDeveloperSharePercent: 50,
     supplierBuyPricePercent: 50,
   });
@@ -329,12 +324,11 @@ export function SettingsWorkspace() {
     resellerCreateMinFunding: 5,
     resellerAutoApprove: false,
   });
-  const [premiumDraft, setPremiumDraft] = useState({ premiumPriceUsd: 10 });
   const [authDraft, setAuthDraft] = useState({
     googleClientId: "",
     googleClientSecret: "",
     resendApiKey: "",
-    resendFromEmail: "Drip <onboarding@resend.dev>",
+    resendFromEmail: "Cheap Seller <onboarding@resend.dev>",
   });
   const [copiedAutogopayWebhook, setCopiedAutogopayWebhook] = useState(false);
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -383,7 +377,6 @@ export function SettingsWorkspace() {
           data.telegramNotifications ?? defaultTelegramNotifyConfig(),
         pagesEnabled: data.pagesEnabled ?? { ...DEFAULT_PAGES_ENABLED },
         developerProfitSharePercent: data.developerProfitSharePercent ?? 10,
-        premiumDeveloperSharePercent: data.premiumDeveloperSharePercent ?? 50,
         specialStockDeveloperSharePercent: data.specialStockDeveloperSharePercent ?? 50,
         supplierBuyPricePercent: data.supplierBuyPricePercent ?? 50,
       }
@@ -459,7 +452,6 @@ export function SettingsWorkspace() {
     if (!settings) return;
     setSharesDraft({
       developerProfitSharePercent: settings.developerProfitSharePercent,
-      premiumDeveloperSharePercent: settings.premiumDeveloperSharePercent,
       specialStockDeveloperSharePercent: settings.specialStockDeveloperSharePercent,
       supplierBuyPricePercent: settings.supplierBuyPricePercent,
     });
@@ -475,12 +467,6 @@ export function SettingsWorkspace() {
       resellerAutoApprove: settings.resellerAutoApprove,
     });
     setEdit("reseller");
-  }
-
-  function openPremium() {
-    if (!settings) return;
-    setPremiumDraft({ premiumPriceUsd: settings.premiumPriceUsd });
-    setEdit("premium");
   }
 
   function openAuth() {
@@ -743,7 +729,7 @@ export function SettingsWorkspace() {
           <SettingsRow
             icon={<PieChart className="size-4" />}
             title="Shares & margins"
-            description={`Dev ${settings.developerProfitSharePercent}% · Premium ${settings.premiumDeveloperSharePercent}% · Special stock ${settings.specialStockDeveloperSharePercent}% · Supplier buy ${settings.supplierBuyPricePercent}%`}
+            description={`Dev ${settings.developerProfitSharePercent}% · Special stock ${settings.specialStockDeveloperSharePercent}% · Supplier buy ${settings.supplierBuyPricePercent}%`}
             badges={<Badge variant="secondary">Settlements · catalog</Badge>}
             onClick={openShares}
           />
@@ -926,15 +912,6 @@ export function SettingsWorkspace() {
               </Badge>
             }
             onClick={() => setWebPushOpen(true)}
-          />
-          <SettingsRow
-            icon={<Crown className="size-4" />}
-            title="Premium membership"
-            description={`One-time unlock · $${settings.premiumPriceUsd} USD`}
-            badges={
-              <Badge variant="secondary">Wallet debit</Badge>
-            }
-            onClick={openPremium}
             last
           />
         </div>
@@ -1510,26 +1487,6 @@ export function SettingsWorkspace() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="premium-share-pct">Premium developer share %</Label>
-              <Input
-                id="premium-share-pct"
-                type="number"
-                min={0}
-                max={100}
-                value={sharesDraft.premiumDeveloperSharePercent}
-                onChange={(e) =>
-                  setSharesDraft({
-                    ...sharesDraft,
-                    premiumDeveloperSharePercent: Number(e.target.value) || 0,
-                  })
-                }
-                className="h-11 tabular-nums"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Of Premium membership revenue on Premium settlements.
-              </p>
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="special-stock-share-pct">Special stock developer share %</Label>
               <Input
                 id="special-stock-share-pct"
@@ -1720,66 +1677,6 @@ export function SettingsWorkspace() {
       </Dialog>
 
       <Dialog
-        open={edit === "premium"}
-        onOpenChange={(open) => !open && setEdit(null)}
-      >
-        <DialogContent className="flex max-h-[min(92dvh,640px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
-          <div className="shrink-0 border-b border-border/40 bg-muted/40 px-5 py-4">
-            <DialogHeader className="gap-1.5 pr-8 text-left">
-              <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                <Crown className="size-5" />
-              </div>
-              <DialogTitle className="text-lg">Premium membership</DialogTitle>
-              <DialogDescription>
-                One-time wallet price to unlock customization and vanity tools.
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="premium-price">Unlock price (USD)</Label>
-              <Input
-                id="premium-price"
-                type="number"
-                min={0}
-                step="1"
-                value={premiumDraft.premiumPriceUsd}
-                onChange={(e) =>
-                  setPremiumDraft({
-                    premiumPriceUsd: Number(e.target.value) || 0,
-                  })
-                }
-                className="h-11 tabular-nums"
-              />
-              <p className="text-xs text-muted-foreground">
-                Charged once from the customer wallet in USD microcents.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEdit(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={pending}
-              onClick={() => {
-                void save(premiumDraft).then((ok) => {
-                  if (ok) setEdit(null);
-                });
-              }}
-            >
-              {pending ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
         open={edit === "auth"}
         onOpenChange={(open) => !open && setEdit(null)}
       >
@@ -1869,7 +1766,7 @@ export function SettingsWorkspace() {
                       resendFromEmail: e.target.value,
                     })
                   }
-                  placeholder="Drip <noreply@yourdomain.com>"
+                  placeholder="Cheap Seller <noreply@yourdomain.com>"
                   className="h-11"
                 />
               </div>
@@ -2104,7 +2001,7 @@ export function SettingsWorkspace() {
                   Webhook Configuration:
                 </p>
                 <code className="mt-1 block select-all break-all rounded bg-background px-2 py-1 font-mono text-[11px] text-primary">
-                  https://dripclientofficial.dev/api/webhooks/famgateway
+                  https://cheapseller.store/api/webhooks/famgateway
                 </code>
                 <p className="mt-1.5 text-[11px] leading-relaxed">
                   Webhooks are cryptographically verified via HMAC-SHA256 with

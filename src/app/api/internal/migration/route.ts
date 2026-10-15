@@ -119,7 +119,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, error: "TARGET_USER_BANNED" }, { status: 403 });
       }
 
-      // Check role upgrade / permission grant for Guru RESELLER / ADMIN -> Drip SELLER
+      // Check role upgrade / permission grant for Guru RESELLER / ADMIN -> Cheap Seller SELLER
       let roleUpgraded = false;
       const oldRole = targetUser.role;
       if ((guruRole === "RESELLER" || guruRole === "ADMIN") && targetUser.role !== "ADMIN") {
@@ -169,11 +169,11 @@ export async function POST(req: Request) {
         `🚀 <b>GuruGamingHub Migration Transfer!</b>`,
         `━━━━━━━━━━━━━━━━━━`,
         `👤 <b>Guru User:</b> @${guruUsername} (<code>${guruEmail}</code> | Role: <b>${guruRole || "USER"}</b>)`,
-        `🎯 <b>Target Drip User:</b> @${targetUser.username} (<code>${targetUser.email}</code>)`,
-        roleUpgraded ? `⭐ <b>Role Upgraded:</b> ${oldRole} ➔ <b>SELLER</b> (Guru Reseller Perk)` : `🛡️ <b>Drip Role:</b> ${finalRole}`,
+        `🎯 <b>Target Cheap Seller User:</b> @${targetUser.username} (<code>${targetUser.email}</code>)`,
+        roleUpgraded ? `⭐ <b>Role Upgraded:</b> ${oldRole} ➔ <b>SELLER</b> (Guru Reseller Perk)` : `🛡️ <b>Cheap Seller Role:</b> ${finalRole}`,
         `💰 <b>Amount Migrated:</b> <b>$${transferredUsd} USD</b>`,
         `💳 <b>Previous Balance:</b> $${oldBalanceUsd} USD`,
-        `✨ <b>New Drip Balance:</b> <b>$${newBalanceUsd} USD</b>`,
+        `✨ <b>New Cheap Seller Balance:</b> <b>$${newBalanceUsd} USD</b>`,
         `🔖 <b>Ref:</b> <code>${refCode}</code>`,
         `🕒 <b>Time:</b> ${new Date().toISOString().replace("T", " ").slice(0, 19)} UTC`,
       ].join("\n");
@@ -253,7 +253,7 @@ export async function POST(req: Request) {
             `⭐ <b>GuruGamingHub Reseller Role Sync!</b>`,
             `━━━━━━━━━━━━━━━━━━`,
             `👤 <b>Guru User:</b> @${guruUsername} (<code>${guruEmail}</code>)`,
-            `🎯 <b>Target Drip User:</b> @${targetUser.username} (<code>${targetUser.email}</code>)`,
+            `🎯 <b>Target Cheap Seller User:</b> @${targetUser.username} (<code>${targetUser.email}</code>)`,
             `⭐ <b>Role Upgraded:</b> ${oldRole} ➔ <b>SELLER</b>`,
             `🔑 <b>Permissions Granted:</b> Create, Manage & Fund Resellers`,
             `🕒 <b>Time:</b> ${new Date().toISOString().replace("T", " ").slice(0, 19)} UTC`,

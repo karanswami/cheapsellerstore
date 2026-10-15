@@ -1,4 +1,4 @@
-/* Drip PWA — installability + offline document fallback */
+/* Cheap Seller PWA — installability + offline document fallback */
 const CACHE = "drip-pwa-v2";
 const PRECACHE = [
   "/offline.html",
@@ -80,7 +80,7 @@ self.addEventListener("push", (event) => {
   if (!event.data) return;
 
   let payload = {
-    title: "DRIP Store",
+    title: "Cheap Seller",
     body: "You have a new update.",
     icon: "/pwa/icon-192.png",
     badge: "/pwa/icon-192.png",

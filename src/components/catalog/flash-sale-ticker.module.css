@@ -9,8 +9,8 @@
   background: linear-gradient(
     90deg,
     color-mix(in oklab, var(--primary) 92%, #7c1fa0) 0%,
-    color-mix(in oklab, var(--brand-accent, #ff6ad5) 85%, var(--primary)) 55%,
-    color-mix(in oklab, var(--primary) 75%, #d600ff) 100%
+    color-mix(in oklab, var(--brand-accent, #f5b942) 85%, var(--primary)) 55%,
+    color-mix(in oklab, var(--primary) 75%, #10b981) 100%
   );
 }
 

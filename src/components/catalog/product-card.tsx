@@ -108,7 +108,6 @@ export function ProductCard({ product }: ProductCardProps) {
           (!inStock || product.isMaintenance) && "opacity-90",
         )}
       >
-        <span className={styles.snakeOverlay} aria-hidden="true" />
         <div className={styles.mediaHit}>
           <ProductBanner product={product} />
 

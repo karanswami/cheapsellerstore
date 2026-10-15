@@ -29,8 +29,6 @@ export async function GET() {
       apiEnabled: true,
       depositsEnabled: true,
       emailVerified: true,
-      isPremium: true,
-      premiumPurchasedAt: true,
       referredById: true,
       referralCode: true,
       createdAt: true,
@@ -47,10 +45,6 @@ export async function GET() {
       apiEnabled: u.apiEnabled !== false,
       depositsEnabled: userCanSelfDeposit(u),
       emailVerified: u.emailVerified ?? false,
-      isPremium: u.isPremium ?? false,
-      premiumPurchasedAt: u.premiumPurchasedAt
-        ? u.premiumPurchasedAt.toISOString()
-        : null,
       createdAt: u.createdAt.toISOString(),
     })),
   });

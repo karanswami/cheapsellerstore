@@ -12,7 +12,7 @@ const DEFAULT_ROUTES = [
     slug: "catalog",
     name: "Public catalog & help",
     replyText:
-      "Welcome to Drip! Looking for premium digital products, working keys, or instant mod downloads? Choose an option below to get started!",
+      "Welcome to Cheap Seller! Looking for premium digital products, working keys, or instant mod downloads? Choose an option below to get started!",
     isSerious: false,
     requireRoles: [] as string[],
     isFallback: false,

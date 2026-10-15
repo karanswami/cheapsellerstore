@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/app/app-shell";
-import { ConsoleQuickStats } from "@/components/layout/console-profile";
 import {
   clearCustomerSessionCookie,
   getCurrentUser,
@@ -7,20 +6,7 @@ import {
 } from "@/lib/auth/customer";
 import { isGiftCodesEnabled } from "@/lib/pages-enabled";
 import { prisma } from "@/lib/prisma";
-import { getCustomerSidebarStats } from "@/lib/sidebar-stats";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
-
-async function SidebarStats({ userId }: { userId: string }) {
-  const stats = await getCustomerSidebarStats(userId);
-  return (
-    <ConsoleQuickStats
-      orders={stats.orders}
-      keys={stats.keys}
-      deposits={stats.deposits}
-    />
-  );
-}
 
 export default async function AppLayout({
   children,
@@ -51,13 +37,6 @@ export default async function AppLayout({
     <AppShell
       user={user}
       giftCodesEnabled={giftCodesEnabled}
-      statsSlot={
-        <Suspense
-          fallback={<ConsoleQuickStats orders={0} keys={0} deposits={0} />}
-        >
-          <SidebarStats userId={user.id} />
-        </Suspense>
-      }
     >
       {children}
     </AppShell>

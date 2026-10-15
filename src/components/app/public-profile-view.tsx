@@ -3,8 +3,6 @@
 import { FlashSaleTicker } from "@/components/catalog/flash-sale-ticker";
 import { ProductSheet } from "@/components/product/product-sheet";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PremiumBadge } from "@/components/ui/premium-badge";
 import { formatMoney } from "@/lib/currencies";
 import {
   isSellerRole,
@@ -25,7 +23,6 @@ import {
   Globe,
   Heart,
   MessageCircle,
-  Pencil,
   Play,
   Shield,
   ShieldCheck,
@@ -135,13 +132,6 @@ function ProfileAvatar({
           title={emoji}
         >
           {emoji}
-        </span>
-      ) : user.isPremium ? (
-        <span
-          className="absolute right-0 bottom-0 z-10 flex size-7 items-center justify-center"
-          title="Premium member"
-        >
-          <PremiumBadge variant="seal" size="sm" showLabel={false} />
         </span>
       ) : user.emailVerified ? (
         <span
@@ -352,24 +342,6 @@ export function PublicProfileView({
       </div>
 
       <div className="relative z-[1] mx-auto w-full max-w-md px-4 pt-6 sm:max-w-lg sm:pt-8 lg:max-w-xl">
-        {/* Owner Quick Edit Trigger */}
-        {isOwner ? (
-          <div className="mb-4 flex items-center justify-between rounded-2xl border border-primary/25 bg-card/80 px-4 py-2.5 backdrop-blur">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-primary">⚡ PREVIEW MODE</p>
-              <p className="text-[11px] text-muted-foreground">
-                This is how visitors see your personal bio page.
-              </p>
-            </div>
-            <Button type="button" size="sm" variant="outline" asChild className="h-8 rounded-xl text-xs">
-              <Link href="/app/bio">
-                <Pencil className="size-3 mr-1" />
-                Customize Bio
-              </Link>
-            </Button>
-          </div>
-        ) : null}
-
         {/* Hero Identity Box */}
         <section className={cn(styles.card, "overflow-hidden rounded-[1.6rem]")}>
           {/* Custom Banner */}
@@ -407,9 +379,6 @@ export function PublicProfileView({
                 {seller ? <Shield className="size-3" /> : <UserRound className="size-3" />}
                 {roleLabel(user.role)}
               </Badge>
-              {user.isPremium ? (
-                <PremiumBadge size="sm" className={styles.premiumChip} />
-              ) : null}
             </div>
 
             {/* Tagline & Bio */}
@@ -546,7 +515,7 @@ export function PublicProfileView({
       <div className="relative z-[1] mt-12 mb-4 text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-border/40 bg-card/40 px-3.5 py-1 text-[11px] text-muted-foreground backdrop-blur-sm">
           <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-mono">{user.username}.dripclientofficial.dev</span>
+          <span className="font-mono">{user.username}.cheapseller.store</span>
         </div>
       </div>
     </main>

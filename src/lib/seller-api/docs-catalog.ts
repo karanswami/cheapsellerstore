@@ -682,7 +682,7 @@ export const AI_PROMPT_PACKS: {
     id: "wire",
     label: "Wire my site",
     description:
-      "Build middleware that maps products → Drip SKUs and delivers keys[].",
+      "Build middleware that maps products → Cheap Seller SKUs and delivers keys[].",
   },
   {
     id: "python",
@@ -1025,7 +1025,7 @@ export function buildAiPromptPack(
   );
 
   const header = [
-    "You are helping me integrate the Drip Platform API (v1 — simplified SKU model).",
+    "You are helping me integrate the Cheap Seller Platform API (v1 — simplified SKU model).",
     "",
     rules,
     "",
@@ -1049,7 +1049,7 @@ export function buildAiPromptPack(
       "",
       "## Task — wire my site",
       "Build server-side middleware (never expose the API key in the browser) that:",
-      "1) Keeps a map from my local product IDs → Drip SKU apiCodes (items[].apiCode)",
+      "1) Keeps a map from my local product IDs → Cheap Seller SKU apiCodes (items[].apiCode)",
       "2) After my customer pays me, calls POST /api/v1/orders with { sku, quantity } + a unique Idempotency-Key",
       "3) Delivers data.keys[] (and/or items[].key) to the buyer",
       "4) On network retry, reuses the same Idempotency-Key",

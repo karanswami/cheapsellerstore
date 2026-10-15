@@ -15,15 +15,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatMoney } from "@/lib/currencies";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/auth/auth-provider";
 import {
-  Crown,
   Flag,
   KeyRound,
   LoaderCircle,
   Plus,
   Wallet,
-  Zap,
 } from "lucide-react";
 import {
   useCallback,
@@ -130,8 +127,6 @@ export function ReportsView({
   initialHasMore: boolean;
   pageSize?: number;
 }) {
-  const { user } = useAuth();
-  const isPremium = Boolean(user?.isPremium);
 
   const [reports, setReports] = useState(initialReports);
   const [page, setPage] = useState(1);
@@ -354,15 +349,6 @@ export function ReportsView({
             value: String(reports.length),
             tone: "default",
           },
-          ...(isPremium
-            ? [
-                {
-                  label: "Support",
-                  value: "⚡ VIP Fast",
-                  tone: "success" as const,
-                },
-              ]
-            : []),
         ]}
         actions={
           <Button
@@ -377,15 +363,6 @@ export function ReportsView({
           </Button>
         }
       />
-
-      {isPremium ? (
-        <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200">
-          <Crown className="size-4 shrink-0 text-amber-400" />
-          <p className="min-w-0 flex-1 leading-snug">
-            <span className="font-semibold text-amber-300">VIP Priority Support Active:</span> Your issue reports receive expedited priority review.
-          </p>
-        </div>
-      ) : null}
 
       {reports.length === 0 ? (
         <HubEmptyPanel>
@@ -498,9 +475,7 @@ export function ReportsView({
         icon={<Flag className="size-5" />}
         title="New report"
         description={
-          isPremium
-            ? "⚡ VIP Priority Queue Active — your ticket is flagged for expedited review."
-            : "Pick an issue type, explain what happened, and attach proof when required."
+          "Pick an issue type, explain what happened, and attach proof when required."
         }
         size="lg"
         footer={

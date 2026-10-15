@@ -13,9 +13,7 @@ import { NativeAppBootstrap } from "@/components/layout/native-app-bootstrap";
 import { NativeOfflineBanner } from "@/components/layout/native-offline-banner";
 import { OfflineBanner } from "@/components/layout/offline-banner";
 import { PwaProvider } from "@/components/layout/pwa-provider";
-import { ResellerApplyPopup } from "@/components/layout/reseller-apply-popup";
 import { SiteChrome } from "@/components/layout/site-chrome";
-import { SplashScreen } from "@/components/layout/splash-screen";
 import { WebPushPrompt } from "@/components/layout/web-push-prompt";
 import { SiteConfigProvider } from "@/components/theme/site-config-provider";
 import { SiteIconsProvider } from "@/components/theme/site-icons-provider";
@@ -42,7 +40,7 @@ const geistMono = Geist_Mono({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#E84FFF",
+  themeColor: "#10b981",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
@@ -138,7 +136,6 @@ export default async function RootLayout({
                   <NativeAppBootstrap />
                   <LiveWaveBackground isBioInitial={isBioInitial} />
                   <AuthProvider>
-                    <SplashScreen isBioInitial={isBioInitial} />
                     <CartProvider>
                       <MaintenanceGate banner={<InstallAppBanner />}>
                         <SiteChrome isBioInitial={isBioInitial}>{children}</SiteChrome>
@@ -146,7 +143,6 @@ export default async function RootLayout({
                       <NativeOfflineBanner />
                       <OfflineBanner />
                       <InstallAppHelpDialog />
-                      <ResellerApplyPopup />
                       <WebPushPrompt />
                       <Toaster />
                     </CartProvider>

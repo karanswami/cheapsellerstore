@@ -39,10 +39,6 @@ export function toSafeUser(user: User): SafeUser {
     featuredProducts: user.featuredProducts ?? [],
     profileBorder: (user.profileBorder as any) ?? "NONE",
     emojiStatus: user.emojiStatus ?? null,
-    isPremium: user.isPremium ?? false,
-    premiumPurchasedAt: user.premiumPurchasedAt
-      ? user.premiumPurchasedAt.toISOString()
-      : null,
     bioTheme: user.bioTheme ?? "DEFAULT",
     bioTagline: user.bioTagline ?? null,
     bioBannerUrl: user.bioBannerUrl ?? null,

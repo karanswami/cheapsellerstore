@@ -418,7 +418,7 @@ const BORDER_OPTIONS: {
   label: string;
   description: string;
   preview: string;
-  unlock: "all" | "premium" | "admin";
+  unlock: "all" | "seller" | "admin";
 }[] = [
   {
     value: "NONE",
@@ -429,10 +429,10 @@ const BORDER_OPTIONS: {
   },
   {
     value: "PREMIUM",
-    label: "Premium",
-    description: "Gold ring for Premium members and sellers",
+    label: "Gold",
+    description: "Gold ring for sellers",
     preview: "border-2 border-amber-500 shadow-[0_0_0_2px_rgba(245,158,11,0.25)]",
-    unlock: "premium",
+    unlock: "seller",
   },
   {
     value: "VIP",
@@ -508,7 +508,7 @@ export function ProfileBorderDialog({
             user.role === "ADMIN";
           const available =
             option.unlock === "all" ||
-            (option.unlock === "premium" && (user.isPremium || seller)) ||
+            (option.unlock === "seller" && seller) ||
             (option.unlock === "admin" && user.role === "ADMIN");
           const selected = border === option.value;
           return (
@@ -538,7 +538,7 @@ export function ProfileBorderDialog({
                 <span className="block text-sm font-medium">{option.label}</span>
                 <span className="block text-xs text-muted-foreground">
                   {option.description}
-                  {!available ? " · Unlock Premium" : ""}
+                  {!available ? " · Not available" : ""}
                 </span>
               </span>
               <span

@@ -25,7 +25,6 @@ function toBoardEntry(
     username: entry.username,
     name: entry.name,
     avatarUrl: entry.avatarUrl,
-    isPremium: entry.isPremium,
     emailVerified: entry.emailVerified,
     emojiStatus: entry.emojiStatus,
     isViewer: entry.id === currentUserId,

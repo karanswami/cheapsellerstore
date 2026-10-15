@@ -119,8 +119,8 @@ export const PROMO_STORAGE_KEY = "drip-promo-v2";
 
 /** Soft fallback codes until admin seeds DB promos — cart still works offline. */
 export const PROMO_CODES: Record<string, AppliedPromo> = {
-  DRIP10: { code: "DRIP10", label: "10% off", percentOff: 10, maxUnits: 1 },
-  DRIP15: { code: "DRIP15", label: "15% off", percentOff: 15, maxUnits: 1 },
+  CHEAP10: { code: "CHEAP10", label: "10% off", percentOff: 10, maxUnits: 1 },
+  CHEAP15: { code: "CHEAP15", label: "15% off", percentOff: 15, maxUnits: 1 },
   WELCOME: { code: "WELCOME", label: "5% off", percentOff: 5, maxUnits: 1 },
 };
 

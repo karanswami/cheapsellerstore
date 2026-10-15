@@ -1,24 +1,17 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { logActivity } from "@/lib/activity-log";
 import { getSessionUserId, toSafeUser } from "@/lib/auth/customer";
-import { hasPremiumAccess } from "@/lib/premium-utils";
 import { prisma } from "@/lib/prisma";
 import { updateProfileSchema } from "@/lib/validations";
 import { Prisma, type ProfileBorder } from "@prisma/client";
 
 function canUseBorder(
   role: string,
-  isPremium: boolean,
   border: ProfileBorder,
 ): boolean {
   if (border === "NONE") return true;
   if (border === "PREMIUM") {
-    return (
-      isPremium ||
-      role === "SELLER" ||
-      role === "RESELLER" ||
-      role === "ADMIN"
-    );
+    return role === "SELLER" || role === "RESELLER" || role === "ADMIN";
   }
   if (border === "VIP") return role === "ADMIN";
   return false;
@@ -48,32 +41,29 @@ export async function PATCH(request: Request) {
 
   const existing = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true, isPremium: true },
+    select: { role: true },
   });
   if (!existing) {
     return jsonError("NOT_FOUND", "Account not found.", 404);
   }
 
-  const premium = hasPremiumAccess(existing);
-  const needsPremium =
+  const customizationRequested =
     parsed.data.bio !== undefined ||
     parsed.data.socialLinks !== undefined ||
     parsed.data.emojiStatus !== undefined ||
-    parsed.data.featuredProducts !== undefined ||
-    (parsed.data.profileBorder !== undefined &&
-      parsed.data.profileBorder !== "NONE");
+    parsed.data.featuredProducts !== undefined;
 
-  if (needsPremium && !premium) {
+  if (customizationRequested) {
     return jsonError(
       "FORBIDDEN",
-      "Premium required for profile customization.",
+      "Profile customization is not available.",
       403,
     );
   }
 
   if (
     parsed.data.profileBorder !== undefined &&
-    !canUseBorder(existing.role, premium, parsed.data.profileBorder)
+    !canUseBorder(existing.role, parsed.data.profileBorder)
   ) {
     return jsonError(
       "FORBIDDEN",

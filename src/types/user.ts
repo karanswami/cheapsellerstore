@@ -53,8 +53,6 @@ export type SafeUser = {
   featuredProducts: string[];
   profileBorder: ProfileBorder;
   emojiStatus: string | null;
-  isPremium: boolean;
-  premiumPurchasedAt: string | null;
   usernameChangedAt: string | null;
   bioTheme?: BioThemePreset | string | null;
   bioTagline?: string | null;

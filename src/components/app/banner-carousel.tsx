@@ -47,7 +47,6 @@ export function BannerCarousel({ banners }: Props) {
   return (
     <section aria-label="Banners" className="relative min-w-0 space-y-2">
       <div className={styles.carouselSection}>
-        <span className={styles.snakeOverlay} aria-hidden="true" />
         <Carousel
           setApi={setApi}
           className="overflow-hidden rounded-xl border border-border bg-muted"

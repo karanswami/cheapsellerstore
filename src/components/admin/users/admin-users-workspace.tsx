@@ -32,8 +32,7 @@ import { formatMoney } from "@/lib/currencies";
 import { roleBadge, type UserRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { AdminBulkSellersDialog } from "@/components/admin/sellers/admin-bulk-sellers-dialog";
-import { PremiumBadge } from "@/components/ui/premium-badge";
-import { ChevronRight, Crown, UserRound, Users, Zap } from "lucide-react";
+import { ChevronRight, UserRound, Users, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -46,8 +45,6 @@ type ListFilter =
   | "sellers"
   | "resellers"
   | "admins"
-  | "premium"
-  | "non_premium"
   | "verified"
   | "unverified"
   | "banned";
@@ -60,8 +57,6 @@ const LIST_FILTERS: { id: ListFilter; label: string }[] = [
   { id: "sellers", label: "Sellers" },
   { id: "resellers", label: "Resellers" },
   { id: "admins", label: "Admins" },
-  { id: "premium", label: "Premium" },
-  { id: "non_premium", label: "Not Premium" },
   { id: "verified", label: "Verified" },
   { id: "unverified", label: "Unverified" },
   { id: "banned", label: "Banned" },
@@ -77,10 +72,6 @@ function matchesListFilter(user: AdminUserRow, filter: ListFilter) {
       return user.role === "RESELLER";
     case "admins":
       return user.role === "ADMIN";
-    case "premium":
-      return user.isPremium;
-    case "non_premium":
-      return !user.isPremium;
     case "verified":
       return user.emailVerified;
     case "unverified":
@@ -154,8 +145,7 @@ export function AdminUsersWorkspace() {
     const total = users.length;
     const sellers = users.filter((u) => u.role === "SELLER").length;
     const resellers = users.filter((u) => u.role === "RESELLER").length;
-    const premium = users.filter((u) => u.isPremium).length;
-    return { total, sellers, resellers, premium };
+    return { total, sellers, resellers };
   }, [users]);
 
   const filtered = useMemo(() => {
@@ -425,7 +415,7 @@ export function AdminUsersWorkspace() {
             Users &amp; roles
           </h1>
           <p className="max-w-lg text-sm text-muted-foreground">
-            Roles, seller caps, Premium, verification, and wallets — all in one
+            Roles, seller caps, verification, and wallets — all in one
             desk.
           </p>
         </div>
@@ -446,7 +436,7 @@ export function AdminUsersWorkspace() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Card variant="stat" size="sm" className="py-2.5">
           <CardHeader className="gap-0 px-3 py-0">
             <CardDescription className="flex items-center gap-1 text-[10px] uppercase">
@@ -477,17 +467,6 @@ export function AdminUsersWorkspace() {
             </CardDescription>
             <CardTitle className="text-xl tabular-nums sm:text-2xl">
               {stats.resellers}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card variant="stat" size="sm" className="py-2.5">
-          <CardHeader className="gap-0 px-3 py-0">
-            <CardDescription className="flex items-center gap-1 text-[10px] uppercase">
-              <Crown className="size-3" />
-              Premium
-            </CardDescription>
-            <CardTitle className="text-xl tabular-nums sm:text-2xl">
-              {stats.premium}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -558,9 +537,6 @@ export function AdminUsersWorkspace() {
                       >
                         {u.banned ? "Banned" : "Active"}
                       </Badge>
-                      {u.isPremium ? (
-                        <PremiumBadge size="xs" animated={false} />
-                      ) : null}
                       {u.emailVerified ? (
                         <Badge
                           variant="outline"
@@ -701,9 +677,6 @@ export function AdminUsersWorkspace() {
         }}
         onDepositsEnabledChange={(value) => {
           if (openUser) void patch(openUser.id, { depositsEnabled: value });
-        }}
-        onPremiumChange={(value) => {
-          if (openUser) void patch(openUser.id, { isPremium: value });
         }}
         onVerifiedChange={(value) => {
           if (openUser) void patch(openUser.id, { emailVerified: value });

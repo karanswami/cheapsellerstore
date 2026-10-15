@@ -80,7 +80,7 @@ function ColorField({
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="#d600ff"
+          placeholder="#10b981"
           className="h-11 font-mono text-sm uppercase"
         />
         <span
@@ -569,7 +569,7 @@ export function SiteConfigWorkspace() {
                 })
               }
             >
-              Reset to Drip defaults
+              Reset to Cheap Seller defaults
             </Button>
           </div>
           <DialogFooter>

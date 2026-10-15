@@ -25,16 +25,16 @@ export type SiteConfig = {
 };
 
 export const SITE_CONFIG_DEFAULTS: SiteConfig = {
-  siteName: "Drip",
+  siteName: "Cheap Seller",
   siteTagline: "Digital Product Store",
   siteSeoDescription: "Premium digital products delivered instantly.",
   logoUrl: "",
   faviconUrl: "",
   ogImageUrl: "",
-  primaryColor: "#d600ff",
-  primaryDarkColor: "#e84fff",
-  accentColor: "#ff4fc8",
-  accentDarkColor: "#ff6ad5",
+  primaryColor: "#10b981",
+  primaryDarkColor: "#10b981",
+  accentColor: "#f5b942",
+  accentDarkColor: "#f5b942",
   successColor: "#16c47f",
   successDarkColor: "#00e676",
   socialLinks: [],

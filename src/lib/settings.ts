@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getRedis } from "@/lib/redis";
 
-const SETTING_CACHE_PREFIX = "drip:setting:";
+const SETTING_CACHE_PREFIX = "cheapseller:setting:";
 const SETTING_CACHE_TTL_SECONDS = 300; // 5 minutes
 
 export async function getSetting(key: string) {
@@ -156,12 +156,8 @@ export const SETTING_KEYS = {
   walletCurrencyRates: "wallet_currency_rates",
   /** JSON { USD, INR, IDR, NPR: number[] } — deposit page fast-amount chips (excl. min) */
   depositQuickAmounts: "deposit_quick_amounts",
-  /** Whole USD dollars for one-time Premium unlock (wallet debit). */
-  premiumPriceUsd: "premium_price_usd",
   /** Developer share of order gross profit (sale − buy), whole percent 0–100. Default 10. */
   developerProfitSharePercent: "developer_profit_share_percent",
-  /** Developer share of Premium membership revenue, whole percent 0–100. Default 50. */
-  premiumDeveloperSharePercent: "premium_developer_share_percent",
   /** Developer share of Special Stock revenue/profit, whole percent 0–100. Default 50. */
   specialStockDeveloperSharePercent: "special_stock_developer_share_percent",
   /** Buy cost = supplier catalog list price × this % (0–100). Default 50. */
@@ -185,7 +181,7 @@ export const SETTING_KEYS = {
   googleClientSecret: "google_client_secret",
   /** Resend API key for forgot-password OTP (admin Settings; env fallback). */
   resendApiKey: "resend_api_key",
-  /** Resend from address, e.g. `Drip <noreply@example.com>`. */
+  /** Resend from address, e.g. `Cheap Seller <noreply@example.com>`. */
   resendFromEmail: "resend_from_email",
   /** Binance Pay API key (admin Settings; env fallback). */
   binanceApiKey: "binance_api_key",
@@ -247,7 +243,7 @@ export const SETTING_KEYS = {
 
 /** Built-in fallback when AppSetting is also empty. */
 export const BUILTIN_DEFAULT_PRODUCT_DEMO_URL =
-  "https://www.youtube.com/@dripclientofficial";
+  "https://www.youtube.com/@cheapseller";
 
 export async function getDefaultProductDemoUrl(): Promise<string> {
   const saved = (
@@ -308,11 +304,6 @@ export async function isResellerAutoApprove(): Promise<boolean> {
   return (await getSettingInt(SETTING_KEYS.resellerAutoApprove, 0)) === 1;
 }
 
-/** Lifetime Premium unlock price in whole USD dollars. */
-export async function getPremiumPriceUsd(): Promise<number> {
-  return getSettingInt(SETTING_KEYS.premiumPriceUsd, 10);
-}
-
 function clampPercent(n: number, fallback: number): number {
   if (!Number.isFinite(n)) return fallback;
   return Math.min(100, Math.max(0, Math.round(n)));
@@ -329,19 +320,6 @@ export async function getDeveloperProfitSharePercent(): Promise<number> {
 /** Fraction 0–1 for order developer share. */
 export async function getDeveloperProfitShareRate(): Promise<number> {
   return (await getDeveloperProfitSharePercent()) / 100;
-}
-
-/** Premium revenue developer share % (default 50). */
-export async function getPremiumDeveloperSharePercent(): Promise<number> {
-  return clampPercent(
-    await getSettingInt(SETTING_KEYS.premiumDeveloperSharePercent, 50),
-    50,
-  );
-}
-
-/** Fraction 0–1 for Premium developer share. */
-export async function getPremiumDeveloperShareRate(): Promise<number> {
-  return (await getPremiumDeveloperSharePercent()) / 100;
 }
 
 /** Special Stock profit developer share % (default 50). */

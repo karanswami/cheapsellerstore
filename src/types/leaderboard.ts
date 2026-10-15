@@ -8,7 +8,6 @@ export type LeaderboardEntry = {
   totalSpent: number;
   /** Total keys purchased (OrderItem rows on fulfilled/paid orders) */
   keyCount: number;
-  isPremium: boolean;
   emailVerified: boolean;
   emojiStatus: string | null;
 };

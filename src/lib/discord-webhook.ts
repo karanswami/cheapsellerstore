@@ -18,7 +18,7 @@ export async function notifyDiscordWebhook(payload: {
           {
             title: payload.title.slice(0, 256),
             description: payload.description.slice(0, 4000),
-            color: 0xd600ff,
+            color: 0x10b981,
             fields: (payload.fields ?? []).slice(0, 25).map((f) => ({
               name: f.name.slice(0, 256),
               value: f.value.slice(0, 1024),

@@ -29,7 +29,6 @@ import {
   ChevronRight,
   Clock,
   Copy,
-  Crown,
   ExternalLink,
   KeyRound,
   Loader2,
@@ -81,7 +80,6 @@ type Overview = {
   gateMessage: string | null;
   purchaseFeePercent: number;
   defaultRateLimitRpm: number;
-  isPremium?: boolean;
   maxKeysPerUser: number;
   sandboxEnabled: boolean;
   walletBalanceMicrocents: number;
@@ -575,11 +573,7 @@ export function DevelopmentView({
       <HubHeaderBar
         icon={<KeyRound />}
         title="Platform API"
-        description={
-          overview.isPremium
-            ? `Up to ${overview.maxKeysPerUser} API keys per account · 300 RPM · 0% API Fee (VIP)`
-            : `Up to ${overview.maxKeysPerUser} API keys per account · ${overview.defaultRateLimitRpm} RPM · ${overview.purchaseFeePercent}% API Fee`
-        }
+        description={`Up to ${overview.maxKeysPerUser} API keys per account · ${overview.defaultRateLimitRpm} RPM · ${overview.purchaseFeePercent}% API Fee`}
         stats={[
           {
             label: "Balance",
@@ -686,9 +680,9 @@ export function DevelopmentView({
               public — no key
             </Link>
             .{" "}
-            {overview.isPremium || overview.purchaseFeePercent === 0 ? (
+            {overview.purchaseFeePercent === 0 ? (
               <span className="font-semibold text-emerald-400">
-                0% API fee (VIP Premium active)
+                0% API fee
               </span>
             ) : (
               `Buys add a ${overview.purchaseFeePercent}% developer fee`
@@ -1108,13 +1102,7 @@ export function DevelopmentView({
             <DialogDescription>
               Up to {overview.maxKeysPerUser} keys per account. Secret is shown
               once.{" "}
-              {overview.isPremium ? (
-                <span className="text-emerald-400 font-medium">
-                  VIP: 300 RPM rate limit &amp; 0% purchase fee.
-                </span>
-              ) : (
-                `Rate limit capped at ${overview.defaultRateLimitRpm} RPM.`
-              )}
+              Rate limit capped at {overview.defaultRateLimitRpm} RPM.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[min(55dvh,420px)] space-y-4 overflow-y-auto px-5 py-4 sm:px-6">

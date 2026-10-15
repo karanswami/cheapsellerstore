@@ -13,7 +13,6 @@ export type SellerLeaderboardEntry = {
   sales: number;
   balance: number;
   earnings: number;
-  isPremium: boolean;
   emailVerified: boolean;
   emojiStatus: string | null;
 };
@@ -34,7 +33,6 @@ export async function getSellerLeaderboard(
       avatarUrl: true,
       role: true,
       walletBalance: true,
-      isPremium: true,
       emailVerified: true,
       emojiStatus: true,
     },
@@ -97,7 +95,6 @@ export async function getSellerLeaderboard(
       sales: salesMap.get(s.id) ?? 0,
       balance: s.walletBalance,
       earnings: earnMap.get(s.id) ?? 0,
-      isPremium: s.isPremium ?? false,
       emailVerified: s.emailVerified ?? false,
       emojiStatus: s.emojiStatus?.trim() || null,
     };

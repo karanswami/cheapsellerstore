@@ -9,7 +9,7 @@ import {
 
 function appUrl() {
   return (
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://dripclientofficial.dev"
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://cheapseller.store"
   ).replace(/\/$/, "");
 }
 

@@ -16,7 +16,6 @@ export const SITE_ICON_KEYS = [
   "reports",
   "users",
   "resellers",
-  "premium",
   "support",
   "banners",
   "reviews",
@@ -166,13 +165,6 @@ export const SITE_ICON_META: SiteIconMeta[] = [
     description: "Reseller desk / seller panel",
     group: "admin",
     defaultUrl: "/icons/resellers.png",
-  },
-  {
-    key: "premium",
-    label: "Premium",
-    description: "Premium membership",
-    group: "admin",
-    defaultUrl: "/icons/premium.png",
   },
   {
     key: "support",

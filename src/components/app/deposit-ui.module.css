@@ -42,7 +42,7 @@
       168deg,
       color-mix(in oklab, var(--card) 76%, transparent),
       color-mix(in oklab, var(--card) 92%, #0a0612) 52%,
-      color-mix(in oklab, #0c0814 90%, var(--card)) 100%
+      color-mix(in oklab, #07110e 90%, var(--card)) 100%
     );
   box-shadow:
     var(--elevation-1),

@@ -26,7 +26,6 @@ const patchSchema = z.object({
   canCreateResellers: z.boolean().optional(),
   canManageResellers: z.boolean().optional(),
   canFundResellers: z.boolean().optional(),
-  isPremium: z.boolean().optional(),
   emailVerified: z.boolean().optional(),
   apiEnabled: z.boolean().optional(),
   depositsEnabled: z.boolean().optional(),
@@ -67,8 +66,6 @@ export async function GET(_request: Request, { params }: Params) {
       apiEnabled: true,
       depositsEnabled: true,
       emailVerified: true,
-      isPremium: true,
-      premiumPurchasedAt: true,
       referredById: true,
       referralCode: true,
       createdAt: true,
@@ -156,10 +153,6 @@ export async function GET(_request: Request, { params }: Params) {
       apiEnabled: user.apiEnabled !== false,
       depositsEnabled: userCanSelfDeposit(user),
       emailVerified: user.emailVerified ?? false,
-      isPremium: user.isPremium ?? false,
-      premiumPurchasedAt: user.premiumPurchasedAt
-        ? user.premiumPurchasedAt.toISOString()
-        : null,
       createdAt: user.createdAt.toISOString(),
     },
     activity,
@@ -252,15 +245,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
   }
 
-  let emailVerified = parsed.data.emailVerified;
-  let isPremium = parsed.data.isPremium;
-  let premiumPurchasedAt: Date | null | undefined;
-  if (isPremium === true) {
-    emailVerified = true;
-    if (!existing.premiumPurchasedAt) {
-      premiumPurchasedAt = new Date();
-    }
-  }
+  const emailVerified = parsed.data.emailVerified;
 
   const nextBanned = parsed.data.banned;
   const banToggling =
@@ -294,9 +279,7 @@ export async function PATCH(request: Request, { params }: Params) {
         ? { apiEnabled: parsed.data.apiEnabled }
         : {}),
       ...(depositsEnabled !== undefined ? { depositsEnabled } : {}),
-      ...(isPremium !== undefined ? { isPremium } : {}),
       ...(emailVerified !== undefined ? { emailVerified } : {}),
-      ...(premiumPurchasedAt !== undefined ? { premiumPurchasedAt } : {}),
     },
     select: {
       id: true,
@@ -315,8 +298,6 @@ export async function PATCH(request: Request, { params }: Params) {
       apiEnabled: true,
       depositsEnabled: true,
       emailVerified: true,
-      isPremium: true,
-      premiumPurchasedAt: true,
       referredById: true,
       createdAt: true,
     },
@@ -390,8 +371,7 @@ export async function PATCH(request: Request, { params }: Params) {
   } else if (
     !banToggling &&
     parsed.data.banReason === undefined &&
-    (parsed.data.isPremium !== undefined ||
-      parsed.data.emailVerified !== undefined ||
+    (parsed.data.emailVerified !== undefined ||
       parsed.data.apiEnabled !== undefined ||
       depositsEnabled !== undefined ||
       canCreate !== undefined ||
@@ -415,10 +395,6 @@ export async function PATCH(request: Request, { params }: Params) {
       apiEnabled: user.apiEnabled !== false,
       depositsEnabled: userCanSelfDeposit(user),
       emailVerified: user.emailVerified ?? false,
-      isPremium: user.isPremium ?? false,
-      premiumPurchasedAt: user.premiumPurchasedAt
-        ? user.premiumPurchasedAt.toISOString()
-        : null,
       createdAt: user.createdAt.toISOString(),
     },
   });

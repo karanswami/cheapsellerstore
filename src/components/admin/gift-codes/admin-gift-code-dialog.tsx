@@ -97,7 +97,7 @@ export function AdminGiftCodeDialog({
               spellCheck={false}
             />
             <p className="text-[11px] text-muted-foreground">
-              Letters and numbers only. Blank → DRIP-XXXX-XXXX.
+              Letters and numbers only. Blank → CHEAP-XXXX-XXXX.
             </p>
           </div>
 

@@ -208,11 +208,11 @@ export function nativeOAuthBridgeResponse(targetUrl: string): Response {
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta http-equiv="refresh" content="0;url=${safeHref}"/>
-<title>Returning to DRIP…</title>
+<title>Returning to CHEAP SELLER…</title>
 <style>
 body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#0c0c0e;color:#f4f4f5;
 font-family:system-ui,sans-serif;padding:24px;text-align:center}
-a{color:#e84fff;font-weight:600}
+a{color:#10b981;font-weight:600}
 p{opacity:.75;font-size:14px;line-height:1.5;max-width:28rem}
 </style>
 <script>location.replace(${safeJs});</script>

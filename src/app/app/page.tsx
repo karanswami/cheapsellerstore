@@ -3,7 +3,6 @@ import {
   CatalogSlotSuspended,
 } from "@/components/catalog/store-catalog-slots";
 import { AppHomeShell } from "@/components/app/app-home-shell";
-import { WhatsNewBanner } from "@/components/app/whats-new-banner";
 import { getCurrentUser } from "@/lib/auth/customer";
 import { redirect } from "next/navigation";
 
@@ -19,7 +18,6 @@ export default async function AppHomePage({ searchParams }: Props) {
 
   return (
     <AppHomeShell>
-      <WhatsNewBanner user={user} />
       <BannerSlotSuspended />
       <CatalogSlotSuspended
         categorySlug={category}

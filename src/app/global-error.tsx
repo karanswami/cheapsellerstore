@@ -47,16 +47,16 @@ export default function GlobalError({
               height: "5rem",
               margin: "0 auto 1.15rem",
               borderRadius: "1.25rem",
-              border: "1px solid rgba(232, 79, 255, 0.35)",
+              border: "1px solid rgba(16, 185, 129, 0.35)",
               background:
-                "linear-gradient(160deg, rgba(232, 79, 255, 0.2), rgba(255, 106, 213, 0.1))",
+                "linear-gradient(160deg, rgba(16, 185, 129, 0.2), rgba(245, 185, 66, 0.1))",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: "1.75rem",
               fontWeight: 700,
               color: "#fff",
-              boxShadow: "0 12px 40px rgba(232, 79, 255, 0.22)",
+              boxShadow: "0 12px 40px rgba(16, 185, 129, 0.22)",
             }}
             aria-hidden
           >
@@ -69,10 +69,10 @@ export default function GlobalError({
               fontWeight: 600,
               letterSpacing: "0.22em",
               textTransform: "uppercase",
-              color: "#e84fff",
+              color: "#10b981",
             }}
           >
-            DRIP CLIENT
+            CHEAP SELLER
           </p>
           <p
             style={{
@@ -125,7 +125,7 @@ export default function GlobalError({
                 fontSize: "0.9375rem",
                 fontWeight: 600,
                 color: "#0c0c0e",
-                background: "#e84fff",
+                background: "#10b981",
                 cursor: "pointer",
               }}
             >

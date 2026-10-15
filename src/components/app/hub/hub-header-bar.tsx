@@ -31,7 +31,6 @@ export function HubHeaderBar({
 
   return (
     <section className={cn(styles.bar, "motion-safe-fade", className)}>
-      <span className={styles.snakeOverlay} aria-hidden="true" />
       <div className={styles.main}>
         <span className={styles.icon} aria-hidden>
           {icon}

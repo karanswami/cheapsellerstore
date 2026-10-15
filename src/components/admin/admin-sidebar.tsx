@@ -1,15 +1,11 @@
 "use client";
 
-import { ConsoleBrand } from "@/components/layout/console-brand";
 import {
-  ConsoleNav,
-  type ConsoleNavSection,
-} from "@/components/layout/console-nav";
-import {
-  ConsoleHeroProfile,
-  ConsoleProfileCard,
-  ConsoleQuickStats,
-} from "@/components/layout/console-profile";
+  SideBalance,
+  SideProfile,
+} from "@/components/sidebar/side-account";
+import { SideBrand } from "@/components/sidebar/side-brand";
+import { SideNav, type SideNavGroup } from "@/components/sidebar/side-nav";
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +13,7 @@ import {
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { roleAccessLine, roleLabel } from "@/lib/roles";
+import { roleLabel } from "@/lib/roles";
 import type { AdminSidebarBadges, ConsoleSidebarStats } from "@/lib/sidebar-stats";
 import type { SafeUser } from "@/types/user";
 import {
@@ -28,7 +24,6 @@ import {
   FileBarChart,
   FileText,
   FolderTree,
-  Gem,
   Gift,
   HelpCircle,
   History,
@@ -59,9 +54,8 @@ import { useEffect, useMemo } from "react";
 
 function buildAdminNavSections(
   badges?: AdminSidebarBadges,
-): ConsoleNavSection[] {
+): SideNavGroup[] {
   const pendingDev = badges?.pendingDevSettlements ?? 0;
-  const pendingPrem = badges?.pendingPremiumSettlements ?? 0;
   const pendingSpec = badges?.pendingSpecialSettlements ?? 0;
   const pendingOrders = badges?.pendingOrders ?? 0;
   const pendingDeposits = badges?.pendingDeposits ?? 0;
@@ -75,20 +69,20 @@ function buildAdminNavSections(
       items: [
         {
           title: "Overview",
-          description: "Health snapshot",
+          hint: "Health snapshot",
           href: "/admin",
           icon: LayoutDashboard,
           exact: true,
         },
         {
           title: "Statistics",
-          description: "Sales charts",
+          hint: "Sales charts",
           href: "/admin/statistics",
           icon: BarChart3,
         },
         {
           title: "Development",
-          description: "Developer settlements",
+          hint: "Developer settlements",
           href: "/admin/development",
           icon: Code2,
           ...(pendingDev > 0
@@ -96,23 +90,14 @@ function buildAdminNavSections(
             : {}),
         },
         {
-          title: "Premium settlements",
-          description: "Premium developer share",
-          href: "/admin/premium-settlements",
-          icon: Gem,
-          ...(pendingPrem > 0
-            ? { badge: { label: `${pendingPrem} PENDING`, tone: "warning" as const } }
-            : {}),
-        },
-        {
           title: "History",
-          description: "All activity",
+          hint: "All activity",
           href: "/admin/history",
           icon: History,
         },
         {
           title: "Logs",
-          description: "Login & user activity",
+          hint: "Login & user activity",
           href: "/admin/logs",
           icon: ScrollText,
         },
@@ -123,37 +108,37 @@ function buildAdminNavSections(
       items: [
         {
           title: "Categories",
-          description: "Catalog folders",
+          hint: "Catalog folders",
           href: "/admin/categories",
           icon: FolderTree,
         },
         {
           title: "Products",
-          description: "Catalog & prices",
+          hint: "Catalog & prices",
           href: "/admin/products",
           icon: Package,
         },
         {
           title: "Keys",
-          description: "Stock & import",
+          hint: "Stock & import",
           href: "/admin/keys",
           icon: KeyRound,
         },
         {
           title: "Supplier",
-          description: "Upstream key API",
+          hint: "Upstream key API",
           href: "/admin/supplier",
           icon: Truck,
         },
         {
           title: "Keys Check",
-          description: "Lookup & edit",
+          hint: "Lookup & edit",
           href: "/admin/key-check",
           icon: ScanSearch,
         },
         {
           title: "Special Stock",
-          description: "Isolated bot inventory",
+          hint: "Isolated bot inventory",
           href: "/admin/special-inventory",
           icon: Layers,
           ...(pendingSpec > 0
@@ -162,7 +147,7 @@ function buildAdminNavSections(
         },
         {
           title: "Orders",
-          description: "Purchases & delivery",
+          hint: "Purchases & delivery",
           href: "/admin/orders",
           icon: ShoppingBag,
           ...(pendingOrders > 0
@@ -171,13 +156,13 @@ function buildAdminNavSections(
         },
         {
           title: "Promos",
-          description: "Discount codes",
+          hint: "Discount codes",
           href: "/admin/promos",
           icon: Tag,
         },
         {
           title: "Flash Sale",
-          description: "Timed discounts",
+          hint: "Timed discounts",
           href: "/admin/flash-sales",
           icon: Zap,
         },
@@ -188,7 +173,7 @@ function buildAdminNavSections(
       items: [
         {
           title: "Deposits",
-          description: "Manual payment requests",
+          hint: "Manual payment requests",
           href: "/admin/deposits",
           icon: Wallet,
           ...(pendingDeposits > 0
@@ -197,23 +182,23 @@ function buildAdminNavSections(
         },
         {
           title: "QRIS deposits",
-          description: "AutoGoPay IDR analytics",
+          hint: "AutoGoPay IDR analytics",
           href: "/admin/qris",
           icon: QrCode,
         },
         {
           title: "Gift codes",
-          description: "USD redeem codes + claims",
+          hint: "USD redeem codes + claims",
           href: "/admin/gift-codes",
           icon: Gift,
         },
         {
           title: "Reports",
-          description: "Key and deposit issue tickets",
+          hint: "Key and deposit issue tickets",
           href: "/admin/reports",
           icon: FileBarChart,
           ...(openReports > 0
-            ? { badge: { label: `${openReports} OPEN`, tone: "destructive" as const } }
+            ? { badge: { label: `${openReports} OPEN`, tone: "danger" as const } }
             : {}),
         },
       ],
@@ -223,19 +208,19 @@ function buildAdminNavSections(
       items: [
         {
           title: "Users",
-          description: "Roles, Premium, wallets",
+          hint: "Roles, wallets",
           href: "/admin/users",
           icon: Users,
         },
         {
           title: "Special prices",
-          description: "Per-user duration overrides",
+          hint: "Per-user duration overrides",
           href: "/admin/special-prices",
           icon: BadgeDollarSign,
         },
         {
           title: "Sellers",
-          description: "Applications and reviews",
+          hint: "Applications and reviews",
           href: "/admin/sellers",
           icon: UserPlus,
           ...(pendingSellers > 0
@@ -249,13 +234,13 @@ function buildAdminNavSections(
       items: [
         {
           title: "Banners",
-          description: "Home image carousel",
+          hint: "Home image carousel",
           href: "/admin/banners",
           icon: Image,
         },
         {
           title: "Reviews",
-          description: "Approve & moderate",
+          hint: "Approve & moderate",
           href: "/admin/reviews",
           icon: Star,
           ...(pendingReviews > 0
@@ -264,13 +249,13 @@ function buildAdminNavSections(
         },
         {
           title: "FAQs",
-          description: "Help articles",
+          hint: "Help articles",
           href: "/admin/faqs",
           icon: HelpCircle,
         },
         {
           title: "Static Pages",
-          description: "Legal & info CMS",
+          hint: "Legal & info CMS",
           href: "/admin/static-pages",
           icon: FileText,
         },
@@ -281,43 +266,43 @@ function buildAdminNavSections(
       items: [
         {
           title: "Platform API",
-          description: "Keys, fees, developer margin",
+          hint: "Keys, fees, developer margin",
           href: "/admin/seller-api",
           icon: Code2,
         },
         {
           title: "Settings",
-          description: "Referral rates and program",
+          hint: "Referral rates and program",
           href: "/admin/settings",
           icon: Settings,
         },
         {
           title: "Site Config",
-          description: "Brand, colours, assets",
+          hint: "Brand, colours, assets",
           href: "/admin/site-config",
           icon: Palette,
         },
         {
           title: "Icons",
-          description: "Replace site icons",
+          hint: "Replace site icons",
           href: "/admin/icons",
           icon: Images,
         },
         {
           title: "Cron",
-          description: "Jobs & run history",
+          hint: "Jobs & run history",
           href: "/admin/cron",
           icon: Clock,
         },
         {
           title: "Broadcast",
-          description: "Pinned announcements",
+          hint: "Pinned announcements",
           href: "/admin/broadcast",
           icon: Megaphone,
         },
         {
           title: "Analytics",
-          description: "Composition charts",
+          hint: "Composition charts",
           href: "/admin/analytics",
           icon: PieChart,
         },
@@ -344,10 +329,6 @@ export function AdminSidebar({
   }, [pathname, isMobile, setOpenMobile]);
 
   const displayName = user.name.trim() || user.username;
-  const initial =
-    displayName.charAt(0).toUpperCase() ||
-    user.username.charAt(0).toUpperCase() ||
-    "?";
 
   const sections = useMemo(
     () => buildAdminNavSections(stats.adminBadges),
@@ -356,38 +337,24 @@ export function AdminSidebar({
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader className="gap-0 border-b border-sidebar-border p-0 pb-2">
-        <ConsoleBrand
+      <SidebarHeader className="gap-0 border-b border-sidebar-border p-0">
+        <SideBrand
           href="/admin"
-          subtitle="Admin console"
+          tag="Admin"
           onClose={isMobile ? () => setOpenMobile(false) : undefined}
         />
-        <ConsoleHeroProfile
-          name={displayName}
-          roleLabel={roleLabel(user.role)}
-          accessLine={roleAccessLine(user.role)}
-          balanceMicrocents={user.walletBalance}
-          initial={initial}
-          imageUrl={user.avatarUrl}
-          showCrown
-        />
       </SidebarHeader>
-      <SidebarContent className="min-h-0 flex-1 gap-0 overflow-x-hidden overflow-y-auto py-2">
-        <ConsoleNav sections={sections} />
+      <SidebarContent className="min-h-0 flex-1 gap-0 overflow-x-hidden overflow-y-auto">
+        <SideNav groups={sections} />
       </SidebarContent>
-      <SidebarFooter className="relative z-10 gap-2 border-t border-sidebar-border bg-sidebar p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
-        <ConsoleProfileCard
+      <SidebarFooter className="gap-2 border-t border-sidebar-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <SideBalance balanceMicrocents={user.walletBalance} />
+        <SideProfile
+          name={displayName}
           handle={`@${user.username}`}
           role={roleLabel(user.role)}
-          balanceMicrocents={user.walletBalance}
-          initial={initial}
           imageUrl={user.avatarUrl}
-          showCrown
-        />
-        <ConsoleQuickStats
-          orders={stats.orders}
-          keys={stats.keys}
-          deposits={stats.deposits}
+          crown
         />
       </SidebarFooter>
     </Sidebar>

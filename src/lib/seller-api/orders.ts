@@ -119,12 +119,8 @@ export async function createAndFulfillApiOrder(input: {
     };
   }
 
-  const [specialPrices, buyerUser, rawFeePercent] = await Promise.all([
+  const [specialPrices, rawFeePercent] = await Promise.all([
     getSpecialPricesForUser(input.userId, [duration.id]),
-    prisma.user.findUnique({
-      where: { id: input.userId },
-      select: { isPremium: true },
-    }),
     getApiPurchaseFeePercent(),
   ]);
   // Price always from server + role — never trust client.
@@ -134,7 +130,7 @@ export async function createAndFulfillApiOrder(input: {
     specialPrice: specialPrices.get(duration.id),
   });
   const subtotal = Math.round(unitPrice * qty);
-  const feePercent = buyerUser?.isPremium ? 0 : rawFeePercent;
+  const feePercent = rawFeePercent;
   const apiFee = input.sandbox ? 0 : calcApiPurchaseFee(subtotal, feePercent);
   const totalDebit = subtotal + apiFee;
   const labelPart = duration.version?.trim()

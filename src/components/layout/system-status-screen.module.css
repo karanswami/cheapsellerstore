@@ -19,9 +19,9 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(closest-side at 50% 40%, rgba(232, 79, 255, 0.22), transparent 68%),
-    radial-gradient(closest-side at 18% 20%, rgba(255, 106, 213, 0.12), transparent 55%),
-    radial-gradient(closest-side at 82% 78%, rgba(214, 0, 255, 0.1), transparent 50%);
+    radial-gradient(closest-side at 50% 40%, rgba(16, 185, 129, 0.22), transparent 68%),
+    radial-gradient(closest-side at 18% 20%, rgba(245, 185, 66, 0.12), transparent 55%),
+    radial-gradient(closest-side at 82% 78%, rgba(16, 185, 129, 0.1), transparent 50%);
   animation: drip-status-glow 8s ease-in-out infinite alternate;
 }
 
@@ -58,15 +58,15 @@
   align-items: center;
   justify-content: center;
   border-radius: 1.35rem;
-  border: 1px solid rgba(232, 79, 255, 0.32);
+  border: 1px solid rgba(16, 185, 129, 0.32);
   background: linear-gradient(
     160deg,
-    rgba(232, 79, 255, 0.16),
-    rgba(255, 106, 213, 0.06)
+    rgba(16, 185, 129, 0.16),
+    rgba(245, 185, 66, 0.06)
   );
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 12px 48px rgba(232, 79, 255, 0.2),
+    0 12px 48px rgba(16, 185, 129, 0.2),
     0 4px 20px rgba(0, 0, 0, 0.4);
   animation: drip-status-breathe 2.4s ease-in-out infinite;
 }
@@ -75,7 +75,7 @@
   position: absolute;
   inset: -10px;
   border-radius: 1.75rem;
-  border: 1px solid rgba(232, 79, 255, 0.35);
+  border: 1px solid rgba(16, 185, 129, 0.35);
   opacity: 0;
   pointer-events: none;
   animation: drip-status-ring 2.2s ease-out infinite;
@@ -86,7 +86,7 @@
   width: 4.25rem;
   border-radius: 1.1rem;
   object-fit: cover;
-  filter: drop-shadow(0 8px 20px rgba(232, 79, 255, 0.28));
+  filter: drop-shadow(0 8px 20px rgba(16, 185, 129, 0.28));
 }
 
 .logoFallback {
@@ -96,12 +96,12 @@
   align-items: center;
   justify-content: center;
   border-radius: 1.1rem;
-  background: linear-gradient(145deg, #e84fff, #ff6ad5);
+  background: linear-gradient(145deg, #10b981, #f5b942);
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: #fff;
-  box-shadow: 0 8px 24px rgba(232, 79, 255, 0.35);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
 }
 
 .brand {
@@ -188,7 +188,7 @@
   background: linear-gradient(
     160deg,
     rgba(239, 68, 68, 0.18),
-    rgba(232, 79, 255, 0.06)
+    rgba(16, 185, 129, 0.06)
   );
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
@@ -206,7 +206,7 @@
   background: linear-gradient(
     160deg,
     rgba(251, 191, 36, 0.12),
-    rgba(232, 79, 255, 0.08)
+    rgba(16, 185, 129, 0.08)
   );
 }
 

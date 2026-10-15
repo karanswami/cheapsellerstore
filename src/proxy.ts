@@ -22,7 +22,7 @@ function extractSubdomain(host: string | null): string | null {
     return sub && sub !== "www" ? sub : null;
   }
 
-  // Production domains: e.g. "venom.dripclientofficial.dev"
+  // Production domains: e.g. "venom.cheapseller.store"
   const parts = cleanHost.split(".");
   if (parts.length >= 3) {
     const sub = parts[0];

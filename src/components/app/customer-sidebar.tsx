@@ -1,14 +1,11 @@
 "use client";
 
-import { ConsoleBrand } from "@/components/layout/console-brand";
 import {
-  ConsoleNav,
-  type ConsoleNavSection,
-} from "@/components/layout/console-nav";
-import {
-  ConsoleHeroProfile,
-  ConsoleProfileCard,
-} from "@/components/layout/console-profile";
+  SideBalance,
+  SideProfile,
+} from "@/components/sidebar/side-account";
+import { SideBrand } from "@/components/sidebar/side-brand";
+import { SideNav, type SideNavGroup } from "@/components/sidebar/side-nav";
 import {
   Sidebar,
   SidebarContent,
@@ -17,16 +14,13 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/auth/auth-provider";
-import { roleAccessLine, roleLabel } from "@/lib/roles";
+import { roleLabel } from "@/lib/roles";
 import type { SafeUser } from "@/types/user";
 import {
   BookOpen,
   Code2,
-  Crown,
   Flag,
   Gift,
-  Gem,
-  Globe,
   History,
   Home,
   KeyRound,
@@ -54,27 +48,27 @@ function buildNavSections(
   depositsEnabled: boolean,
   giftCodesEnabled: boolean,
   badges?: CustomerSidebarBadges,
-): ConsoleNavSection[] {
-  const sections: ConsoleNavSection[] = [
+): SideNavGroup[] {
+  const sections: SideNavGroup[] = [
     {
       label: "Store",
       items: [
         {
           title: "Home",
-          description: "Shop mods & tools",
+          hint: "Shop mods & tools",
           href: "/app",
           icon: Home,
           exact: true,
         },
         {
           title: "Keys",
-          description: "Purchased licenses and codes",
+          hint: "Purchased licenses and codes",
           href: "/app/keys",
           icon: KeyRound,
         },
         {
           title: "Leaderboard",
-          description: "Top customers by spend",
+          hint: "Top customers by spend",
           href: "/app/leaderboard",
           icon: Trophy,
           badge: { label: "TOP 100", tone: "primary" },
@@ -83,12 +77,12 @@ function buildNavSections(
     },
   ];
 
-  const walletItems: ConsoleNavSection["items"] = [];
+  const walletItems: SideNavGroup["items"] = [];
   if (depositsEnabled) {
     const pendingDeposits = badges?.pendingDeposits ?? 0;
     walletItems.push({
       title: "Deposit",
-      description: "Top up balance for checkout",
+      hint: "Top up balance for checkout",
       href: "/app/deposit",
       icon: Wallet,
       badge:
@@ -100,7 +94,7 @@ function buildNavSections(
   if (giftCodesEnabled) {
     walletItems.push({
       title: "Gift codes",
-      description: "Claim USD gift codes",
+      hint: "Claim USD gift codes",
       href: "/app/gift-codes",
       icon: Ticket,
     });
@@ -118,43 +112,35 @@ function buildNavSections(
     items: [
       {
         title: "Profile",
-        description: "Name, photo, password",
+        hint: "Name, photo, password",
         href: "/app/profile",
         icon: User,
       },
       {
-        title: "VIP Access",
-        description: "VIP perks, custom subdomain & bio",
-        href: "/app/bio",
-        icon: Crown,
-        badge: { label: "VIP", tone: "primary" },
-      },
-
-      {
         title: "History",
-        description: "Orders, deposits, wallet activity",
+        hint: "Orders, deposits, wallet activity",
         href: "/app/history",
         icon: History,
       },
       {
         title: "Referral",
-        description: "Invite friends and earn rewards",
+        hint: "Invite friends and earn rewards",
         href: "/app/referral",
         icon: Gift,
       },
       {
         title: "Broadcast",
-        description: "Active team announcements",
+        hint: "Active team announcements",
         href: "/app/broadcast",
         icon: Megaphone,
       },
       {
         title: "Reports",
-        description: "Key and deposit issue tickets",
+        hint: "Key and deposit issue tickets",
         href: "/app/reports",
         icon: Flag,
         ...(activeReports > 0
-          ? { badge: { label: `${activeReports} OPEN`, tone: "destructive" as const } }
+          ? { badge: { label: `${activeReports} OPEN`, tone: "danger" as const } }
           : {}),
       },
     ],
@@ -166,13 +152,13 @@ function buildNavSections(
       items: [
         {
           title: "Platform API",
-          description: "API keys · usage · webhooks",
+          hint: "API keys · usage · webhooks",
           href: "/app/development",
           icon: Code2,
         },
         {
           title: "Docs",
-          description: "Public API reference + live test",
+          hint: "Public API reference + live test",
           href: "/developers",
           icon: BookOpen,
         },
@@ -181,10 +167,10 @@ function buildNavSections(
   }
 
   if (role === "SELLER" || role === "RESELLER") {
-    const sellerItems: ConsoleNavSection["items"] = [
+    const sellerItems: SideNavGroup["items"] = [
       {
         title: "Seller board",
-        description: "Private seller rankings",
+        hint: "Private seller rankings",
         href: "/app/seller/leaderboard",
         icon: Trophy,
       },
@@ -197,7 +183,7 @@ function buildNavSections(
     ) {
       sellerItems.unshift({
         title: "Seller panel",
-        description: "Manage resellers",
+        hint: "Manage resellers",
         href: "/app/seller",
         icon: UsersRound,
       });
@@ -214,13 +200,13 @@ function buildNavSections(
       items: [
         {
           title: "Admin panel",
-          description: "Catalog, keys and orders",
+          hint: "Catalog, keys and orders",
           href: "/admin",
           icon: LayoutDashboard,
         },
         {
           title: "Create resellers",
-          description: "Admin reseller tools",
+          hint: "Admin reseller tools",
           href: "/admin/users",
           icon: UserPlus,
         },
@@ -233,14 +219,12 @@ function buildNavSections(
 
 type CustomerSidebarProps = React.ComponentProps<typeof Sidebar> & {
   user: SafeUser;
-  statsSlot: React.ReactNode;
   /** SSR store flag; live AuthProvider pagesEnabled overrides when synced. */
   giftCodesEnabled?: boolean;
 };
 
 export function CustomerSidebar({
   user,
-  statsSlot,
   giftCodesEnabled: giftCodesEnabledProp = false,
   ...props
 }: CustomerSidebarProps) {
@@ -280,53 +264,45 @@ export function CustomerSidebar({
     ],
   );
 
-  const subtitle =
+  const tag =
     user.role === "SELLER"
-      ? "Seller console"
+      ? "Seller"
       : user.role === "RESELLER"
-        ? "Reseller console"
+        ? "Reseller"
         : user.role === "ADMIN"
-          ? "Admin account"
-          : "Customer console";
+          ? "Admin"
+          : "Customer";
 
   const displayName = user.name.trim() || user.username;
-  const initial =
-    displayName.charAt(0).toUpperCase() ||
-    user.username.charAt(0).toUpperCase() ||
-    "?";
-  const showCrown = user.role === "ADMIN" || user.isPremium;
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader className="gap-0 border-b border-sidebar-border p-0 pb-2">
-        <ConsoleBrand
+      <SidebarHeader className="gap-0 border-b border-sidebar-border p-0">
+        <SideBrand
           href="/app"
-          subtitle={subtitle}
+          tag={tag}
           onClose={isMobile ? () => setOpenMobile(false) : undefined}
         />
-        <ConsoleHeroProfile
-          name={displayName}
-          roleLabel={roleLabel(user.role)}
-          accessLine={roleAccessLine(user.role)}
-          balanceMicrocents={user.walletBalance}
-          initial={initial}
-          imageUrl={user.avatarUrl}
-          showCrown={showCrown}
-        />
       </SidebarHeader>
-      <SidebarContent className="min-h-0 flex-1 gap-0 overflow-x-hidden overflow-y-auto py-2">
-        <ConsoleNav sections={sections} />
+      <SidebarContent className="min-h-0 flex-1 gap-0 overflow-x-hidden overflow-y-auto">
+        <SideNav groups={sections} />
       </SidebarContent>
-      <SidebarFooter className="relative z-10 gap-2 border-t border-sidebar-border bg-sidebar p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
-        <ConsoleProfileCard
+      <SidebarFooter className="gap-2 border-t border-sidebar-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <SideBalance
+          balanceMicrocents={user.walletBalance}
+          action={
+            user.depositsEnabled
+              ? { href: "/app/deposit", label: "Top up" }
+              : undefined
+          }
+        />
+        <SideProfile
+          name={displayName}
           handle={`@${user.username}`}
           role={roleLabel(user.role)}
-          balanceMicrocents={user.walletBalance}
-          initial={initial}
           imageUrl={user.avatarUrl}
-          showCrown={showCrown}
+          crown={user.role === "ADMIN"}
         />
-        {statsSlot}
       </SidebarFooter>
     </Sidebar>
   );

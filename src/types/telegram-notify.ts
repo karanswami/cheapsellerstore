@@ -4,7 +4,6 @@ export const TELEGRAM_NOTIFY_EVENTS = [
   "deposit",
   "register",
   "purchase",
-  "premium",
   "ownerReseller",
   "subReseller",
   "manualDeposit",
@@ -51,11 +50,6 @@ export const TELEGRAM_NOTIFY_DEFAULTS: Record<
     label: "Purchase",
     chatId: "-1004443071170",
     inviteLink: "https://t.me/+pcSHFP1SeBEyNjY1",
-  },
-  premium: {
-    label: "Premium",
-    chatId: "",
-    inviteLink: "",
   },
   ownerReseller: {
     label: "Owner Reseller",

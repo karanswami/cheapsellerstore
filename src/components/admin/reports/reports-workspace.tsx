@@ -19,7 +19,6 @@ import {
   Check,
   Clock,
   Copy,
-  Crown,
   ExternalLink,
   Flag,
   KeyRound,
@@ -52,7 +51,6 @@ type Report = {
     name: string;
     email: string;
     username: string;
-    isPremium?: boolean;
   };
   deposit?: {
     id: string;
@@ -266,15 +264,6 @@ export function ReportsWorkspace() {
                   >
                     {STATUS_LABEL[r.status]}
                   </Badge>
-                  {r.user?.isPremium ? (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 border-amber-500/40 bg-amber-500/10 text-[10px] font-semibold text-amber-300 shadow-xs"
-                    >
-                      <Crown className="size-3 text-amber-400" />
-                      VIP Priority
-                    </Badge>
-                  ) : null}
                   {r.deposit ? (
                     <span className="text-xs font-semibold tabular-nums text-success">
                       {formatMoney(r.deposit.amount)}
@@ -371,15 +360,6 @@ export function ReportsWorkspace() {
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Customer Account
                   </p>
-                  {selected.user.isPremium ? (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 border-amber-500/40 bg-amber-500/10 text-[10px] font-semibold text-amber-300"
-                    >
-                      <Crown className="size-3 text-amber-400" />
-                      VIP Priority Member
-                    </Badge>
-                  ) : null}
                 </div>
                 <div className="mt-1 flex flex-wrap items-baseline gap-2">
                   <p className="text-sm font-semibold">

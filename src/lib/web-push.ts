@@ -21,7 +21,7 @@ export async function getWebPushConfig(): Promise<{
   let [publicKey, privateKey, contactEmail, enabledInt] = await Promise.all([
     getSettingText(SETTING_KEYS.webPushPublicKey, process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ""),
     getSettingText(SETTING_KEYS.webPushPrivateKey, process.env.VAPID_PRIVATE_KEY || ""),
-    getSettingText(SETTING_KEYS.webPushContactEmail, process.env.VAPID_CONTACT_EMAIL || "admin@dripclient.dev"),
+    getSettingText(SETTING_KEYS.webPushContactEmail, process.env.VAPID_CONTACT_EMAIL || "admin@cheapseller.store"),
     getSettingInt(SETTING_KEYS.webPushEnabled, 1),
   ]);
 
@@ -44,7 +44,7 @@ export async function getWebPushConfig(): Promise<{
     enabled: enabledInt === 1 && Boolean(publicKey && privateKey),
     publicKey,
     privateKey,
-    contactEmail: contactEmail || "mailto:admin@dripclient.dev",
+    contactEmail: contactEmail || "mailto:admin@cheapseller.store",
   };
 }
 

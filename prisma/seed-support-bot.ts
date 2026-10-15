@@ -33,7 +33,7 @@ const STEPS: SeedStep[] = [
     slug: "welcome",
     title: "Welcome",
     messageText:
-      "Hey! Welcome to Drip Client Official Support 👋\n\nTap a topic below — I'll guide you step by step. Prefer reading? Open FAQs anytime.",
+      "Hey! Welcome to Cheap Seller Support 👋\n\nTap a topic below — I'll guide you step by step. Prefer reading? Open FAQs anytime.",
     isEntry: true,
     sortOrder: 10,
     buttons: [
@@ -41,7 +41,6 @@ const STEPS: SeedStep[] = [
       { id: "buy", label: "🛒 Buy & checkout", type: "step", row: 1, targetSlug: "buy_menu" },
       { id: "keys", label: "🔑 Keys", type: "step", row: 2, targetSlug: "keys_menu" },
       { id: "account", label: "👤 Account", type: "step", row: 2, targetSlug: "account_menu" },
-      { id: "premium", label: "⭐ Premium", type: "step", row: 3, targetSlug: "premium_help" },
       { id: "referral", label: "🎁 Referral", type: "step", row: 3, targetSlug: "referral_menu" },
       { id: "policies", label: "📄 Policies", type: "step", row: 4, targetSlug: "policies_menu" },
       { id: "faq", label: "❓ FAQs", type: "link", row: 4, href: "/faq" },
@@ -96,7 +95,7 @@ const STEPS: SeedStep[] = [
     slug: "deposit_rejected",
     title: "Deposit rejected",
     messageText:
-      "Rejected = not credited to Drip.\n\nCommon causes: wrong amount, unclear screenshot, wrong account, or expired ticket.\n\nIf money left your bank/wallet but Drip rejected it, open Reports with deposit ID + clear proof. Don't chargeback before contacting us — that can suspend your account.",
+      "Rejected = not credited to Cheap Seller.\n\nCommon causes: wrong amount, unclear screenshot, wrong account, or expired ticket.\n\nIf money left your bank/wallet but Cheap Seller rejected it, open Reports with deposit ID + clear proof. Don't chargeback before contacting us — that can suspend your account.",
     sortOrder: 23,
     buttons: [
       { id: "report", label: "🛠 Submit report", type: "link", row: 1, href: "/app/reports" },
@@ -326,20 +325,6 @@ const STEPS: SeedStep[] = [
     buttons: [
       { id: "tos", label: "📄 Terms of Service", type: "link", row: 1, href: "/pages/terms-of-service" },
       { id: "back", label: "◀️ Account", type: "step", row: 2, targetSlug: "account_menu" },
-    ],
-  },
-
-  // ── Premium ───────────────────────────────────────────────
-  {
-    slug: "premium_help",
-    title: "Premium",
-    messageText:
-      "Premium is a one-time wallet unlock ⭐\n\nIt verifies your email and unlocks Premium profile tools (customization, vanity referral, featured products, public show page).\n\nPrice is set by admin in Settings. Open Premium to purchase if you have enough balance.",
-    sortOrder: 60,
-    buttons: [
-      { id: "go", label: "⭐ Open Premium", type: "link", row: 1, href: "/app/premium" },
-      { id: "deposit", label: "💰 Top up", type: "link", row: 1, href: "/app/deposit" },
-      { id: "back", label: "◀️ Main menu", type: "back", row: 2 },
     ],
   },
 

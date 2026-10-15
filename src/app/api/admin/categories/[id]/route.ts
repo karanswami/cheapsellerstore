@@ -107,7 +107,7 @@ export async function PATCH(
   try {
     const { getRedis } = await import("@/lib/redis");
     const redis = await getRedis();
-    if (redis) await redis.del("drip:cache:categories");
+    if (redis) await redis.del("cheapseller:cache:categories");
   } catch {
     // ignore
   }
@@ -139,7 +139,7 @@ export async function DELETE(
   try {
     const { getRedis } = await import("@/lib/redis");
     const redis = await getRedis();
-    if (redis) await redis.del("drip:cache:categories");
+    if (redis) await redis.del("cheapseller:cache:categories");
   } catch {
     // ignore
   }

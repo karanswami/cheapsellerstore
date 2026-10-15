@@ -89,18 +89,6 @@ const APP_ROUTES: RouteEntry[] = [
     icon: User,
   },
   {
-    path: "/app/bio",
-    title: "VIP Access",
-    subtitle: "VIP perks, custom subdomain & bio hub",
-    icon: Crown,
-  },
-  {
-    path: "/app/premium",
-    title: "VIP Access",
-    subtitle: "Unlock exclusive account features",
-    icon: Crown,
-  },
-  {
     path: "/app/history",
     title: "History",
     subtitle: "Orders, deposits, and wallet activity",
@@ -169,12 +157,6 @@ const ADMIN_ROUTES: RouteEntry[] = [
     title: "Development",
     subtitle: "Developer settlement ledger",
     icon: Code2,
-  },
-  {
-    path: "/admin/premium-settlements",
-    title: "Premium settlements",
-    subtitle: "Premium membership developer share",
-    icon: Gem,
   },
   {
     path: "/admin/history",
@@ -259,12 +241,6 @@ const ADMIN_ROUTES: RouteEntry[] = [
     title: "Sellers",
     subtitle: "Seller applications and caps",
     icon: UserPlus,
-  },
-  {
-    path: "/admin/premium",
-    title: "Premium",
-    subtitle: "Membership grants and pricing",
-    icon: Star,
   },
   {
     path: "/admin/seller-api",

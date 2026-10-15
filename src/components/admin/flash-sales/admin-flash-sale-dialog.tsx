@@ -415,7 +415,7 @@ export function AdminFlashSaleDialog({
                   onChange={(e) =>
                     patch("displayPromoCode", e.target.value.toUpperCase())
                   }
-                  placeholder="DRIP40"
+                  placeholder="CHEAP40"
                   className="h-10 font-mono tracking-wide uppercase"
                   autoComplete="off"
                 />

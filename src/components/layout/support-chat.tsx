@@ -574,7 +574,7 @@ export const SupportChat = forwardRef<SupportChatHandle, SupportChatProps>(
               ref={panelRef}
               role="dialog"
               aria-modal="true"
-              aria-label="Drip Support"
+              aria-label="Cheap Seller Support"
               className={cn(
                 "fixed z-50 flex w-[min(24rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[1.35rem]",
                 "border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)]",
@@ -607,7 +607,7 @@ export const SupportChat = forwardRef<SupportChatHandle, SupportChatProps>(
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold tracking-tight text-foreground">
-                      Drip Support
+                      Cheap Seller Support
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {sending ? (

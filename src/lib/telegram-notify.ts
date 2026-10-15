@@ -258,7 +258,7 @@ export async function verifyAndNotifyChannel(options: {
   return sendRawMessage(
     options.botToken,
     options.chatId,
-    `✅ Drip notify OK\nChannel: ${label}\nBot is admin and can post.`,
+    `✅ Cheap Seller notify OK\nChannel: ${label}\nBot is admin and can post.`,
   );
 }
 

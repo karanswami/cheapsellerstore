@@ -139,7 +139,7 @@ export function ResellerApplyPopup() {
           />
 
           <div className="relative flex flex-col gap-2.5">
-            <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary shadow-[0_0_12px_rgba(232,79,255,0.2)]">
+            <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary shadow-[0_0_12px_rgba(16, 185, 129,0.2)]">
               <Sparkles className="size-3.5 animate-pulse" />
               <span>PARTNER INVITATION</span>
             </div>

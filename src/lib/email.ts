@@ -32,7 +32,7 @@ export async function sendPasswordResetOtpEmail(params: {
   const { error } = await client.emails.send({
     from: resendFromEmail,
     to: params.to,
-    subject: `${params.code} is your Drip password reset code`,
+    subject: `${params.code} is your Cheap Seller password reset code`,
     text: [
       greeting,
       "",
@@ -40,7 +40,7 @@ export async function sendPasswordResetOtpEmail(params: {
       "",
       "This code expires in 10 minutes. If you did not request a reset, you can ignore this email.",
       "",
-      "— Drip",
+      "— Cheap Seller",
     ].join("\n"),
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; color: #111;">
@@ -48,7 +48,7 @@ export async function sendPasswordResetOtpEmail(params: {
         <p>Your password reset code is:</p>
         <p style="font-size: 28px; font-weight: 700; letter-spacing: 0.2em; margin: 24px 0;">${params.code}</p>
         <p style="color: #555;">This code expires in 10 minutes. If you did not request a reset, you can ignore this email.</p>
-        <p style="color: #555;">— Drip</p>
+        <p style="color: #555;">— Cheap Seller</p>
       </div>
     `,
   });

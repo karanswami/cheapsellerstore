@@ -77,7 +77,7 @@ export function buildSdkFile(
 
 function buildPythonSdk(base: string): string {
   return `#!/usr/bin/env python3
-"""Drip Platform API v1 client — products → balance → order → keys[].
+"""Cheap Seller Platform API v1 client — products → balance → order → keys[].
 
 Env:
   DRIP_API_BASE  (default ${base})
@@ -164,7 +164,7 @@ if __name__ == "__main__":
 function buildNodeSdk(base: string): string {
   return `#!/usr/bin/env node
 /**
- * Drip Platform API v1 client — products → balance → order → keys[].
+ * Cheap Seller Platform API v1 client — products → balance → order → keys[].
  *
  * Env:
  *   DRIP_API_BASE  (default ${base})
@@ -231,7 +231,7 @@ if (orderStatus >= 400) process.exit(1);
 function buildPhpSdk(base: string): string {
   return `<?php
 /**
- * Drip Platform API v1 client — products → balance → order → keys[].
+ * Cheap Seller Platform API v1 client — products → balance → order → keys[].
  *
  * Env:
  *   DRIP_API_BASE  (default ${base})
@@ -309,7 +309,7 @@ if ($status >= 400) {
 }
 
 function buildGoSdk(base: string): string {
-  return `// Drip Platform API v1 client — products → balance → order → keys[].
+  return `// Cheap Seller Platform API v1 client — products → balance → order → keys[].
 //
 // Env:
 //   DRIP_API_BASE  (default ${base})
@@ -438,7 +438,7 @@ func main() {
 
 function buildCurlSdk(base: string): string {
   return `#!/usr/bin/env bash
-# Drip Platform API v1 — curl helpers for every endpoint.
+# Cheap Seller Platform API v1 — curl helpers for every endpoint.
 # Env: DRIP_API_BASE (default ${base})  DRIP_API_KEY  DRIP_SKU  DRIP_ORDER_ID
 set -euo pipefail
 

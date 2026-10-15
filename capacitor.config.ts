@@ -1,11 +1,11 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const PROD_URL =
-  process.env.CAPACITOR_SERVER_URL ?? "https://dripclientofficial.dev";
+  process.env.CAPACITOR_SERVER_URL ?? "https://cheapseller.store";
 
 const config: CapacitorConfig = {
   appId: "dev.dripclientofficial.app",
-  appName: "DRIP CLIENT",
+  appName: "CHEAP SELLER",
   webDir: "www",
   server: {
     url: PROD_URL,

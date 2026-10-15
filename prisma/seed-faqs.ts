@@ -20,9 +20,9 @@ const FAQS: SeedFaq[] = [
   {
     category: "Getting started",
     sortOrder: 10,
-    question: "What is Drip Client Official?",
+    question: "What is Cheap Seller?",
     answer:
-      "Drip Client Official is a digital key store. Browse Mods / Tools / Spoofers, deposit funds to your USD wallet, checkout, and receive license keys instantly in your Keys vault.",
+      "Cheap Seller is a digital key store. Browse Mods / Tools / Spoofers, deposit funds to your USD wallet, checkout, and receive license keys instantly in your Keys vault.",
   },
   {
     category: "Getting started",
@@ -166,14 +166,7 @@ const FAQS: SeedFaq[] = [
       "Accounts may be suspended for chargebacks, fraud, abuse, or policy violations. If you believe it is a mistake, contact support with your registered email and a short explanation for admin review.",
   },
 
-  // Premium / referral / API
-  {
-    category: "Premium",
-    sortOrder: 510,
-    question: "What is Premium?",
-    answer:
-      "Premium is a one-time wallet unlock that verifies your email and unlocks profile customization, vanity referral tools, featured products, and a public show page. Price is set by admin — open Premium to purchase.",
-  },
+  // Referral / API
   {
     category: "Referral",
     sortOrder: 610,

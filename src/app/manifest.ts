@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const config = await getSiteConfig();
-  const name = config.siteName.trim() || "Drip";
+  const name = config.siteName.trim() || "Cheap Seller";
   const description =
     config.siteSeoDescription.trim() ||
     config.siteTagline.trim() ||
@@ -49,7 +49,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     display: "standalone",
     orientation: "portrait-primary",
     background_color: "#0c0c0e",
-    theme_color: config.primaryDarkColor || "#E84FFF",
+    theme_color: config.primaryDarkColor || "#10b981",
     categories: ["shopping", "productivity"],
     icons,
   };

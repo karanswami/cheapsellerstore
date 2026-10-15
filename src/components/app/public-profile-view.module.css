@@ -54,7 +54,7 @@
   --pp-glow: color-mix(in oklab, var(--primary) 45%, transparent);
   --pp-border: color-mix(in oklab, var(--primary) 28%, var(--border));
   --pp-accent: var(--primary);
-  --pp-ring: linear-gradient(135deg, #d600ff 0%, #7c3aed 38%, #ff6ad5 72%, #38bdf8 100%);
+  --pp-ring: linear-gradient(135deg, #10b981 0%, #7c3aed 38%, #f5b942 72%, #38bdf8 100%);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

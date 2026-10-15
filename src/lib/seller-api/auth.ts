@@ -146,7 +146,6 @@ export async function authenticateApiRequest(
       walletBalance: true,
       username: true,
       name: true,
-      isPremium: true,
     },
   });
 
@@ -209,8 +208,8 @@ export async function authenticateApiRequest(
     getApiBurstLimit(),
     getApiPurchaseFeePercent(),
   ]);
-  const effectiveBaseRpm = user.isPremium ? 300 : defaultRpm;
-  const purchaseFeePercent = user.isPremium ? 0 : rawPurchaseFeePercent;
+  const effectiveBaseRpm = defaultRpm;
+  const purchaseFeePercent = rawPurchaseFeePercent;
   const rpm = key.rateLimitRpm && key.rateLimitRpm > 0
     ? Math.min(key.rateLimitRpm, effectiveBaseRpm, 300)
     : effectiveBaseRpm;

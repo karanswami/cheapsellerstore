@@ -1,22 +1,19 @@
 import { Badge } from "@/components/ui/badge";
-import { PremiumBadge } from "@/components/ui/premium-badge";
 import { cn } from "@/lib/utils";
 import { BadgeCheck, Sparkles } from "lucide-react";
 
 type LeaderboardTrustBadgesProps = {
-  isPremium?: boolean;
   emailVerified?: boolean;
   isYou?: boolean;
   className?: string;
 };
 
 export function LeaderboardTrustBadges({
-  isPremium,
   emailVerified,
   isYou,
   className,
 }: LeaderboardTrustBadgesProps) {
-  if (!isPremium && !emailVerified && !isYou) return null;
+  if (!emailVerified && !isYou) return null;
 
   return (
     <span className={cn("inline-flex flex-wrap items-center gap-1", className)}>
@@ -29,7 +26,6 @@ export function LeaderboardTrustBadges({
           You
         </Badge>
       ) : null}
-      {isPremium ? <PremiumBadge size="xs" animated={false} /> : null}
       {emailVerified ? (
         <Badge
           variant="secondary"

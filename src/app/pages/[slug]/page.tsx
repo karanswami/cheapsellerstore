@@ -9,13 +9,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const page = await getActiveStaticPageBySlug(slug);
   if (!page) {
-    return { title: "Page not found | Drip" };
+    return { title: "Page not found | Cheap Seller" };
   }
   return {
-    title: page.seoTitle?.trim() || `${page.title} | Drip`,
+    title: page.seoTitle?.trim() || `${page.title} | Cheap Seller`,
     description:
       page.seoDescription?.trim() ||
-      `${page.title} — information from Drip.`,
+      `${page.title} — information from Cheap Seller.`,
   };
 }
 

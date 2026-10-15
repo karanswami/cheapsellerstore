@@ -123,7 +123,7 @@ export async function registerNativeNetworkReload(): Promise<() => void> {
       const href = window.location.href;
       if (isOfflineDocumentUrl(href)) {
         window.location.href =
-          process.env.NEXT_PUBLIC_APP_URL ?? "https://dripclientofficial.dev";
+          process.env.NEXT_PUBLIC_APP_URL ?? "https://cheapseller.store";
       }
     });
     return () => {

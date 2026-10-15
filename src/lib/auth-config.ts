@@ -35,7 +35,7 @@ export const getResendFromEmail = cache(async (): Promise<string> => {
   const fromDb = (await getSettingText(SETTING_KEYS.resendFromEmail, "")).trim();
   if (fromDb) return fromDb;
   return (
-    process.env.RESEND_FROM_EMAIL?.trim() ?? "Drip <onboarding@resend.dev>"
+    process.env.RESEND_FROM_EMAIL?.trim() ?? "Cheap Seller <onboarding@resend.dev>"
   );
 });
 

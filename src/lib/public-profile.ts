@@ -52,8 +52,6 @@ function toPublicSafeUser(
     discordInvite?: string | null;
     telegramChannel?: string | null;
     youtubeVideoUrl?: string | null;
-    isPremium: boolean;
-    premiumPurchasedAt: Date | null;
     usernameChangedAt: Date | null;
     createdAt: Date;
   },
@@ -95,8 +93,6 @@ function toPublicSafeUser(
       discordInvite: null,
       telegramChannel: null,
       youtubeVideoUrl: null,
-      isPremium: user.isPremium ?? false,
-      premiumPurchasedAt: null,
       apiEnabled: false,
       depositsEnabled: false,
       usernameChangedAt: null,
@@ -140,11 +136,6 @@ function toPublicSafeUser(
     discordInvite: user.discordInvite ?? null,
     telegramChannel: user.telegramChannel ?? null,
     youtubeVideoUrl: user.youtubeVideoUrl ?? null,
-    isPremium: user.isPremium ?? false,
-    premiumPurchasedAt:
-      isOwner && user.premiumPurchasedAt
-        ? user.premiumPurchasedAt.toISOString()
-        : null,
     apiEnabled: isOwner ? (user as { apiEnabled?: boolean }).apiEnabled !== false : false,
     depositsEnabled: isOwner
       ? userCanSelfDeposit(user as { role: string; depositsEnabled?: boolean | null })

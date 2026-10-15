@@ -8,7 +8,6 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { PremiumBadge } from "@/components/ui/premium-badge";
 import { isSellerRole, roleLabel } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 import type { SafeUser } from "@/types/user";
@@ -96,10 +95,6 @@ export function ProfileHeroStage({
                 >
                   {user.emojiStatus}
                 </AvatarBadge>
-              ) : user.isPremium ? (
-                <AvatarBadge className="size-6 border-0 bg-transparent p-0 ring-1 ring-background">
-                  <PremiumBadge variant="seal" size="xs" showLabel={false} />
-                </AvatarBadge>
               ) : null}
             </Avatar>
           </div>
@@ -120,9 +115,6 @@ export function ProfileHeroStage({
             >
               {roleLabel(user.role)}
             </Badge>
-            {user.isPremium ? (
-              <PremiumBadge size="xs" />
-            ) : null}
             {user.emailVerified ? (
               <Badge
                 variant="secondary"

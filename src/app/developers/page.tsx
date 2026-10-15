@@ -7,7 +7,7 @@ import {
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Developer API Docs | Drip",
+  title: "Developer API Docs | Cheap Seller",
   description:
     "GitBook-style Platform API reference: full route demos, downloadable SDKs (Python/Node/PHP/Go/cURL), OpenAPI, AI prompt packs, live tester.",
 };

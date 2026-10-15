@@ -71,8 +71,6 @@ import {
 import {
   getDefaultProductDemoUrl,
   getDeveloperProfitSharePercent,
-  getPremiumDeveloperSharePercent,
-  getPremiumPriceUsd,
   getReferralPercent,
   getResellerApplyMinBalanceUsd,
   getResellerCreateMinFundingUsd,
@@ -225,9 +223,7 @@ export async function GET() {
     resellerApplyMinBalance: await getResellerApplyMinBalanceUsd(),
     resellerCreateMinFunding: await getResellerCreateMinFundingUsd(),
     resellerAutoApprove: await isResellerAutoApprove(),
-    premiumPriceUsd: await getPremiumPriceUsd(),
     developerProfitSharePercent: await getDeveloperProfitSharePercent(),
-    premiumDeveloperSharePercent: await getPremiumDeveloperSharePercent(),
     specialStockDeveloperSharePercent: await getSpecialStockDeveloperSharePercent(),
     supplierBuyPricePercent: await getSupplierBuyPricePercent(),
     defaultProductDemoUrl: await getDefaultProductDemoUrl(),
@@ -282,9 +278,7 @@ const schema = z.object({
   resellerApplyMinBalance: z.number().min(0).optional(),
   resellerCreateMinFunding: z.number().min(0).optional(),
   resellerAutoApprove: z.boolean().optional(),
-  premiumPriceUsd: z.number().min(0).max(10_000).optional(),
   developerProfitSharePercent: z.number().min(0).max(100).optional(),
-  premiumDeveloperSharePercent: z.number().min(0).max(100).optional(),
   specialStockDeveloperSharePercent: z.number().min(0).max(100).optional(),
   supplierBuyPricePercent: z.number().min(0).max(100).optional(),
   defaultProductDemoUrl: z
@@ -490,22 +484,10 @@ export async function PATCH(request: Request) {
       intValue: d.resellerAutoApprove ? 1 : 0,
     });
   }
-  if (d.premiumPriceUsd !== undefined) {
-    await upsertSetting({
-      key: SETTING_KEYS.premiumPriceUsd,
-      intValue: Math.round(d.premiumPriceUsd),
-    });
-  }
   if (d.developerProfitSharePercent !== undefined) {
     await upsertSetting({
       key: SETTING_KEYS.developerProfitSharePercent,
       intValue: Math.round(d.developerProfitSharePercent),
-    });
-  }
-  if (d.premiumDeveloperSharePercent !== undefined) {
-    await upsertSetting({
-      key: SETTING_KEYS.premiumDeveloperSharePercent,
-      intValue: Math.round(d.premiumDeveloperSharePercent),
     });
   }
   if (d.specialStockDeveloperSharePercent !== undefined) {

@@ -54,8 +54,6 @@ export type BulkActionKey =
   | "DISABLE_DEPOSITS"
   | "ENABLE_API"
   | "DISABLE_API"
-  | "GRANT_PREMIUM"
-  | "REVOKE_PREMIUM"
   | "MARK_VERIFIED"
   | "MARK_UNVERIFIED"
   | "WALLET_ADD"
@@ -69,7 +67,6 @@ interface TargetStats {
   totalMatching: number;
   activeCount: number;
   bannedCount: number;
-  premiumCount: number;
   verifiedCount: number;
   canCreateCount: number;
   canManageCount: number;
@@ -106,7 +103,7 @@ export function AdminBulkSellersDialog({
   const [banReason, setBanReason] = useState("Administrative policy update");
   const [notifyTitle, setNotifyTitle] = useState("Important Announcement for Sellers");
   const [notifyMessage, setNotifyMessage] = useState(
-    "Hello Seller, new updates and catalog additions are now live on Drip Client.",
+    "Hello Seller, new updates and catalog additions are now live on Cheap Seller.",
   );
   const [notifyUrl, setNotifyUrl] = useState("/app");
 
@@ -236,19 +233,6 @@ export function AdminBulkSellersDialog({
           details: "Blocks automated Platform API access for matched accounts.",
           actionPayload: { action: "SET_API_ENABLED", booleanValue: false },
         };
-      case "GRANT_PREMIUM":
-        return {
-          title: "Grant Lifetime Premium",
-          details:
-            "Unlocks Premium badge, bio storefront tools, and verifies email across all matched accounts.",
-          actionPayload: { action: "SET_PREMIUM", booleanValue: true },
-        };
-      case "REVOKE_PREMIUM":
-        return {
-          title: "Revoke Premium Status",
-          details: "Removes Premium membership status from matched accounts.",
-          actionPayload: { action: "SET_PREMIUM", booleanValue: false },
-        };
       case "MARK_VERIFIED":
         return {
           title: "Mark Email Verified",
@@ -361,7 +345,7 @@ export function AdminBulkSellersDialog({
         <div className="border-b border-border/40 bg-muted/30 px-5 py-4">
           <DialogHeader className="gap-1.5">
             <div className="flex items-center gap-2">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/20 text-primary shadow-[0_0_12px_rgba(232,79,255,0.25)]">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/20 text-primary shadow-[0_0_12px_rgba(16, 185, 129,0.25)]">
                 <Zap className="size-5" />
               </div>
               <div>
@@ -414,7 +398,7 @@ export function AdminBulkSellersDialog({
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-all",
                     target === opt.id
-                      ? "border-primary bg-primary/15 text-foreground shadow-[0_0_15px_rgba(232,79,255,0.15)] ring-1 ring-primary/40"
+                      ? "border-primary bg-primary/15 text-foreground shadow-[0_0_15px_rgba(16, 185, 129,0.15)] ring-1 ring-primary/40"
                       : "border-border/50 bg-card/40 text-muted-foreground hover:border-border hover:bg-muted/40",
                   )}
                 >
@@ -435,9 +419,6 @@ export function AdminBulkSellersDialog({
                     <UserX className="size-3" /> {stats.bannedCount} Banned
                   </span>
                 )}
-                <span className="flex items-center gap-1">
-                  <Crown className="size-3 text-primary" /> {stats.premiumCount} Premium
-                </span>
                 <span className="flex items-center gap-1">
                   <BadgeCheck className="size-3 text-success" /> {stats.verifiedCount} Verified
                 </span>
@@ -681,38 +662,10 @@ export function AdminBulkSellersDialog({
             {activeTab === "perks" && (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  Grant or revoke Premium membership status and email verification badges.
+                  Grant or revoke email verification badges.
                 </p>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-2 rounded-xl border border-border/40 p-3">
-                    <div className="flex items-center gap-2">
-                      <Crown className="size-4 text-primary" />
-                      <p className="text-xs font-semibold">Lifetime Premium</p>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Grants animated VIP badges, bio store customizer, and verified trust.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant={selectedAction === "GRANT_PREMIUM" ? "default" : "outline"}
-                        className="h-8 flex-1 text-xs"
-                        onClick={() => setSelectedAction("GRANT_PREMIUM")}
-                      >
-                        Grant Premium
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={selectedAction === "REVOKE_PREMIUM" ? "destructive" : "outline"}
-                        className="h-8 flex-1 text-xs"
-                        onClick={() => setSelectedAction("REVOKE_PREMIUM")}
-                      >
-                        Revoke Premium
-                      </Button>
-                    </div>
-                  </div>
-
                   <div className="space-y-2 rounded-xl border border-border/40 p-3">
                     <div className="flex items-center gap-2">
                       <BadgeCheck className="size-4 text-success" />

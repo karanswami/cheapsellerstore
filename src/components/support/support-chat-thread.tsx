@@ -77,7 +77,7 @@ function isOwnSide(role: SupportThreadRole, viewer: SupportChatViewer) {
 function roleLabel(role: SupportThreadRole) {
   if (role === "admin") return "Admin";
   if (role === "notification") return "Notification";
-  if (role === "assistant") return "Drip Support";
+  if (role === "assistant") return "Cheap Seller Support";
   if (role === "user") return "Customer";
   return null;
 }

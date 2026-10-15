@@ -31,7 +31,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const BUILTIN_DEFAULT_PRODUCT_DEMO_URL =
-  "https://www.youtube.com/@dripclientofficial";
+  "https://www.youtube.com/@cheapseller";
 
 type CategoryRow = { id: string; name: string; slug: string };
 

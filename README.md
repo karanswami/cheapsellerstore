@@ -1,10 +1,10 @@
-# Drip Client Official — Version 1.0
+# Cheap Seller — Version 1.0
 
 Digital key storefront (Mods / Tools / Spoofers) with customer hub, multi-rail wallet deposits, wallet checkout, and a full admin console.
 
-**Live:** [https://dripclientofficial.dev](https://dripclientofficial.dev)  
+**Live:** [https://cheapseller.store](https://cheapseller.store)  
 **Legacy alias:** [https://drip-client.gurugaminghub.store](https://drip-client.gurugaminghub.store)  
-**Android APK:** [Download v1.0.8](https://dripclientofficial.dev/downloads/DRIP-CLIENT-OFFICIAL-v1.0.8.apk)
+**Android APK:** [Download v1.0.8](https://cheapseller.store/downloads/CHEAP-SELLER-v1.0.8.apk)
 
 ---
 
@@ -41,7 +41,7 @@ Admin access: register a user, then set `User.role = ADMIN` in Mongo (no separat
 
 ## Production deploy (this VPS)
 
-App name: `drip-client-reseller` · port **3102** · cwd `/home/kscoder/dripclientofficial.dev`
+App name: `cheapsellerstore` · port **3120** · cwd `/home/kscoder/cheapsellerstore`
 
 ```bash
 # One-shot: deps → Prisma → build → PM2 restart
@@ -55,7 +55,7 @@ npm install
 npm run db:generate
 npm run db:push
 npm run build
-pm2 startOrRestart ecosystem.config.cjs --only drip-client-reseller --update-env
+pm2 startOrRestart ecosystem.config.cjs --only cheapsellerstore --update-env
 pm2 save
 ```
 
@@ -63,18 +63,18 @@ pm2 save
 
 ```bash
 sudo bash setup.sh
-# installs nginx/certbot, proxies dripclientofficial.dev (+ www) and
+# installs nginx/certbot, proxies cheapseller.store (+ www) and
 # drip-client.gurugaminghub.store → :3102, issues Let's Encrypt certs,
 # ensures ~/.ssh ed25519 + known_hosts, sets git origin to SSH
 ```
 
 ### Deposit cron (every minute)
 
-VPS crontab already runs `/home/kscoder/scripts/cron-deposits.sh`, which polls Drip at:
+VPS crontab already runs `/home/kscoder/scripts/cron-deposits.sh`, which polls Cheap Seller at:
 
 `http://127.0.0.1:3102/api/cron/deposits/poll` with `CRON_SECRET` from `.env`.
 
-Project-local helper (Drip-only):
+Project-local helper (Cheap Seller-only):
 
 ```bash
 bash scripts/cron-deposits-poll.sh
@@ -88,7 +88,7 @@ See `.env.example`. Minimum for launch:
 |----------|---------|
 | `DATABASE_URL` | MongoDB Atlas / replica set |
 | `CUSTOMER_SESSION_SECRET` | JWT cookie (≥32 chars) |
-| `NEXT_PUBLIC_APP_URL` | `https://dripclientofficial.dev` (also pinned in `ecosystem.config.cjs`) |
+| `NEXT_PUBLIC_APP_URL` | `https://cheapseller.store` (also pinned in `ecosystem.config.cjs`) |
 | `CRON_SECRET` | Deposit poll auth |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Forgot-password OTP |
 | Payment keys | Cashfree / Binance / RamaShop — or Admin → Settings → Payment API keys |

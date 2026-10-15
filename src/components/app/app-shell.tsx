@@ -24,14 +24,12 @@ import { usePathname } from "next/navigation";
 
 type AppShellProps = {
   user: SafeUser;
-  statsSlot: React.ReactNode;
   giftCodesEnabled?: boolean;
   children: React.ReactNode;
 };
 
 export function AppShell({
   user: serverUser,
-  statsSlot,
   giftCodesEnabled = false,
   children,
 }: AppShellProps) {
@@ -60,7 +58,6 @@ export function AppShell({
       >
         <CustomerSidebar
           user={user}
-          statsSlot={statsSlot}
           giftCodesEnabled={giftOn}
         />
         <SidebarInset>

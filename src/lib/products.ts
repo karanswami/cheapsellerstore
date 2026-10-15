@@ -47,7 +47,7 @@ export async function getCategories() {
     const { getRedis } = await import("@/lib/redis");
     const redis = await getRedis();
     if (redis) {
-      const cached = await redis.get("drip:cache:categories");
+      const cached = await redis.get("cheapseller:cache:categories");
       if (cached) {
         return JSON.parse(cached);
       }
@@ -64,7 +64,7 @@ export async function getCategories() {
     const { getRedis } = await import("@/lib/redis");
     const redis = await getRedis();
     if (redis && categories.length > 0) {
-      await redis.set("drip:cache:categories", JSON.stringify(categories), "EX", 120);
+      await redis.set("cheapseller:cache:categories", JSON.stringify(categories), "EX", 120);
     }
   } catch {
     // ignore cache write error

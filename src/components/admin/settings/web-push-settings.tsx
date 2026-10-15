@@ -36,7 +36,7 @@ export function WebPushSettingsDialog({
   const [loading, setLoading] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
   const [testForm, setTestForm] = useState({
-    title: "🔔 DRIP Store — Test Notification",
+    title: "🔔 Cheap Seller — Test Notification",
     body: "Web Push notifications are working perfectly on this device!",
     url: "/app",
   });

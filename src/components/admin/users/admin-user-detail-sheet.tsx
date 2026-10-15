@@ -27,7 +27,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatMoney } from "@/lib/currencies";
 import { roleBadge, type UserRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-import { PremiumBadge } from "@/components/ui/premium-badge";
 import {
   BadgeCheck,
   CalendarDays,
@@ -48,15 +47,6 @@ function initials(name: string, username: string) {
   return (source[0] ?? "?").toUpperCase();
 }
 
-function premiumSinceLabel(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 export function AdminUserDetailSheet({
   user,
   activity,
@@ -72,7 +62,6 @@ export function AdminUserDetailSheet({
   onCanFundChange,
   onApiEnabledChange,
   onDepositsEnabledChange,
-  onPremiumChange,
   onVerifiedChange,
   onLoginAs,
   onOpenWallet,
@@ -92,7 +81,6 @@ export function AdminUserDetailSheet({
   onCanFundChange: (value: boolean) => void;
   onApiEnabledChange: (value: boolean) => void;
   onDepositsEnabledChange: (value: boolean) => void;
-  onPremiumChange: (value: boolean) => void;
   onVerifiedChange: (value: boolean) => void;
   onLoginAs: () => void;
   onOpenWallet: () => void;
@@ -172,9 +160,6 @@ export function AdminUserDetailSheet({
                             ? "Banned"
                             : "Active"}
                       </Badge>
-                      {user.isPremium ? (
-                        <PremiumBadge size="xs" animated={false} />
-                      ) : null}
                       {user.emailVerified ? (
                         <Badge
                           variant="outline"
@@ -438,24 +423,8 @@ export function AdminUserDetailSheet({
 
                 <div className="space-y-2">
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    Premium &amp; trust
+                    Trust
                   </p>
-                  <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2.5">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">Premium membership</p>
-                      <p className="text-xs text-muted-foreground">
-                        Lifetime unlock. Granting also verifies the account.
-                        {user.isPremium
-                          ? ` · since ${premiumSinceLabel(user.premiumPurchasedAt)}`
-                          : ""}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={user.isPremium}
-                      disabled={pending}
-                      onCheckedChange={onPremiumChange}
-                    />
-                  </div>
                   <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2.5">
                     <div className="min-w-0">
                       <p className="text-sm font-medium">Email verified</p>

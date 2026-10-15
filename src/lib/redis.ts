@@ -82,10 +82,10 @@ export async function isRedisHealthy(): Promise<boolean> {
 
 /** Redis Keys used for logging, buffers, and system alerts */
 export const REDIS_KEYS = {
-  ACTIVITY_LOG_STREAM: "drip:activity_logs:stream",
-  MONGO_FALLBACK_QUEUE: "drip:logs:mongo_fallback_queue",
-  ALERT_THROTTLE_PREFIX: "drip:alert:throttle:",
-  SYSTEM_STATUS: "drip:system:status",
+  ACTIVITY_LOG_STREAM: "cheapseller:activity_logs:stream",
+  MONGO_FALLBACK_QUEUE: "cheapseller:logs:mongo_fallback_queue",
+  ALERT_THROTTLE_PREFIX: "cheapseller:alert:throttle:",
+  SYSTEM_STATUS: "cheapseller:system:status",
 } as const;
 
 /** Max temporary logs kept in fast Redis stream (7 days max / 5,000 items) */

@@ -4,7 +4,7 @@ import { hashPassword, verifyPassword } from "@/lib/auth/customer";
 import * as OTPAuth from "otpauth";
 import QRCode from "qrcode";
 
-const ISSUER = "Drip";
+const ISSUER = "Cheap Seller";
 const BACKUP_CODE_COUNT = 8;
 
 export function generateTotpSecret() {

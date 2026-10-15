@@ -12,7 +12,6 @@ export type AdminSidebarBadges = {
   pendingReviews: number;
   pendingSellers: number;
   pendingDevSettlements: number;
-  pendingPremiumSettlements: number;
   pendingSpecialSettlements: number;
   pendingOrders: number;
 };
@@ -72,7 +71,6 @@ export async function getAdminSidebarStats(): Promise<ConsoleSidebarStats> {
     pendingReviews,
     pendingSellers,
     pendingDevSettlements,
-    pendingPremiumSettlements,
     pendingSpecialSettlements,
     pendingOrders,
   ] = await Promise.all([
@@ -93,9 +91,6 @@ export async function getAdminSidebarStats(): Promise<ConsoleSidebarStats> {
     prisma.developerSettlementDay.count({
       where: { status: "PENDING" },
     }),
-    prisma.premiumSettlementDay.count({
-      where: { status: "PENDING" },
-    }),
     prisma.specialStockSettlementDay.count({
       where: { status: "PENDING" },
     }),
@@ -110,7 +105,6 @@ export async function getAdminSidebarStats(): Promise<ConsoleSidebarStats> {
     pendingReviews,
     pendingSellers,
     pendingDevSettlements,
-    pendingPremiumSettlements,
     pendingSpecialSettlements,
     pendingOrders,
   };

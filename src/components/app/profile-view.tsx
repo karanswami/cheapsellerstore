@@ -22,7 +22,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PremiumBadge } from "@/components/ui/premium-badge";
 import {
   feedbackSuccess,
   isHapticsEnabled,
@@ -284,35 +283,6 @@ export function ProfileView({
           </div>
         </div>
       ) : null}
-
-      <Link
-        href="/app/premium"
-        className={cn(
-          profileHeroStyles.glassPanel,
-          "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-amber-500/10 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-        )}
-      >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
-          <PremiumBadge variant="icon-only" size="sm" animated={false} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold">
-            {user.isPremium ? "Manage Premium" : "Get Premium"}
-          </span>
-          <span className="block text-xs text-muted-foreground">
-            Public page, socials, username, and share tools
-          </span>
-        </span>
-        {user.isPremium ? (
-          <Badge
-            variant="secondary"
-            className="text-[10px] text-amber-600 dark:text-amber-400"
-          >
-            Active
-          </Badge>
-        ) : null}
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-      </Link>
 
       <section className={cn(profileHeroStyles.glassPanel, "overflow-hidden")}>
         <Card variant="summary" className="border-0 bg-transparent shadow-none">

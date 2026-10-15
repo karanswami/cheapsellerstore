@@ -19,8 +19,6 @@ export type AdminUserRow = {
   apiEnabled: boolean;
   depositsEnabled: boolean;
   emailVerified: boolean;
-  isPremium: boolean;
-  premiumPurchasedAt: string | null;
   referredById: string | null;
   referralCode: string | null;
   createdAt: string;

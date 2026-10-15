@@ -58,7 +58,6 @@ export async function getLeaderboard(
         username: true,
         name: true,
         avatarUrl: true,
-        isPremium: true,
         emailVerified: true,
         emojiStatus: true,
       },
@@ -80,7 +79,6 @@ export async function getLeaderboard(
         avatarUrl: user.avatarUrl,
         totalSpent: agg.totalSpent,
         keyCount: agg.keyCount,
-        isPremium: user.isPremium ?? false,
         emailVerified: user.emailVerified ?? false,
         emojiStatus: user.emojiStatus?.trim() || null,
       });

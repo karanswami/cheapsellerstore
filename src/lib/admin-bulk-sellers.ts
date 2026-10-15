@@ -25,7 +25,6 @@ export const BulkSellersActionTypeSchema = z.enum([
   "SET_CAN_FUND_RESELLERS",
   "SET_DEPOSITS_ENABLED",
   "SET_API_ENABLED",
-  "SET_PREMIUM",
   "SET_EMAIL_VERIFIED",
   "MASS_BAN",
   "MASS_UNBAN",
@@ -67,7 +66,6 @@ export async function getBulkSellersStats(target: BulkSellersTarget) {
     totalMatching,
     activeCount,
     bannedCount,
-    premiumCount,
     verifiedCount,
     canCreateCount,
     canManageCount,
@@ -79,7 +77,6 @@ export async function getBulkSellersStats(target: BulkSellersTarget) {
     prisma.user.count({ where }),
     prisma.user.count({ where: { ...where, banned: false } }),
     prisma.user.count({ where: { ...where, banned: true } }),
-    prisma.user.count({ where: { ...where, isPremium: true } }),
     prisma.user.count({ where: { ...where, emailVerified: true } }),
     prisma.user.count({ where: { ...where, canCreateResellers: true } }),
     prisma.user.count({ where: { ...where, canManageResellers: true } }),
@@ -97,7 +94,6 @@ export async function getBulkSellersStats(target: BulkSellersTarget) {
     totalMatching,
     activeCount,
     bannedCount,
-    premiumCount,
     verifiedCount,
     canCreateCount,
     canManageCount,
@@ -228,26 +224,6 @@ export async function executeBulkSellersAction(params: {
         data: { apiEnabled: val },
       });
       actionSummary = `${val ? "Enabled" : "Disabled"} Platform API access for ${result.count} accounts`;
-      auditDetails.affectedCount = result.count;
-      auditDetails.value = val;
-      break;
-    }
-
-    case "SET_PREMIUM": {
-      const val = payload.booleanValue ?? true;
-      const updateData = val
-        ? {
-            isPremium: true,
-            emailVerified: true,
-            premiumPurchasedAt: new Date(),
-          }
-        : { isPremium: false };
-
-      const result = await prisma.user.updateMany({
-        where: { id: { in: userIds } },
-        data: updateData,
-      });
-      actionSummary = `${val ? "Granted Lifetime Premium" : "Revoked Premium"} for ${result.count} accounts`;
       auditDetails.affectedCount = result.count;
       auditDetails.value = val;
       break;

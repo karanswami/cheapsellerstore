@@ -3,7 +3,7 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_NAME="drip-client-reseller"
+APP_NAME="cheapsellerstore"
 HEALTH_URL="http://127.0.0.1:3102"
 
 cd "$PROJECT_DIR"
@@ -53,5 +53,5 @@ echo "==> PM2 status"
 pm2 status "$APP_NAME"
 
 echo "==> Deploy completed successfully"
-echo "    Public: https://dripclientofficial.dev"
-echo "    APK:    https://dripclientofficial.dev/downloads/DRIP-CLIENT-OFFICIAL.apk"
+echo "    Public: https://cheapseller.store"
+echo "    APK:    https://cheapseller.store/downloads/CHEAP-SELLER.apk"

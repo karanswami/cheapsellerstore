@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     try {
       const { getRedis } = await import("@/lib/redis");
       const redis = await getRedis();
-      if (redis) await redis.del("drip:cache:categories");
+      if (redis) await redis.del("cheapseller:cache:categories");
     } catch {
       // ignore
     }

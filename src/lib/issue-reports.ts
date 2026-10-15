@@ -19,7 +19,6 @@ export type IssueReportUser = {
   name: string;
   email: string;
   username: string;
-  isPremium?: boolean;
 };
 
 export type IssueReportDeposit = {
@@ -101,8 +100,7 @@ function serialize(row: {
     name: string;
     email: string;
     username: string;
-    isPremium?: boolean;
-  };
+    };
   deposit?: IssueReportDeposit | null;
   keyDetails?: IssueReportKeyDetails | null;
 }): IssueReportRow {
@@ -128,7 +126,6 @@ function serialize(row: {
           name: row.user.name,
           email: row.user.email,
           username: row.user.username,
-          isPremium: row.user.isPremium ?? false,
         }
       : undefined,
     deposit: row.deposit ?? null,
@@ -257,7 +254,6 @@ const includeUser = {
   name: true,
   email: true,
   username: true,
-  isPremium: true,
 } as const;
 
 export async function listEligibleDepositsForReport(userId: string) {
@@ -432,7 +428,6 @@ export async function createIssueReport(input: {
       createdAt: deposit.createdAt.toISOString(),
     };
 
-    const isVip = Boolean(row.user?.isPremium);
     const depositAmountStr =
       deposit.payCurrency && deposit.payCurrency !== "USD" && deposit.requestedAmount > 0
         ? `${deposit.requestedAmount} ${deposit.payCurrency} (${formatMoney(deposit.amount)})`
@@ -441,8 +436,8 @@ export async function createIssueReport(input: {
     void notifyTelegram(
       "report",
       [
-        isVip ? "🚨 ⭐ VIP Issue report (DEPOSIT) [Priority Queue]" : "🚨 Issue report (DEPOSIT)",
-        `User: @${row.user.username} (${row.user.email})${isVip ? " [⭐ PREMIUM MEMBER]" : ""}`,
+        "🚨 Issue report (DEPOSIT)",
+        `User: @${row.user.username} (${row.user.email})`,
         `Deposit ID: ${deposit.id}`,
         `Amount: ${depositAmountStr}`,
         `Method: ${deposit.method}${deposit.manualMethodKey ? ` (${deposit.manualMethodKey})` : ""}`,
@@ -548,12 +543,11 @@ export async function createIssueReport(input: {
     purchasedAt: purchasedAt.toISOString(),
   };
 
-  const isVip = Boolean(row.user?.isPremium);
   void notifyTelegram(
     "report",
     [
-      isVip ? "🚨 ⭐ VIP Issue report (KEY) [Priority Queue]" : "🚨 Issue report (KEY)",
-      `User: @${row.user.username} (${row.user.email})${isVip ? " [⭐ PREMIUM MEMBER]" : ""}`,
+      "🚨 Issue report (KEY)",
+      `User: @${row.user.username} (${row.user.email})`,
       `Product: ${orderItem.productTitle} — ${orderItem.durationLabel}`,
       `Key Code: ${fullCode || "N/A"}`,
       `Key ID: ${orderItem.keyId}`,
@@ -755,7 +749,6 @@ export async function updateIssueReportStatus(
       : new Map<string, IssueReportKeyDetails>();
     const keyDetails = row.keyId ? keyMap.get(row.keyId) ?? null : null;
 
-    const isVip = Boolean(row.user?.isPremium);
     const statusEmoji =
       input.status === "RESOLVED"
         ? "✅"
@@ -768,7 +761,7 @@ export async function updateIssueReportStatus(
     void notifyTelegram(
       "report",
       [
-        `${statusEmoji} Issue report status updated: ${input.status}${isVip ? " [⭐ VIP]" : ""}`,
+        `${statusEmoji} Issue report status updated: ${input.status}`,
         `User: @${row.user?.username ?? "?"} (${row.user?.email ?? row.userId})`,
         `Kind: ${row.kind}`,
         `Subject: ${row.subject}`,

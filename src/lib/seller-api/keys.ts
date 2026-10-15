@@ -62,7 +62,6 @@ export async function assertUserCanManageApi(user: {
   role: UserRole | string;
   banned: boolean;
   apiEnabled: boolean | null;
-  isPremium?: boolean | null;
 }) {
   if (user.banned) return { ok: false as const, code: "BANNED", message: "Account banned." };
   if (user.apiEnabled === false) {
@@ -107,7 +106,6 @@ export async function getPlatformApiHubSnapshot(user: {
   role: UserRole | string;
   banned: boolean;
   apiEnabled: boolean | null;
-  isPremium?: boolean | null;
 }) {
   const gate = await assertUserCanManageApi(user);
   const settings = await getPlatformApiSettings();
@@ -116,8 +114,8 @@ export async function getPlatformApiHubSnapshot(user: {
   const maxKeysPerUser = settings.maxKeysPerUser;
   const webhooks = gate.ok ? await listUserWebhooks(user.id) : [];
   const stats = gate.ok ? await getUserApiStats(user.id) : null;
-  const effectiveRpm = user.isPremium ? 300 : settings.defaultRateLimitRpm;
-  const effectiveFeePercent = user.isPremium ? 0 : settings.purchaseFeePercent;
+  const effectiveRpm = settings.defaultRateLimitRpm;
+  const effectiveFeePercent = settings.purchaseFeePercent;
 
   return {
     overview: {
@@ -127,7 +125,6 @@ export async function getPlatformApiHubSnapshot(user: {
       platformEnabled: settings.platformEnabled,
       purchaseFeePercent: effectiveFeePercent,
       defaultRateLimitRpm: effectiveRpm,
-      isPremium: Boolean(user.isPremium),
       maxKeysPerUser,
       sandboxEnabled: settings.sandboxEnabled,
       walletBalanceMicrocents: balance,
@@ -178,11 +175,11 @@ async function insertApiKey(input: {
 
   const owner = await prisma.user.findUnique({
     where: { id: input.userId },
-    select: { username: true, email: true, isPremium: true },
+    select: { username: true, email: true },
   });
 
   const baseRpm = await getApiDefaultRateLimitRpm();
-  const maxRpm = owner?.isPremium ? 300 : baseRpm;
+  const maxRpm = baseRpm;
   const rpm =
     input.rateLimitRpm != null && input.rateLimitRpm > 0
       ? Math.min(Math.round(input.rateLimitRpm), maxRpm)

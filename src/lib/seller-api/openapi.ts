@@ -22,7 +22,7 @@ export function buildOpenApiDocument(baseUrl: string): Record<string, unknown> {
   return {
     openapi: "3.1.0",
     info: {
-      title: "Drip Platform API",
+      title: "Cheap Seller Platform API",
       version: "1.0.0",
       description:
         "Flat SKU catalog, role-tier pricing, wallet checkout. Money is USD microcents (1 USD = 100_000_000). POST /orders requires Idempotency-Key. Never send client price.",

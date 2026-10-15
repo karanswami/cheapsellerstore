@@ -5,8 +5,7 @@ import {
   normalizeProfileUsername,
 } from "@/lib/profile";
 import { getPublicProfileByUsername } from "@/lib/public-profile";
-import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 type PublicProfilePageProps = {
   params: Promise<{ username: string }>;
@@ -30,13 +29,6 @@ export default async function PublicProfilePage({
 
   if (!profile) {
     notFound();
-  }
-
-  // Guard custom subdomains: only Premium VIP members get active username.dripclientofficial.dev subdomains
-  const h = await headers();
-  const isSubdomain = Boolean(h.get("x-drip-subdomain"));
-  if (isSubdomain && !profile.user.isPremium) {
-    redirect(`https://dripclientofficial.dev/${username}`);
   }
 
   return (

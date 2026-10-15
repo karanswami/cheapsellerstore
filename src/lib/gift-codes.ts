@@ -12,8 +12,8 @@ export function normalizeGiftCode(raw: string): string {
   return raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
-/** Human-readable chunked code e.g. DRIP-XXXX-XXXX */
-export function generateGiftCode(prefix = "DRIP"): string {
+/** Human-readable chunked code e.g. CHEAP-XXXX-XXXX */
+export function generateGiftCode(prefix = "CHEAP"): string {
   let body = "";
   const bytes = randomBytes(8);
   for (let i = 0; i < 8; i++) {
