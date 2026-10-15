@@ -1,0 +1,386 @@
+/* Public profile & Bento Bio Storefront Hub */
+
+@keyframes pp-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.88;
+  }
+  50% {
+    transform: translate3d(1.2%, -1%, 0) scale(1.03);
+    opacity: 1;
+  }
+}
+
+@keyframes pp-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes pp-radar-ping {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes pp-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.page {
+  --pp-surface: color-mix(in oklab, var(--card) 92%, #12061c);
+  --pp-surface-strong: color-mix(in oklab, var(--card) 86%, #0a0412);
+  --pp-glow: color-mix(in oklab, var(--primary) 45%, transparent);
+  --pp-border: color-mix(in oklab, var(--primary) 28%, var(--border));
+  --pp-accent: var(--primary);
+  --pp-ring: linear-gradient(135deg, #d600ff 0%, #7c3aed 38%, #ff6ad5 72%, #38bdf8 100%);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.page::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* Theme Presets */
+.themeToxic {
+  --pp-glow: rgba(16, 185, 129, 0.45);
+  --pp-border: rgba(16, 185, 129, 0.35);
+  --pp-accent: #10b981;
+  --pp-surface: color-mix(in oklab, #061f14 90%, var(--card));
+  --pp-surface-strong: color-mix(in oklab, #04140d 90%, var(--card));
+  --pp-ring: linear-gradient(135deg, #10b981 0%, #059669 40%, #34d399 80%, #a7f3d0 100%);
+}
+
+.themeViolet {
+  --pp-glow: rgba(168, 85, 247, 0.45);
+  --pp-border: rgba(168, 85, 247, 0.35);
+  --pp-accent: #a855f7;
+  --pp-surface: color-mix(in oklab, #19092c 90%, var(--card));
+  --pp-surface-strong: color-mix(in oklab, #10051e 90%, var(--card));
+  --pp-ring: linear-gradient(135deg, #c084fc 0%, #9333ea 40%, #ec4899 80%, #f472b6 100%);
+}
+
+.themeGlacier {
+  --pp-glow: rgba(6, 182, 212, 0.45);
+  --pp-border: rgba(6, 182, 212, 0.35);
+  --pp-accent: #06b6d4;
+  --pp-surface: color-mix(in oklab, #061e28 90%, var(--card));
+  --pp-surface-strong: color-mix(in oklab, #03141b 90%, var(--card));
+  --pp-ring: linear-gradient(135deg, #38bdf8 0%, #0284c7 40%, #06b6d4 80%, #67e8f9 100%);
+}
+
+.themeCrimson {
+  --pp-glow: rgba(244, 63, 94, 0.45);
+  --pp-border: rgba(244, 63, 94, 0.35);
+  --pp-accent: #f43f5e;
+  --pp-surface: color-mix(in oklab, #2a0812 90%, var(--card));
+  --pp-surface-strong: color-mix(in oklab, #1a040a 90%, var(--card));
+  --pp-ring: linear-gradient(135deg, #fb7185 0%, #e11d48 40%, #be123c 80%, #fda4af 100%);
+}
+
+.themeGold {
+  --pp-glow: rgba(245, 158, 11, 0.45);
+  --pp-border: rgba(245, 158, 11, 0.35);
+  --pp-accent: #f59e0b;
+  --pp-surface: color-mix(in oklab, #241604 90%, var(--card));
+  --pp-surface-strong: color-mix(in oklab, #170d02 90%, var(--card));
+  --pp-ring: linear-gradient(135deg, #fbbf24 0%, #d97706 40%, #f59e0b 80%, #fef3c7 100%);
+}
+
+.heroWash {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 auto;
+  height: 40rem;
+  overflow: hidden;
+  animation: pp-drift 16s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.heroOrbA {
+  position: absolute;
+  top: -6rem;
+  left: 50%;
+  width: 44rem;
+  height: 28rem;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at center,
+    var(--pp-glow),
+    transparent 68%
+  );
+  filter: blur(52px);
+}
+
+.heroOrbB {
+  position: absolute;
+  top: 8rem;
+  right: -3rem;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at center,
+    var(--pp-glow),
+    transparent 70%
+  );
+  filter: blur(44px);
+}
+
+.bannerWrapper {
+  position: relative;
+  width: 100%;
+  height: 8.5rem;
+  overflow: hidden;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: linear-gradient(180deg, var(--pp-surface-strong) 0%, var(--pp-surface) 100%);
+}
+
+.bannerImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+
+.card {
+  border: 1px solid var(--pp-border);
+  background:
+    radial-gradient(
+      ellipse at 50% -20%,
+      color-mix(in oklab, var(--pp-accent) 18%, transparent),
+      transparent 55%
+    ),
+    var(--pp-surface);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, white 4%, transparent) inset,
+    0 22px 60px -28px var(--pp-glow);
+  backdrop-filter: blur(16px);
+}
+
+.bentoTile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid var(--pp-border);
+  background: var(--pp-surface-strong);
+  box-shadow: 0 12px 32px -24px var(--pp-glow);
+  backdrop-filter: blur(12px);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.bentoTile:hover {
+  transform: translateY(-2px);
+  border-color: var(--pp-accent);
+  box-shadow: 0 16px 40px -20px var(--pp-glow);
+}
+
+.avatarRing {
+  display: inline-flex;
+  padding: 3.5px;
+  border-radius: 9999px;
+  background: var(--pp-ring);
+  box-shadow: 0 0 32px var(--pp-glow);
+  animation: pp-pulse 4.8s ease-in-out infinite;
+}
+
+.onlinePulse {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.onlineDot {
+  position: relative;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: #10b981;
+}
+
+.onlineDot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #10b981;
+  animation: pp-radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.promoPill {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 1.1rem;
+  border: 1px dashed var(--pp-border);
+  background: color-mix(in oklab, var(--pp-accent) 10%, var(--pp-surface-strong));
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.promoPill:hover {
+  transform: scale(1.01);
+  background: color-mix(in oklab, var(--pp-accent) 16%, var(--pp-surface-strong));
+}
+
+.promoPill:active {
+  transform: scale(0.98);
+}
+
+.stats {
+  border: 1px solid var(--pp-border);
+  background: var(--pp-surface-strong);
+  box-shadow: 0 14px 40px -28px var(--pp-glow);
+  backdrop-filter: blur(12px);
+}
+
+.joinCta {
+  display: inline-flex;
+  height: 3.15rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 1rem;
+  border: 0;
+  background: var(--gradient-primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow:
+    0 12px 28px color-mix(in oklab, var(--pp-accent) 42%, transparent),
+    0 0 0 1px color-mix(in oklab, white 10%, transparent) inset;
+  transition:
+    filter 0.15s ease,
+    transform 0.15s ease;
+}
+
+.joinCta:hover {
+  filter: brightness(1.06);
+  color: #fff;
+}
+
+.joinCta:active {
+  transform: translateY(1px);
+}
+
+.linkTile {
+  position: relative;
+  display: flex;
+  height: 3.2rem;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  border: 1px solid var(--pp-border);
+  background: var(--pp-surface-strong);
+  padding: 0 1rem;
+  color: var(--foreground);
+  text-decoration: none;
+  box-shadow: 0 10px 28px -22px var(--pp-glow);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.linkTile:hover {
+  transform: translateY(-1.5px);
+  border-color: var(--pp-accent);
+  box-shadow: 0 14px 32px -18px var(--pp-glow);
+}
+
+.linkTile:active {
+  transform: scale(0.98);
+}
+
+.featured {
+  border: 1px solid var(--pp-border);
+  background:
+    radial-gradient(
+      circle at 10% 0%,
+      color-mix(in oklab, var(--pp-accent) 14%, transparent),
+      transparent 42%
+    ),
+    var(--pp-surface);
+  box-shadow: 0 18px 48px -30px var(--pp-glow);
+}
+
+.thumb {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--pp-accent) 35%, transparent),
+    0 10px 24px -12px var(--pp-glow);
+}
+
+.buyNow {
+  display: inline-flex;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: var(--gradient-primary);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0 1rem;
+  box-shadow: 0 8px 18px color-mix(in oklab, var(--pp-accent) 38%, transparent);
+}
+
+.buyNow:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.buyNow:disabled {
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroWash,
+  .avatarRing,
+  .onlineDot::after {
+    animation: none;
+  }
+}

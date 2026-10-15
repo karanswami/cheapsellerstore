@@ -1,0 +1,54 @@
+# Dependencies & package managers
+node_modules/
+.pnp/
+.pnp.*
+.yarn/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lock
+bun.lockb
+
+# Next.js / build outputs
+.next/
+out/
+dist/
+build/
+.vercel/
+coverage/
+
+# Generated / tooling noise
+*.tsbuildinfo
+next-env.d.ts
+src/generated/
+
+
+# Git & VCS
+.git/
+
+# Env & secrets (keep .env.example readable)
+# .env
+# .env.*
+# !.env.example
+
+# Logs & OS junk
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Certs / keys
+*.pem
+*.key
+
+# Python venvs (if ever added)
+.venv/
+venv/
+
+# Editor caches (keep .vscode if present for shared settings)
+.idea/
+*.swp
+*~

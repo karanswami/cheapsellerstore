@@ -1,0 +1,384 @@
+@keyframes site-header-shift {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  isolation: isolate;
+  /* Native APK sets --safe-area-top-pad:0 (status bar already reserved). */
+  padding-top: var(--safe-area-top-pad, env(safe-area-inset-top, 0px));
+  border-bottom: 1px solid color-mix(in oklab, var(--primary) 18%, var(--border));
+  background: color-mix(in oklab, var(--background) 88%, transparent);
+  box-shadow:
+    var(--elevation-1),
+    0 1px 0 color-mix(in oklab, var(--primary) 12%, transparent);
+}
+
+@media (min-width: 768px) {
+  .header {
+    background: color-mix(in oklab, var(--background) 82%, transparent);
+    backdrop-filter: blur(14px);
+  }
+}
+
+.wash {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    radial-gradient(
+      ellipse 80% 120% at 0% 0%,
+      color-mix(in oklab, var(--primary) 16%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 60% 100% at 100% 100%,
+      color-mix(in oklab, var(--ring) 12%, transparent),
+      transparent 50%
+    );
+  background-size: 140% 140%;
+  opacity: 0.58;
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  .wash {
+    animation: site-header-shift var(--motion-ambient, 16s) ease-in-out infinite;
+  }
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .inner {
+    min-height: 4rem;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+  }
+}
+
+.brand {
+  display: flex;
+  min-width: 0;
+  flex-shrink: 1;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+@media (min-width: 640px) {
+  .brand {
+    gap: 0.65rem;
+    flex-shrink: 0;
+  }
+}
+
+.brandLogo {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.7rem;
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--primary) 14%, transparent);
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .brandLogo {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+}
+
+.brandLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brandInitial {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.brandName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+@media (min-width: 400px) {
+  .brandName {
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .brandName {
+    font-size: 0.98rem;
+    max-width: 12rem;
+  }
+}
+
+.nav {
+  display: none;
+  min-width: 0;
+  flex-shrink: 1;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .nav {
+    display: flex;
+  }
+}
+
+.navLink {
+  display: inline-flex;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  padding-inline: 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  transition:
+    color var(--motion-fast, 150ms) ease,
+    background-color var(--motion-fast, 150ms) ease,
+    box-shadow var(--motion-normal, 200ms) ease;
+}
+
+.navLink:hover {
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--muted) 80%, transparent);
+}
+
+.navLinkActive {
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--primary) 12%, var(--muted));
+  box-shadow: 0 0 10px color-mix(in oklab, var(--primary) 10%, transparent);
+}
+
+.actions {
+  display: flex;
+  min-width: 0;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+@media (min-width: 640px) {
+  .actions {
+    gap: 0.45rem;
+  }
+}
+
+.iconBtn {
+  display: inline-flex;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 28%, var(--border));
+  background: color-mix(in oklab, var(--secondary) 70%, transparent);
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast, 150ms) ease,
+    background-color var(--motion-fast, 150ms) ease,
+    box-shadow var(--motion-normal, 200ms) ease;
+}
+
+.iconBtn:hover {
+  border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
+  background: color-mix(in oklab, var(--primary) 10%, var(--secondary));
+  box-shadow: var(--glow-soft);
+}
+
+.iconBtn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.cartBtn {
+  position: relative;
+}
+
+.cartBadge {
+  position: absolute;
+  top: -0.2rem;
+  right: -0.2rem;
+  display: flex;
+  width: 1rem;
+  height: 1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--primary);
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--primary-foreground);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--primary) 45%, transparent);
+}
+
+.userBtn {
+  display: inline-flex;
+  height: 2.15rem;
+  max-width: 9rem;
+  flex-shrink: 1;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 0.85rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 28%, var(--border));
+  background: color-mix(in oklab, var(--secondary) 70%, transparent);
+  padding-inline: 0.35rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast, 150ms) ease,
+    background-color var(--motion-fast, 150ms) ease,
+    box-shadow var(--motion-normal, 200ms) ease;
+}
+
+@media (min-width: 640px) {
+  .userBtn {
+    max-width: 11rem;
+    padding-inline: 0.45rem 0.65rem;
+  }
+}
+
+.userBtn:hover {
+  border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
+  background: color-mix(in oklab, var(--primary) 10%, var(--secondary));
+  box-shadow: var(--glow-soft);
+}
+
+.userName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userNameHidden {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .userNameHidden {
+    display: inline;
+  }
+}
+
+.authBtn {
+  display: inline-flex;
+  height: 2.15rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 0.85rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 28%, var(--border));
+  background: color-mix(in oklab, var(--secondary) 70%, transparent);
+  padding-inline: 0.55rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast, 150ms) ease,
+    background-color var(--motion-fast, 150ms) ease,
+    box-shadow var(--motion-normal, 200ms) ease;
+}
+
+.authBtn:hover {
+  border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
+  background: color-mix(in oklab, var(--primary) 10%, var(--secondary));
+  box-shadow: var(--glow-soft);
+}
+
+.authBtnPrimary {
+  border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+  background: var(--gradient-primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--glow-soft);
+}
+
+.authBtnPrimary:hover {
+  filter: brightness(1.08);
+  box-shadow: var(--glow-primary);
+}
+
+.authLabel {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .authLabel {
+    display: inline;
+  }
+}
+
+.authLabelShort {
+  display: inline;
+}
+
+@media (min-width: 480px) {
+  .authLabelShort {
+    display: none;
+  }
+}
+
+.loadingPulse {
+  width: 5rem;
+  height: 2.15rem;
+  flex-shrink: 0;
+  border-radius: 0.85rem;
+  background: color-mix(in oklab, var(--muted) 80%, transparent);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wash {
+    animation: none;
+    opacity: 0.48;
+  }
+}

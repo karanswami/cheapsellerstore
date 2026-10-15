@@ -1,0 +1,180 @@
+.bar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  border-radius: 1rem;
+  padding: 0.75rem 0.9rem;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--primary) 14%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(180deg, #221830, #15101f);
+  border: 1px solid color-mix(in oklab, var(--primary) 28%, var(--border));
+  box-shadow: var(--elevation-1), var(--glow-soft);
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .bar {
+    padding: 0.85rem 1rem;
+  }
+}
+
+.snakeOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 10;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+}
+
+.snakeOverlay::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 260deg,
+    rgba(214, 0, 255, 0.2) 280deg,
+    color-mix(in oklab, var(--primary) 85%, transparent) 310deg,
+    var(--brand-accent, #ff4fc8) 335deg,
+    #00f0ff 360deg
+  );
+  animation: snakeRotate 3.5s linear infinite;
+}
+
+@keyframes snakeRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snakeOverlay::before {
+    animation: none;
+  }
+}
+
+.main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.icon {
+  display: flex;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 32%, transparent);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+
+.icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.copy {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--foreground);
+}
+
+.titleGradient {
+  background: linear-gradient(
+    100deg,
+    var(--foreground) 0%,
+    color-mix(in oklab, var(--primary) 75%, white) 55%,
+    var(--primary) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.desc {
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  max-width: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.trailing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-left: auto;
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .bar {
+    gap: 0.55rem 0.65rem;
+    padding: 0.7rem 0.8rem;
+  }
+
+  .trailing {
+    width: auto;
+    flex-shrink: 0;
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+
+  .stats {
+    width: auto;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}

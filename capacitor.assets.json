@@ -1,0 +1,12 @@
+{
+  "android": {
+    "icon": {
+      "sources": ["mobile-assets/icon-only.png"],
+      "backgroundColor": "#0c0c0e"
+    },
+    "splash": {
+      "sources": ["mobile-assets/splash.png"],
+      "backgroundColor": "#0c0c0e"
+    }
+  }
+}

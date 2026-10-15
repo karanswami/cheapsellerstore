@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drip Client — PHP Edition PRD</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --bg-panel: #12151c;
+    --bg-panel-2: #171b24;
+    --border: #262b36;
+    --text: #e6e9ef;
+    --text-dim: #9aa3b2;
+    --accent: #7c9eff;
+    --accent-soft: #7c9eff22;
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --code-bg: #0e1117;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 600px at 50% -10%, #1a2030 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+  }
+  .wrap {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 56px 28px 120px;
+  }
+  header.hero {
+    border: 1px solid var(--border);
+    background: linear-gradient(160deg, var(--bg-panel), var(--bg-panel-2));
+    border-radius: var(--radius);
+    padding: 36px 32px;
+    margin-bottom: 40px;
+  }
+  header.hero .kicker {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  header.hero h1 {
+    margin: 0 0 8px;
+    font-size: 32px;
+    letter-spacing: -0.02em;
+  }
+  header.hero p.tagline {
+    color: var(--text-dim);
+    font-size: 16px;
+    margin: 0 0 20px;
+    max-width: 65ch;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-top: 22px;
+  }
+  .meta-item {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #ffffff05;
+  }
+  .meta-item .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .meta-item .value { font-size: 14px; font-weight: 600; }
+
+  nav.toc {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    background: var(--bg-panel);
+    margin-bottom: 44px;
+  }
+  nav.toc h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav.toc li { margin-bottom: 8px; font-size: 14px; break-inside: avoid; }
+  nav.toc a { color: var(--text); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+
+  section {
+    margin-bottom: 48px;
+    padding-top: 8px;
+  }
+  h2 {
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin: 0 0 20px;
+    scroll-margin-top: 20px;
+  }
+  h2 .num { color: var(--accent); margin-right: 8px; }
+  h3 {
+    font-size: 16px;
+    margin: 28px 0 10px;
+    color: var(--text);
+  }
+  p { color: #d3d8e2; margin: 0 0 14px; }
+  ul, ol { color: #d3d8e2; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  li > ul, li > ol { margin-top: 6px; }
+  strong { color: var(--text); font-weight: 600; }
+  code {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 0.88em;
+    color: #b9d3ff;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #c7d3ea;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--bg-panel-2);
+    color: var(--text-dim);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  tr:nth-child(even) td { background: #ffffff03; }
+
+  .card {
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .card h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: var(--accent);
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .badge.keep { background: #4ade8022; color: var(--good); }
+  .badge.confirm { background: #fbbf2422; color: var(--warn); }
+
+  .phase-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  @media print {
+    body { background: #fff; color: #000; }
+    header.hero, nav.toc, .card { background: #f5f5f5 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="kicker">Product Requirements Document</span>
+    <h1>Drip Client — PHP Edition</h1>
+    <p class="tagline">A full feature-parity clone of the Next.js DripClient storefront, rewritten in raw PHP + MySQL, so it can be sold/resold to buyers who only have cheap shared (cPanel-style) hosting and cannot afford Node.js hosting.</p>
+    <div class="meta-grid">
+      <div class="meta-item"><div class="label">Codename</div><div class="value">DripClient PHP Edition</div></div>
+      <div class="meta-item"><div class="label">Prepared for</div><div class="value">karanswami1506@gmail.com</div></div>
+      <div class="meta-item"><div class="label">Date</div><div class="value">2026-08-18</div></div>
+      <div class="meta-item"><div class="label">Status</div><div class="value">Draft v1 — for review</div></div>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#s1">Why this exists</a></li>
+      <li><a href="#s2">Target stack</a></li>
+      <li><a href="#s3">Full feature scope</a></li>
+      <li><a href="#s4">Out of scope (v1)</a></li>
+      <li><a href="#s5">Data model (MySQL)</a></li>
+      <li><a href="#s6">Folder structure</a></li>
+      <li><a href="#s7">Build phases</a></li>
+      <li><a href="#s8">Open questions</a></li>
+      <li><a href="#s9">Summary</a></li>
+    </ol>
+  </nav>
+
+  <section id="s1">
+    <h2><span class="num">1.</span>Why this exists</h2>
+    <p>The current product (<code>dripclientofficial.dev</code>) is a Next.js 16 + Prisma + MongoDB digital-key storefront, running on a VPS with PM2 + nginx. This is too expensive/complex for resale customers, most of whom only have:</p>
+    <ul>
+      <li>Shared PHP hosting (cPanel, MySQL, no shell/SSH, no Node runtime)</li>
+      <li>Little to no DevOps knowledge — needs to be "upload via FTP/File Manager and go"</li>
+    </ul>
+    <div class="card">
+      <h4>Goal</h4>
+      <p style="margin:0">Reimplement the same product surface in <strong>plain PHP + MySQL</strong>, deployable by uploading files and importing one SQL file — no Composer, no build step, no Node.</p>
+    </div>
+    <p><strong>Non-goal:</strong> this is not a literal transpile of the Next.js code. It's a from-scratch PHP implementation that reproduces the same <em>behavior and features</em>, using PHP-idiomatic patterns (server-rendered pages + PDO + sessions).</p>
+  </section>
+
+  <section id="s2">
+    <h2><span class="num">2.</span>Target stack</h2>
+    <table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Language</td><td>PHP 8.1+</td><td>Widely available on shared hosting; typed properties, enums, match — no framework</td></tr>
+        <tr><td>DB</td><td>MySQL 5.7+ / MariaDB 10.3+</td><td>via PDO, prepared statements only</td></tr>
+        <tr><td>Sessions/Auth</td><td>Native PHP sessions + <code>password_hash()</code>/<code>password_verify()</code></td><td>No JWT dependency; CSRF tokens per form</td></tr>
+        <tr><td>Frontend</td><td>Server-rendered PHP templates + Tailwind (CDN/prebuilt) + vanilla JS / Alpine sprinkles</td><td>No SPA, no build pipeline required</td></tr>
+        <tr><td>File uploads</td><td>Local <code>/uploads</code>, validated mime/size</td><td>Avatar, review images, deposit proof, ticket attachments</td></tr>
+        <tr><td>Cron</td><td>cPanel cron → PHP script (HTTP or CLI)</td><td>Replaces Next.js <code>/api/cron/deposits/poll</code></td></tr>
+        <tr><td>Email</td><td>PHPMailer (SMTP) or <code>mail()</code> fallback</td><td>OTP / password reset</td></tr>
+        <tr><td>2FA</td><td>Hand-rolled TOTP (RFC 6238), single vendored file</td><td>Keeps zero-Composer promise</td></tr>
+        <tr><td>Payments</td><td>Cashfree, Binance Pay, manual UPI/QRIS/eSewa</td><td>Same rails as original; webhook + polling cron</td></tr>
+        <tr><td>Money</td><td>Integer <strong>cents</strong> in <code>BIGINT</code> columns</td><td>Simpler than microcents; avoids float rounding bugs</td></tr>
+        <tr><td>Deployment</td><td>Zip upload + <code>install.php</code> wizard</td><td>Writes config, imports schema, creates first admin — WordPress-style</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Explicit non-requirement:</strong> no Composer, no npm, no build step. Buyer unzips, uploads via FTP, visits <code>install.php</code>, fills a form, goes live.</p>
+  </section>
+
+  <section id="s3">
+    <h2><span class="num">3.</span>Full feature scope <span class="badge keep">nothing dropped</span></h2>
+    <p>Organized by module, mapped 1:1 to the current Prisma models/routes.</p>
+
+    <h3>3.1 Storefront (public)</h3>
+    <ul>
+      <li>Home: categories, product grid, bestseller/new/pinned sorting, banners, flash-sale banner, promo banner</li>
+      <li>Product detail: durations × versions, price table (user/reseller/special-price aware), stock indicator, reviews (approved only), demo URL</li>
+      <li>Category browse</li>
+      <li>FAQ page, static pages (CMS pages by slug)</li>
+      <li>Public seller/user profile pages (<code>/[username]</code>) — bio, socials, featured products, profile border, emoji status, premium badge</li>
+      <li>Leaderboard (top sellers/resellers)</li>
+      <li>Developer docs page (Platform API reference, human-readable)</li>
+    </ul>
+
+    <h3>3.2 Auth & account</h3>
+    <ul>
+      <li>Register / login (email + password), email verification</li>
+      <li>Forgot password via emailed OTP (rate-limited, hashed OTP, expiry, attempt counter)</li>
+      <li>Change email / change password from account settings</li>
+      <li>Google OAuth login (optional; standard OAuth2 authorization-code flow, no SDK needed)</li>
+      <li>2FA (TOTP) enable/disable + hashed backup codes</li>
+      <li>Avatar upload, bio, social links, public/private profile toggle</li>
+      <li>Username change (Premium-only, 30-day cooldown)</li>
+      <li>Session/device handling — plain PHP session, "remember me" cookie (hashed token in DB)</li>
+      <li>Ban enforcement (banned users blocked at login/session-check with ban reason shown)</li>
+    </ul>
+
+    <h3>3.3 Wallet & payments</h3>
+    <ul>
+      <li>Wallet balance (integer cents, USD only)</li>
+      <li>Deposit rails: Binance Pay, QRIS, UPI, eSewa, Manual (admin-defined methods with instructions/QR)</li>
+      <li>Deposit lifecycle: PENDING → PROCESSING → COMPLETED/FAILED/EXPIRED/CANCELLED</li>
+      <li>Proof-of-payment upload for manual deposits, admin review (approve/reject with note)</li>
+      <li>Deposit cron/poll: checks provider status, auto-expires stale ones, credits wallet on confirm (idempotent via <code>transaction_id</code> link)</li>
+      <li>Ledger: <code>transactions</code> table — DEPOSIT, PURCHASE, REFUND, REFERRAL_REWARD, ADMIN_ADJUSTMENT, PREMIUM_PURCHASE, API_FEE, GIFT_CODE</li>
+      <li>Gift codes: admin-generated wallet credit codes, optional user-assignment, redeem flow, kill-switch</li>
+      <li>Cashfree + Binance + manual webhook endpoints</li>
+    </ul>
+
+    <h3>3.4 Catalog & inventory</h3>
+    <ul>
+      <li>Categories (CRUD, sort order)</li>
+      <li>Products (title, description, images, features list, bestseller/new/pinned/active flags, category)</li>
+      <li>Durations per product (label, days, version grouping, <code>api_code</code> SKU, supplier linkage fields)</li>
+      <li>Duration prices: user price, reseller price, buy/cost price (admin-only), per-currency</li>
+      <li>Keys: inventory per duration (AVAILABLE/SOLD/DISABLED), manual bulk upload <strong>and</strong> optional supplier auto-generation</li>
+      <li>Per-user special price overrides + audit history</li>
+      <li>Product reviews: star rating, body, verified-buyer flag, PENDING→APPROVED/DISABLED moderation</li>
+    </ul>
+
+    <h3>3.5 Checkout & orders</h3>
+    <ul>
+      <li>Cart-less direct buy (buy 1 duration at a time) with quantity</li>
+      <li>Promo codes: global/product/duration scope, percent/flat discount, audience targeting, redemption caps, active window, storefront banner</li>
+      <li>Flash sales: same scoping model, percent-only, banner with countdown</li>
+      <li>Guest checkout by email as well as logged-in wallet checkout</li>
+      <li>Order states: PENDING → PAID → FULFILLED / FAILED / REFUNDED</li>
+      <li>Key fulfillment: atomic claim of an AVAILABLE key (row-level lock), mark SOLD</li>
+      <li>Order access token (public order lookup without login)</li>
+      <li>Android ID / device-bound key support</li>
+    </ul>
+
+    <h3>3.6 Reseller / Seller tiering <span class="badge keep">core resale value</span></h3>
+    <ul>
+      <li>Roles: USER, SELLER, RESELLER, ADMIN</li>
+      <li>Reseller application flow: submit → PENDING → admin APPROVED/REJECTED</li>
+      <li>Seller permissions granted by admin: <code>can_create_resellers</code>, <code>can_manage_resellers</code>, <code>can_fund_resellers</code></li>
+      <li>Seller dashboard: create/manage own resellers, fund/cut their wallet, downline leaderboard</li>
+      <li>Reseller-tier pricing at checkout (special price > reseller price > user price)</li>
+      <li>Seller "become a reseller/seller" application pages</li>
+    </ul>
+
+    <h3>3.7 Admin console (full parity)</h3>
+    <ul>
+      <li>Dashboard/analytics (revenue, orders, signups, top products)</li>
+      <li>Products, Categories, Durations, Prices, Keys (bulk import), Special Prices + history</li>
+      <li>Orders (search/filter/refund/mark fulfilled)</li>
+      <li>Deposits (queue, manual approve/reject, recheck flag, provider raw response viewer)</li>
+      <li>Deposit cron run history</li>
+      <li>Gift codes (create single/batch, assign, kill-switch, claim history)</li>
+      <li>Promo codes, Flash sales, Banners</li>
+      <li>Reviews moderation queue</li>
+      <li>FAQs, Static pages (simple CMS editor)</li>
+      <li>Users (search, ban/unban with reason, role change, wallet adjustment, impersonate)</li>
+      <li>Resellers/Sellers (approve requests, grant permissions, fund management)</li>
+      <li>Support tickets inbox + replies; Issue reports</li>
+      <li>Support bot builder: button-tree editor + keyword-route trainer</li>
+      <li>Broadcasts (pinned announcements by audience)</li>
+      <li>Site config (branding, icons, maintenance mode)</li>
+      <li>Seller/Platform API admin: key issuance, usage stats, developer settlement ledgers</li>
+      <li>Activity/audit logs (auto-purge after 7 days)</li>
+      <li>Supplier API logs viewer</li>
+      <li>Settings: payment gateway keys, manual deposit editor, sandbox toggle</li>
+    </ul>
+
+    <h3>3.8 Notifications & support</h3>
+    <ul>
+      <li>In-app notification bell</li>
+      <li>Support ticket system: threaded replies, status/priority, freeze-bot flag</li>
+      <li>Persistent support inbox thread per user, unread tracking</li>
+      <li>Support "memory" per user (context-aware bot/admin view)</li>
+      <li>Issue reports: submit-only, tied to key/deposit, admin review queue</li>
+    </ul>
+
+    <h3>3.9 Platform API (developer-facing REST API) <span class="badge keep">kept in scope</span></h3>
+    <ul>
+      <li>Seller-issued API keys (LIVE/SANDBOX, prefix + hashed secret, scopes, IP allowlist, rate limit)</li>
+      <li>Endpoints: <code>me</code>, <code>balance</code>, <code>products</code>, <code>pricing</code>, <code>stock</code>, <code>orders</code>, <code>ai-prompt</code>, <code>sdk</code>, <code>openapi.json</code></li>
+      <li>Idempotency keys for repeated POSTs</li>
+      <li>Per-request usage logging for admin analytics</li>
+      <li>Webhooks: seller-registered URL + signing secret, event list, delivery tracking</li>
+      <li>1% developer margin fee (<code>API_FEE</code>) auto-applied; daily settlement ledger</li>
+      <li>Sandbox mode toggle (global + per-key)</li>
+    </ul>
+
+    <h3>3.10 Supplier auto-fulfillment <span class="badge keep">kept in scope</span></h3>
+    <ul>
+      <li>Optional per-duration link to an upstream supplier catalog product id</li>
+      <li>On stock-out, call supplier API server-to-server to fetch a fresh key</li>
+      <li>Full request/response logging for admin debugging, with fallback flag</li>
+      <li>Manual key upload always remains the primary path — supplier integration is additive</li>
+    </ul>
+
+    <h3>3.11 Support bot / "Little AI" router <span class="badge keep">kept in scope</span></h3>
+    <ul>
+      <li><strong>Button-tree bot:</strong> Telegram-style step/button flows, one entry step, one fallback step</li>
+      <li><strong>Keyword router:</strong> trainable phrase→weight matching, role-gated routes, canned reply + up to 3 buttons</li>
+      <li>No external LLM call required — pure keyword-weight matching in PHP (zero hosting cost)</li>
+      <li>Escalation to a live SupportTicket when a serious route matches or user asks for a human</li>
+    </ul>
+
+    <h3>3.12 Premium membership</h3>
+    <ul>
+      <li>One-time wallet purchase → lifetime <code>is_premium</code> flag</li>
+      <li>Perks: profile border, username-change ability, referral code page, premium-only purchased-products area</li>
+      <li>Daily settlement ledger for platform revenue share</li>
+    </ul>
+
+    <h3>3.13 Referrals</h3>
+    <ul>
+      <li>Referral code per user, referred-by linkage</li>
+      <li>Reward transaction on referred user's qualifying action (confirm business rule during build)</li>
+      <li>Referral check endpoint (validate a code before signup)</li>
+    </ul>
+
+    <h3>3.14 Mobile/native shell parity <span class="badge confirm">Phase 6</span></h3>
+    <p>Same approach as the Next.js app: mobile-responsive PHP site wrapped in a minimal Capacitor/WebView shell. No PHP-side work beyond ensuring a good "app-like" mobile experience and a native handoff endpoint.</p>
+  </section>
+
+  <section id="s4">
+    <h2><span class="num">4.</span>Explicitly out of scope for v1</h2>
+    <p>Nothing was cut per instruction ("sab kuch daalo") — the full list in Section 3 is the target. The only true out-of-scope item is:</p>
+    <div class="card">
+      <h4>UI pixel parity</h4>
+      <p style="margin:0"><strong>1:1 UI pixel parity</strong> with the Next.js/shadcn design system is not a goal. PHP edition gets its own server-rendered Tailwind UI inspired by the same layout, not a literal component port (React components don't translate to PHP). If pixel-parity is wanted, it becomes its own phase — say so and it'll be added.</p>
+    </div>
+  </section>
+
+  <section id="s5">
+    <h2><span class="num">5.</span>Data model (MySQL)</h2>
+    <p>Direct translation of the Prisma/Mongo schema to normalized MySQL. Key differences from the source:</p>
+    <ul>
+      <li><code>ObjectId</code> → <code>BIGINT UNSIGNED AUTO_INCREMENT</code> primary keys (or <code>CHAR(26)</code> ULIDs for sortable public-safe ids — recommended for order/deposit ids shown in URLs)</li>
+      <li>Money <code>Float</code> microcents → <code>BIGINT</code> <strong>cents</strong> (simpler, exact integer math)</li>
+      <li><code>String[]</code> arrays → child tables or <code>JSON</code> columns where opaque/admin-only</li>
+      <li><code>Json</code> fields → native MySQL <code>JSON</code> columns</li>
+      <li>Enums → MySQL <code>ENUM(...)</code> columns</li>
+      <li>Relations → FK constraints with <code>ON DELETE</code> rules matching current semantics</li>
+    </ul>
+    <h3>Full table list (33 tables, matches 33 Prisma models 1:1)</h3>
+    <pre><code>users, password_reset_otps, categories, products, product_reviews,
+durations, user_special_prices, user_special_price_history, duration_prices,
+keys, orders, order_items, transactions, deposits, gift_codes,
+deposit_cron_runs, promo_codes, promo_redemptions, flash_sales, banners,
+faq_items, static_pages, reseller_requests, notifications, app_settings,
+support_bot_steps, support_routes, support_tickets, support_ticket_replies,
+support_inbox_messages, support_user_memory, developer_settlement_days,
+premium_settlement_days, api_developer_margin_days, seller_api_keys,
+seller_api_usage, seller_api_webhooks, seller_api_idempotency, broadcasts,
+issue_reports, activity_logs, supplier_api_logs</code></pre>
+    <p>(Full column-level DDL to be written as <code>schema.sql</code> at build time — this PRD fixes the shape; exact DDL is an implementation artifact, not a planning artifact.)</p>
+  </section>
+
+  <section id="s6">
+    <h2><span class="num">6.</span>Proposed folder structure</h2>
+    <p>No framework, no autoloader magic beyond a tiny PSR-4-lite loader.</p>
+    <pre><code>/php-edition
+  /config
+    config.example.php        # DB creds, secrets, payment keys — copied to config.php by installer
+  /install
+    install.php                # web installer wizard (schema import + first admin + config write)
+    schema.sql
+  /public                       # web root — only this directory is exposed by the host
+    index.php                   # front controller / router
+    /assets (css, js, images)
+    /uploads                    # avatars, proofs, attachments (writable)
+  /src
+    /Core        (Router, DB (PDO singleton), Session, Csrf, Request, Response, View)
+    /Auth        (Login, Register, OTP, TOTP, Google OAuth, Ban check middleware)
+    /Models      (one class per table, thin data-mapper, prepared statements only)
+    /Services    (Wallet, Checkout, Deposits, GiftCodes, Promo, FlashSale, Referral,
+                  SpecialPrice, SupportBot, SupplierApi, PlatformApi, Settlement)
+    /Controllers (Storefront, Account, Wallet, Checkout, Admin\*, Api\V1\*, Webhooks\*)
+    /Views       (plain PHP templates, layout.php + partials, Tailwind classes)
+    /Cron        (deposits_poll.php, settlement_daily.php, activity_log_purge.php)
+  /docs
+    PRD.md (this file), API.md (Platform API reference), INSTALL.md</code></pre>
+    <p>Routing: a single <code>public/index.php</code> front controller with a small hand-rolled router (regex route table → controller method), avoiding any Composer dependency.</p>
+  </section>
+
+  <section id="s7">
+    <h2><span class="num">7.</span>Build phases</h2>
+    <p>Sequenced for a working, sellable product as early as possible, with full parity reached by Phase 5.</p>
+    <table class="phase-table">
+      <thead><tr><th>Phase</th><th>Scope</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>Installer, config, DB schema, base Router/DB/Session/CSRF core</td><td>Empty app deploys and shows a working homepage shell</td></tr>
+        <tr><td>1 — MVP</td><td>Auth (register/login/forgot-password), Categories/Products/Durations/Keys, Checkout (wallet + manual deposit), Orders, basic Admin</td><td><strong>Sellable minimum</strong>: buyer can list products, take wallet payments, fulfill keys</td></tr>
+        <tr><td>2 — Growth</td><td>Promo codes, Flash sales, Gift codes, Reviews, Banners, FAQs/Static pages, Referrals, Premium membership</td><td>Matches a typical competitor key-shop feature set</td></tr>
+        <tr><td>3 — Reseller</td><td>Reseller requests, Seller/Reseller roles + permissions, special prices + history, seller dashboard</td><td>Unlocks the wholesale/reseller resale angle</td></tr>
+        <tr><td>4 — Support & ops</td><td>Notifications, Support tickets, Support inbox, Support bot (button-tree + keyword router), Issue reports, Broadcasts, Activity logs</td><td>Full support/ops parity</td></tr>
+        <tr><td>5 — API & supplier</td><td>Seller API keys/webhooks/idempotency, Platform API v1 + OpenAPI doc, developer settlement ledgers, Supplier auto-fulfillment + logs</td><td><strong>100% feature parity</strong> with the Next.js edition</td></tr>
+        <tr><td>6 — Mobile & polish</td><td>Capacitor WebView wrapper, responsive QA pass, packaging for resale (demo data seeder, branding wizard)</td><td>Ready to package and sell</td></tr>
+      </tbody>
+    </table>
+    <p>Each phase should end in a deployable, demo-able state — useful since this is a resale product and progress may need to be shown/sold before Phase 5 is done.</p>
+  </section>
+
+  <section id="s8">
+    <h2><span class="num">8.</span>Open questions <span class="badge confirm">confirm before Phase 0</span></h2>
+    <ol>
+      <li><strong>IDs:</strong> auto-increment ints (simplest, fastest) vs ULIDs (nicer for public URLs, avoids enumeration). Recommend ULIDs for <code>orders</code>, <code>deposits</code>, <code>gift_codes</code>; plain ints elsewhere.</li>
+      <li><strong>Multi-currency:</strong> current system is USD-only by design. Keep that constraint for v1?</li>
+      <li><strong>Licensing/anti-piracy for the resale product itself:</strong> bake a license-key check into the PHP app (since this codebase is being sold to others), or is that a separate concern outside this PRD?</li>
+      <li><strong>Branding:</strong> should the installer include a "rebrand wizard" (site name/logo/colors) so each buyer can white-label without touching code?</li>
+      <li><strong>Payment gateways:</strong> confirm which of Cashfree/Binance Pay/manual UPI/QRIS/eSewa are must-have for v1 vs admin-toggleable per deployment.</li>
+    </ol>
+  </section>
+
+  <section id="s9">
+    <h2><span class="num">9.</span>Summary</h2>
+    <p>Everything in the current Next.js DripClient — storefront, wallet, checkout, reseller tiers, admin console, support bot, Platform API, supplier auto-fulfillment — is in scope for the PHP edition, built in 6 phases on plain PHP 8 + MySQL with zero Composer/npm/build-step dependencies, installable via a web wizard like a classic PHP script product. Phase 1 alone is enough to be sellable; full parity lands at Phase 5.</p>
+  </section>
+
+  <footer>
+    Drip Client — PHP Edition PRD · Draft v1 · 2026-08-18
+  </footer>
+
+</div>
+</body>
+</html>

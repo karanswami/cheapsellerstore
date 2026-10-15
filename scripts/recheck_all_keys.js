@@ -1,0 +1,265 @@
+const { PrismaClient } = require('@prisma/client');
+const fs = require('fs');
+
+const keysInput = `
+Key: 3573435552
+ACIC6-DWBNV-HWDH2-7TGQ4-6FTTJ-LWW4Z-3FHJW-HU4LJ
+XI4BG-AVA5F-ESOYR-FAWMY-JVUHL-Q7KWH-2TBZR-XV646
+Key: 5918135531
+OE2QT-R6J5X-KIHS6-MD3AX-DLT2B-DPF3L-F2SR4-QRY66
+Key: 7337053668
+4MY7X-VGDNZ-3ZGUF-I65AA-FUDX5-GY7WE-3NBO2-QMDG5
+Key: 8702025243
+TXNCS-AKIS5-5ZTSS-YITYA-Z7BOZ-FZLZG-F4THD-URG4V
+C4C7B-FF5FM-VIY6A-PXH7N-NO2OY-D3257-W5GML-EQW7Z
+Key: 2051965005
+6NT5R-ASGLE-NLISH-2WY25-XHUDA-LTIQR-2HBTT-WJWGC
+AHO7V-OVXO7-VTNTE-5BU2G-JHULO-HHWA3-IJQS3-RIYH2
+NS5LX-QRBFG-M57M2-3JMJZ-UOCDB-IMIX3-RCOGD-MRNJ2
+R4KWU-GY2RW-4UNSN-JKTXI-6TGSE-VPSN6-LWL7E-RWO66
+2I6WX-4IVB2-BCMGQ-2SIMI-2T62G-EB6GO-NLZCQ-DAIS3
+FEJWD-D6VX4-EKWVM-LOCI3-OBD4K-IZYK6-AWCAU-3JSCJ
+Key: 6889849244
+Z2CGU-476MI-YQAE3-LJTTC-QVF65-RSEQL-PAZXG-EZYHQ
+DPD7K-OAIAF-HZJK6-6Y5QQ-LUGQ6-6NMHX-JO2DJ-HQRYP
+QV6KV-IBYPP-ACWX3-5EU47-RE6II-2XEV6-XYFOH-2SETF
+M66OB-E4BPD-4CCWP-JEBUI-SPS6F-FBVIQ-TOEHE-5JSXK
+CYT3E-GURXZ-XA2RS-P7DD4-B4QVS-TFHRS-SV4HG-NQZHR
+Key: 5494558558
+Key: 9796858524
+V5JCS-YSA2F-LE54V-G3EMV-FK6JC-PGG3D-GDLWT-MU55T
+OH5LA-ZVROI-KGVPL-3WB3Q-WNMIY-5WU4D-FXLOE-QJXBB
+ZSWNZ-F3NJM-TLGSD-Y3AKF-CYBU3-MLIVR-YHYWF-PQ5BX
+LK3P5-EJ6CQ-CAXDM-CD2GW-U3HYI-4DNVI-F6IV2-W42WT
+Key: 9845415455
+BH2V5-FNFIK-TEC5G-OLNTS-JI2BR-PP2P3-JTQ4U-GOMJL
+6D24H-HEUH3-CWNA5-XSBXJ-JXBT6-G7UY5-3FPLE-JR7D2
+JBWTO-GIWYM-3WL7Y-2H42L-R2MAQ-Z3WW5-ALGS5-2EKEF
+FPKOG-CDALY-YUNKP-MDBAB-44DRN-3PNL3-BK5LI-PXV6K
+LQBL6-YM3XF-RODCG-WEG5H-ERNBD-SLN3I-FR2QT-DTH6F
+DYCQC-SWMHI-CHW3B-NLG2F-2CML4-6XHAF-R6LHD-4C6JA
+NL6YV-NLSX7-5AJ43-5LEB5-VKKEY-IGGTH-6PMD7-EV3RE
+SC_5bffe75c:57828614
+Key: 1269951862
+Key: 5778941507
+3VHOG-MGSUI-NVFTA-AMW5O-2SMQY-BLJF7-A75CN-E6OPS
+NBMQY-H7UPQ-SLP5C-747W4-6HZUC-YMOTC-A2MJU-EQARF
+R2EJD-N5O32-53QFZ-TBV6G-XX43Q-SSZ5A-4ANQU-K5RUQ
+DOIIZ-JVPDV-3USAP-LK7VY-2JMCM-M4FW5-ACZTY-G5VR4
+Key: 5428896870
+Key: 8021459487
+Key: 3433241558
+Key: 5159251316
+Key: 2742593421
+H6W4D-QQOK6-DI552-QVD3O-QTREZ-5W75N-PZLZB-WQ2SL
+R7BAX-DXVVJ-WAUVW-OBCBY-WKKDM-B6X42-CTQMP-RDU45
+A7X7N-ITTMK-23ZD7-K4IEG-6FJP3-AVRVK-UVTIY-5YYTK
+Key: 3455481270
+Key: 9737955070
+Key: 8265780958
+MLT76-DTWMA-3RR36-ZYPWQ-CQLKP-UCXF7-2JAA4-SADYP
+ZHNRF-3NVT2-3T5Y6-HFOQA-YGSRK-BWOWQ-I7TJ7-MFUCY
+JRZ45-663T6-TRUTM-NPSQL-C6CQR-KRTKR-5BGRY-MQIQV
+6RP7U-GB45Z-6GGXL-QSP6P-QVL7I-V6QNF-J5GZQ-CAURY
+Key: 5901988886
+VICE4-Y4Q7T-IWMPT-RU7N3-2NNWP-JAJCW-G2HSH-I3KRQ
+Key: 8419777691
+TYON7-YGR3Y-2ASTP-QSHEM-BAWIP-7S4PQ-EJAZ4-LL7XH
+LYLDO-BB44K-AI2ZR-HDEBK-FB37H-DFTZU-GPDKA-AOIV5
+3ZLRL-4FEGY-3QZOY-I76CE-4QCUK-HSBJS-PM74C-7KNUA
+Key: 1531788626
+ZGDJ6-HI5JD-LO4VX-BZ7PK-KXLAZ-JQ3CM-25T7G-EPQUC
+6T3X6-KOMCG-4HQCU-RJVYR-QBDPN-BCO5N-5DYOA-IIL2O
+TC7XX-YFTES-CFEHK-OSU32-RUE2X-SZZ4Z-RDD4I-AR2XY
+FT5XI-P3LXS-CIPH7-DANLT-R7T4X-CXWXE-RMFWM-WUCOT
+Key: 5519893739
+AVL35-PYFXK-5DUXB-673R3-DVWWE-TG633-A7SLR-CY3R5
+Key: 3285427695
+ZXYZU-MQ7AD-WSNSU-MD3OG-6JFJD-ULZ4L-PDX4L-TDTBQ
+HG-TGBJPH
+D7CEY-TV5WN-BGZBT-YNHX3-YMDR2-UQ2JS-BDHLQ-GZPQZ
+Key: 4585905709
+LOFMI-J735Y-YZX72-7MTLF-F4JDL-RXYJV-4UFQC-URDHW
+5GUNX-NBQTY-Y3O44-OVIHW-MSYYD-4RDPZ-KHKEB-733OT
+TET6Z-K4ZWS-MXNFL-N6P3O-AIN5U-ZBEOW-B24RD-OWTVK
+KWVI4-SUTX7-SBJMT-I2P5Y-VI4DS-SELAT-25JQC-RK6VU
+IYAAY-5G7VK-6A7HJ-3DV3F-DDZWT-LB7MO-2CN2L-XAUVO
+BY5C5-U45JO-V7OOT-5KJDR-JNTFF-WQU4A-CBFCO-ZII5R
+7AJVJ-JGHXM-IK34Q-DYQRX-XWJ4V-3LBXZ-EIGRI-R3W7T
+U6SDI-A6DP5-GEBLZ-GMCFK-PDF7Q-LX5N5-LBLUA-2PHRR
+XR3WK-USV2M-QHNMZ-CTR6K-M7JGE-KZHBJ-FV7Q7-YCE26
+ISOX4-SIBNQ-NASLE-UZY2U-F7WNE-YGNZW-5SLEZ-CU3O4
+HOHLB-4FEDV-7XMUB-EP5Y6-SSXUU-G2TZA-W6QFG-5RAGM
+SVNBZ-VSB4P-A6TLZ-6AGWJ-KRRHF-DWTFY-HC6NU-NEDN7
+PIXRV-W6H6P-XRYSQ-5LLNF-ULMGL-FSX6I-HTOOL-KDUPN
+OM5EW-Z5ZFT-GEMUI-JIGCO-R4H3Z-TBN3Z-NA766-LR2QN
+UA6CW-2RECF-Y62W5-JOLYZ-5XIQL-ZBGNP-LWFWC-5JJEA
+NRINK-G5KHE-XUJSI-N7CYF-IY5DK-O2IAL-4AO36-NPTLH
+PVQEC-USGYX-6RRR7-ILEWV-U2EP6-YXK2Q-OILC7-V6XLT
+6FKY2-I7KLM-OD4S4-B4SGD-ZLTDA-GRXL6-Z44JU-LD44Y
+UK3LI-EYQ3D-EVBLN-L26YD-7H7YY-FEWIZ-D6W3A-S3K4G
+IUQER-UV777-DUL2Q-PCH4T-K2XUG-ILSKW-CLL6I-OLIOM
+CF4B7-MNELU-OFUWV-BIUXF-EWYML-B2B3D-6XM6V-WQPTD
+ZE33N-YHLDC-5YX34-WJWGP-XRPLQ-GKCAR-WQR24-T5NDI
+NRQDN-72ZF3-CCU3O-ELHHR-MIJCR-TU445-346G7-DHJIT
+FLKWV-QCWQJ-HGKJL-JIVER-LEITA-KHSOF-FNLYC-YHDE2
+PJGD5-DTYJU-OT45P-KUP6B-OOCZB-GTNEG-4FS2L-576BW
+GIXWI-DHMJI-SVNUI-GCXAC-CNCVI-EO47T-BCU62-4AFHQ
+WGL2J-5AGV3-6GZP7-UXAM5-YN2LD-AD3QQ-WDUXV-PZPQJ
+BIC3D-PSKJ3-IOPZG-AEQYM-T2DC6-6WAMU-L65UO-UEIMM
+QLU3W-IPAK5-3MAZK-HBMVV-5ZKNK-Z42FE-NVJ4N-QXAQQ
+GWMJ3-OUUYS-ONTQX-RTKQI-D6FHB-PKNUQ-2PIVQ-OS5PX
+PGCPJ-IHQ65-XN36M-ZF6GM-Q5BEE-H4JF5-IXRKV-FWJUY
+AKFKM-WM6EE-ATA3Y-SQLIQ-6UT6E-BGPUV-DOMAV-W44WF
+3AEWX-XODQR-V2BWB-MLBYC-NYKSE-MHQRU-JW6WO-R62BP
+34P7C-5QM7C-CNUIF-DYZKG-WWTUR-EH6JW-BNLYF-YNOEX
+OSMMB-LO23V-2H74K-RHPDR-SPR75-NYC6Q-MYLWX-2V2FK
+SMGFE-PY2V2-FXU4Y-P7Z3N-HTVYV-BQ6ZF-VDYSI-2YGUA
+GWXY5-CADOR-EG5CU-5CW72-GI2AZ-NYD6W-LO2I4-USDOM
+6NI7N-GPUHQ-H7FFM-CQ2LD-NN4GX-UNZON-QZ7BU-X54OC
+Z2A52-2EKPD-R3CVE-NKWFU-TCCH7-56XRT-OWFAT-54LHF
+J574R-OBLNO-FPZOD-GHRBE-7QDHW-C4MMJ-ULM5E-U2CJL
+HCHKX-SM3E5-G2W2M-KIBIP-TSK5U-VPOZS-7QXZI-GL3ZK
+IZVWP-KMU3V-Y4OVN-QYG5E-PXBP3-SHX2D-UYEJH-MOPWT
+LSGU7-UZ274-AAPJK-6UTOK-DI22A-RF3FB-ACXWC-6RLZC
+3AXG5-S4JGN-ZA2TY-V2A25-PUGK5-E75SX-2EQOG-WBDQJ
+AT2VX-A7FMI-KS2MF-H55CS-7BIPM-DPSXP-U4E4I-CQ27L
+PDYCU-RD4PP-NNK3Y-EAJ6D-JGHQA-QHC2A-WOUJZ-OLDI6
+F3DTS-WKMVT-VTKWY-PMB7L-IQH5C-LZOD5-HTP3C-OXSKH
+HJB6K-GI2KT-J4E2E-NI3O7-CC75E-Y34FL-S5BNS-S4FBF
+GG6LT-VDKHZ-NNQ6Q-HKQTC-N6UDZ-4UGVZ-YAEZO-GQMAF
+BOFDY-VJAV5-RZRPZ-7RYNC-FZYPH-GH5JC-TDEFI-OJNTO
+DYXZA-R6633-NHFD3-V2XPA-YOYMY-T2DUJ-FP4UG-ZJ537
+N4MCF-QOIDL-HC443-CQYFT-BYTWM-N23LZ-FVJLJ-UITHI
+QK5ZL-E7DVH-3W5MI-7D4R6-F5RGV-XWLTP-4ZQXA-QR5JV
+JCTL6-RVPIX-2HHT3-SG44R-46LPA-H4IQZ-CTDCQ-ERIZZ
+4PJV4-L3SCZ-S6P7K-DYAHB-TS6GP-QIWVT-AMRD4-PRBOK
+OQ5NJ-5KNGP-W4STK-2X642-NDWPI-7WYDX-BJSYV-2PWAZ
+SU7UF-QXK45-57UTZ-QSW3G-FWPMB-LXAGY-RMSN3-LWFGF
+TRKNO-VTYS2-GC3CJ-ZA7TG-NFYDN-MJQLX-4MW7K-AKBQR
+O4JCM-QWZTH-YDAZ4-CS3GY-73UR5-3VRHX-M5LY4-62SQM
+YRUXZ-LHWEE-JXE66-2EYEA-6P4DZ-YF3UB-QUTOQ-MMJBL
+SHF7U-YNWOZ-Q6IFY-5NZAI-776FB-3VETJ-XBJS5-IBLPE
+HG-UNLBGO
+Z2O33-W6XNK-HTF2O-DK4YX-UB2CF-JYF3C-CANHG-APMNX
+XOMTW-NM4LX-2PLTW-PDLKV-3276M-O7BQU-SCZOV-R7TRA
+TVKYN-GPWCV-WRH77-FYW5N-SU45N-A6YBU-VLIQ7-6XR3K
+82D83D : 850052
+LSYJG-LMM63-A5LAU-IFF6Z-GX6YA-I4QPU-XKHFT-MKA6G
+FBD4BA : 352370
+4F6G7-AESF6-3ZOUJ-Y2Y4P-DPV66-OSFY7-XCFMF-3L52Q
+7HX63-GZ4W2-HIBIT-P6YVC-ASIQI-7AEBD-U7JOK-33IA5
+V5LT6-ZCYIZ-TKTSH-RQNL4-VX3FJ-66YWK-7YPTX-FJU7E
+X5FVQ-NZEWV-WDOLP-WBD26-KFDNE-7WEDN-FHIOT-XAOL3
+DH4KP-L4EFV-2OBQG-FZR6H-3ZD5Y-SNGQA-OL6YC-T35TJ
+KW4H6-LGWKI-GCSFA-UNL4R-JBZDT-MYZS3-ZTRPH-CT4NR
+3HR65-CAUQ3-TZPNP-VAH5J-NQO2J-BEOM3-TNWDP-UEG23
+KXIAD-RN6ZB-Y2DQI-CNNA2-LMSYH-4K5GK-ZHMQH-7DXJG
+`;
+
+const lines = keysInput.trim().split('\n').map(l => l.trim()).filter(l => l.length > 0);
+const rawKeys = lines.map(line => {
+    let clean = line;
+    if (clean.startsWith('Key:')) clean = clean.replace('Key:', '').trim();
+    return clean;
+});
+
+async function main() {
+    const dripPrisma = new PrismaClient({
+        datasources: { db: { url: "mongodb+srv://guru_gaming:OLSvzzl00TYZoLJX@gurugaming.5kqpl3y.mongodb.net/drip-client-reseller?retryWrites=true&w=majority" } }
+    });
+
+    const guruPrisma = new PrismaClient({
+        datasources: { db: { url: "mongodb+srv://guru_gaming:OLSvzzl00TYZoLJX@gurugaming.5kqpl3y.mongodb.net/gurugaminghub_store?retryWrites=true&w=majority" } }
+    });
+
+    const results = [];
+    const matchedKeysSet = new Set();
+
+    async function checkDb(prisma, siteName) {
+        // 1. Check Key table
+        const dbKeys = await prisma.key.findMany({
+            include: {
+                duration: { include: { product: true } },
+                order: true
+            }
+        });
+
+        for (const k of dbKeys) {
+            if (rawKeys.includes(k.code)) {
+                matchedKeysSet.add(k.code);
+                let username = "N/A";
+                if (k.orderId) {
+                    const orderObj = await prisma.order.findUnique({ where: { id: k.orderId } });
+                    if (orderObj && orderObj.userId && orderObj.userId.length === 24) {
+                        const userObj = await prisma.user.findUnique({ where: { id: orderObj.userId } }).catch(() => null);
+                        if (userObj) username = userObj.username || userObj.email || userObj.id;
+                        else username = orderObj.buyerEmail || "N/A";
+                    }
+                }
+                results.push({
+                    key: k.code,
+                    site: siteName,
+                    status: k.status,
+                    sellTime: k.order?.createdAt || k.soldAt || "N/A",
+                    user: username,
+                    product: k.duration?.product?.name || "N/A",
+                    supplier: "Direct (Key Table)"
+                });
+            }
+        }
+
+        // 2. Check SupplierApiLog
+        const logs = await prisma.supplierApiLog.findMany();
+        for (const log of logs) {
+            const respStr = log.responseJson || '';
+            const reqStr = log.requestJson || '';
+            for (const rk of rawKeys) {
+                if (respStr.includes(rk) || reqStr.includes(rk)) {
+                    matchedKeysSet.add(rk);
+                    let username = "N/A";
+                    if (log.userId && log.userId.length === 24) {
+                        const userObj = await prisma.user.findUnique({ where: { id: log.userId } }).catch(() => null);
+                        if (userObj) username = userObj.username || userObj.email || userObj.id;
+                    }
+                    results.push({
+                        key: rk,
+                        site: siteName,
+                        status: log.ok ? "SOLD" : "FAILED",
+                        sellTime: log.createdAt,
+                        user: username !== "N/A" ? username : (log.userId || "N/A"),
+                        product: `Supplier Order (ID: ${log.orderId || 'N/A'})`,
+                        supplier: `Supplier API (${log.endpoint || 'API Request'})`
+                    });
+                }
+            }
+        }
+    }
+
+    console.log("Checking DripClientOfficial DB...");
+    await checkDb(dripPrisma, "dripclientofficial.dev");
+
+    console.log("Checking GuruGamingHub DB...");
+    await checkDb(guruPrisma, "gurugaminghub");
+
+    const notFoundList = rawKeys.filter(k => !matchedKeysSet.has(k));
+
+    console.log("\n=================== FINAL CONSOLIDATED SUMMARY ===================");
+    console.log(`Total Keys Input: ${rawKeys.length}`);
+    console.log(`Matched Records Found: ${results.length}`);
+    console.log(`Unique Keys Found: ${matchedKeysSet.size}`);
+    console.log(`Not Found Keys: ${notFoundList.length}`);
+
+    fs.writeFileSync('/tmp/analysis_accurate.json', JSON.stringify({
+        total: rawKeys.length,
+        foundCount: matchedKeysSet.size,
+        notFoundCount: notFoundList.length,
+        foundRecords: results,
+        notFoundKeys: notFoundList
+    }, null, 2));
+
+    await dripPrisma.$disconnect();
+    await guruPrisma.$disconnect();
+}
+
+main().catch(console.error);

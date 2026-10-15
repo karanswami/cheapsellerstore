@@ -1,0 +1,162 @@
+# Drip Client Reseller — Cursor Rules
+
+You are working on **drip-client-reseller** (Drip digital key store). These rules override casual defaults.
+
+## Mandatory context load (before any application code)
+
+Before writing, editing, or generating application code, you MUST read:
+
+1. `.ai-os/STATUS.md` — current phase + next task
+2. `.ai-os/system-prompt.md`
+3. `.ai-os/features.md`
+4. `.ai-os/todo.md` — execute the next unchecked task unless the human explicitly overrides
+5. `.ai-os/routes.md`
+6. `.ai-os/architecture-map.md`
+7. `.ai-os/mapping/INDEX.md` — pick the page map(s) for the route(s) you will touch
+8. The matching `.ai-os/mapping/<page>.md` file(s) for those routes (and `shared-auth-dialog.md` when auth is involved)
+
+Do not invent features, routes, or folders that contradict those files.
+
+## Mandatory page maps (token discipline — no wasteful code search)
+
+Page maps under `.ai-os/mapping/` are the **first lookup** for which files a route uses.
+
+| Must | Must not |
+|------|----------|
+| Start from `INDEX.md` → open only the map(s) for the page(s) in scope | Dump whole `src/` or run broad repo-wide searches “to find where X lives” when the map already lists it |
+| Treat map **File Inventory** as the working file set (page, components, libs, APIs) | Re-discover the same paths by grepping the entire codebase by default |
+| Read only the listed files when that inventory is enough to implement safely | Open unrelated sibling pages, workspaces, or API trees “just in case” |
+| If the map is **missing, stale, or incomplete** (wrong path, missing API, new dialog, redirect changed): do a **targeted** read/search of that gap only, then **update the map in the same session** | Leave maps wrong after you learned the truth from code |
+| After any route / component / API add-move-delete: update the matching page map + `INDEX.md` if needed | Ship code that drifts from mapping without refreshing the map |
+
+**Workflow for every task touching UI or APIs:**
+
+1. Identify route(s) → open `.ai-os/mapping/INDEX.md` → open those page map(s).
+2. Use inventory + guardrails + permitted edit scopes as the plan.
+3. Edit **only** files in that inventory (or newly created files that belong to that page).
+4. Search/read code **only when** the map lacks a needed detail (exact prop, schema field, edge-case logic). Keep searches narrow (one path / one symbol).
+5. When you learn something the map should have had: **patch the map immediately** (File Inventory, guardrails, and/or write scopes). Mapping update is part of “done”.
+6. Prefer asking the human to attach specific `.ai-os/mapping/*.md` files over asking them to attach large source trees.
+
+New page route → create a new `.ai-os/mapping/<name>.md` with the standard three sections and add it to `INDEX.md`. Redirect shells stay marked as redirects (no fake workflow).
+
+## Mandatory doc sync (after every completed feature / todo item)
+
+When you finish a feature, todo checkbox, route, or structural change, you MUST automatically update in the **same session**:
+
+- `.ai-os/todo.md` — mark `[x]`, refresh **Current Execution Pointer**
+- `.ai-os/STATUS.md` / `.ai-os/features.md` — if phase, shipped area, or acceptance status changed
+- `.ai-os/routes.md` — if any URL or API route was added/changed/removed
+- `.ai-os/architecture-map.md` — if any file, folder, schema, or component map changed
+- `.ai-os/mapping/<page>.md` (+ `INDEX.md` if the page list changed) — keep page inventories accurate
+
+Code without matching AI-OS updates (including page maps) is incomplete work.
+
+## Product vision
+
+- Build a **full storefront** (browse → cart → checkout → key delivery) plus a **large, polished admin panel** (dashboard, catalog CRUD, key inventory, orders, user roles).
+- Customer `/app` and admin `/admin` share the **hub console** pattern (grouped sidebar + header user menu) — not thin stubs. Empty states, loading skeletons, DB-backed data only.
+- Auth is dialog-based (`AuthDialog`: login / register / forgot / 2FA) — no `/login`, `/register`, or `/admin/login` pages. Admin panel requires `User.role=ADMIN` on the same session.
+- Support: button-tree bot (`SupportBotStep`); Settings admin CRUD; Lucide FAB; notifications in drawer; text → fallback step; no AI; no admin live-chat desk.
+
+## Data & state (database + contexts)
+
+- **Source of truth = MongoDB via Prisma.** Catalog, stock, orders, admin KPIs — never hardcode product lists, prices, or inventory in components.
+- **Shared client state = React Context** (`CartProvider`, `AuthProvider`, theme via `next-themes`). Do **not** introduce Redux/Zustand.
+- Server Components fetch from `src/lib/*` + Prisma; Client Components consume contexts / props only — never import Prisma on the client.
+- Never expose unused `Key.code` on public APIs.
+- **Roles:** `USER` | `SELLER` | `RESELLER` | `ADMIN` on `User.role` (JWT claim). Hierarchy: Admin → Seller → Reseller; Users are retail. Register → USER; Sellers via Become-a-Seller applications + admin; Resellers created by admin or Sellers.
+- **Seller caps** (admin-granted on `SELLER`, independent): `canCreateResellers` · `canManageResellers` · `canFundResellers`.
+- **Pricing tiers:** `USER` / `ADMIN` → `DurationPrice.price`; `SELLER` / `RESELLER` → shared wholesale `DurationPrice.resellerPrice` (fallback to retail if unset).
+- **No hardcoded business details:** mins, percents, program thresholds, operator-facing copy, and feature tunables belong in admin Settings / desks (`AppSetting` or existing Dialog groups by sidebar page). Do not bake them into components — only true invariants (enums, microcents scale, routes) stay in code.
+- **Wallet:** `User.walletBalance` in USD microcents (`1 USD = 100_000_000`). Deposits via multiple methods; balance always USD. No FX.
+- Catalog / checkout / wallet are **USD only** — prices via `DurationPrice` (USD) + `formatMoney` (microcents → USD display).
+- **Reviews:** verified buyers only; customer submit → `PENDING`; storefront + `Product.rating` use **APPROVED** only; moderate at `/admin/reviews`.
+- **Support:** never auto-wipe chat on close (keep vs clear). Notifications still arrive in inbox.
+
+## File organization (no mixing)
+
+- **One feature / page = its own files.** Do not dump unrelated UI into a shared mega-file.
+- Co-locate by domain under `src/components/{landing,catalog,cart,product,auth,app,admin,checkout,layout,theme}/`.
+- Shared console chrome lives in `layout/console-*`; public chrome via `SiteChrome` / `SiteHeader` / `SiteFooter`.
+- Each route owns its `page.tsx`, and when needed its own `loading.tsx` / skeleton component (e.g. `landing-skeleton.tsx`).
+- Lib helpers stay domain-named: `products.ts`, `orders.ts`, `keys.ts`, `roles.ts`, `promos.ts`, `email.ts`, `support-*.ts`, `openrouter.ts`, `auth/*` — no catch-all `utils` kitchensink beyond `cn()`.
+- Follow paths in `.ai-os/architecture-map.md` and routes in `.ai-os/routes.md`.
+
+## Styling stack (strict)
+
+| Prefer | Avoid |
+|--------|--------|
+| **shadcn/ui** primitives | Second UI kits |
+| **Tailwind 4** utilities | Large one-off CSS in `globals.css` |
+| **CSS Modules** (`*.module.css`) next to the component when Tailwind is awkward | Emotion / styled-components / CSS-in-JS |
+| Design tokens in `globals.css` (`:root` + `.dark`) | Inventing parallel color systems |
+
+- Write **almost no custom CSS**. Use CSS Modules only when necessary.
+- Preserve the clean **dark-only** shadcn theme (`next-themes` `forcedTheme=dark`, Geist, neon `--primary`, `--success` green prices). No light/system toggle. No pixel fonts or arcade glow.
+
+## Big data / lists — never load all at once (mandatory)
+
+If a page can hold large datasets (history, users, keys, orders, deposits, chats, etc.):
+
+| Do | Don't |
+|----|--------|
+| Server-side `page` / `limit` (or cursor) APIs | Dump hundreds/thousands of rows in one response |
+| Progressive loading: first page + infinite scroll / Load more + skeleton | Client-only pagination after fetching everything |
+| Reset to page 1 when filters/search change | Keep appending across stale filter results |
+
+Treat feed apps (Instagram-style) as the UX default for long activity lists.
+
+## Admin / console list UX (mobile-first — mandatory)
+
+Design admin and hub list pages for **phone first**, then scale up. Do not ship tall card stacks or desktop-only control rows.
+
+| Do | Don't |
+|----|--------|
+| Compact list rows (avatar + identity + key facts in ~2–3 lines) | Oversized per-row cards with stacked action bars |
+| Status / role as **static badges/tags** in the list | Inline status dropdowns / switches in every list row |
+| Show **read-only** money (balance) in the list | “Add balance” / wallet edit controls on the list |
+| Open a **single polished Dialog** for edits (role, ban, wallet) | Mutating wallet/status from the list without opening detail |
+| One primary CTA in the page header; horizontal scroll filter chips on mobile | Extra Users/History-style page tabs when only one list matters |
+| Avoid duplicate KPI blocks (e.g. Admins/Banned cards that repeat filters) | Wasting the first mobile viewport with redundant summary cards |
+
+- Wallet adjust (add/cut) lives **only** inside the user detail dialog (or a dialog opened from it).
+- Detail dialogs: `max-h-[min(92dvh,…)]`, scrollable body, sticky/footer actions, no cramped nested mega-cards.
+- Prefer a tappable whole-row → detail; secondary icon buttons only when needed.
+
+## Edits are Dialog-only (mandatory — no inline forms)
+
+**Never** put edit `Input` / `Textarea` / form controls inline on admin or hub list/settings pages. Pages show **read-only** summaries (rows, badges, key facts). All create/edit/mutate flows open a polished **shadcn `Dialog`**.
+
+| Do | Don't |
+|----|--------|
+| Read-only list/settings rows + “tap to edit” | Inline text boxes, textareas, or save forms on the page body |
+| shadcn `Dialog` with header icon, title, description, scroll body, footer Cancel/Save | Bare `alert`/custom overlays, Sheet-as-default for simple edits, or inline expand-to-edit |
+| `Switch` / `Select` / `Input` **inside** the Dialog only | Raw `<input type="checkbox">` or inline field clusters next to list content |
+| Search/filter chips in the header (read query only) | Editable setting fields embedded in cards |
+
+- Applies to Settings (incl. Support bot), Users, Resellers, Banners, Reviews, and every future admin/hub workspace.
+- Filter/search bars are allowed (query only) — they are not settings editors.
+- Dialog pattern: `gap-0 overflow-hidden p-0`, muted header band, `max-h-[min(92dvh,…)]`, scrollable body, `DialogFooter` actions.
+
+## Stack lock
+
+- Next.js 16 App Router under `src/app/`
+- Prisma 6 + MongoDB; server-only Prisma usage
+- React Context + `localStorage` for cart (`drip-cart-v2`) + optional promo (`drip-promo-v2`)
+- Auth: jose JWT cookies · bcryptjs · Resend (forgot-password OTP) · optional Google OAuth · otpauth/qrcode (TOTP 2FA) · Sonner toasts
+- Support: button-tree `SupportBotStep` (Settings CRUD); no OpenRouter
+- Theme: `next-themes` forced dark (`html.dark`); no light mode
+- Charts: Recharts + shadcn Chart (admin statistics / analytics)
+- Loading: page-specific shadcn `Skeleton` UIs, responsive for mobile and desktop
+- Do not add Redux, Zustand, tRPC, or live FX
+
+## Scope discipline
+
+- Only touch files required for the current todo item
+- Do not create unsolicited markdown docs outside `.ai-os` updates
+- Do not commit unless the human asks
+
+## Product reminder
+
+Drip sells digital keys (Mods / Tools / Spoofers) with Category → Product → Duration → DurationPrice (USD microcents) → Key, plus Order fulfillment, customer `/app` hub console, and `/admin` inventory + roles. Checkout is wallet-gated; payment mode is `manual`. Deposits support multiple methods; balance is always USD. Hierarchy: `SELLER` (applications) may create/manage/fund `RESELLER` accounts when admin-granted caps are on; both share wholesale pricing.

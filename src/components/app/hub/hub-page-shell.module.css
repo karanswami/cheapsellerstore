@@ -1,0 +1,74 @@
+.shell {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+}
+
+.ambient {
+  pointer-events: none;
+  position: absolute;
+  inset: -8% -12% auto;
+  height: 12rem;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 50% 55% at 50% 20%,
+      color-mix(in oklab, var(--primary) 28%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 35% 40% at 85% 40%,
+      color-mix(in oklab, var(--success) 12%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 30% 35% at 10% 50%,
+      color-mix(in oklab, var(--brand-accent) 14%, transparent),
+      transparent 70%
+    );
+  opacity: 0.62;
+  /* Static on mobile; soft drift only on fine-pointer / desktop */
+  transform: translateZ(0);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.contentWide {
+  gap: 1.15rem;
+}
+
+@keyframes hub-ambient-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -3%, 0) scale(1.02);
+  }
+}
+
+@media (max-width: 767px) {
+  .ambient {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  .ambient {
+    animation: hub-ambient-drift var(--motion-ambient, 16s) ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient {
+    animation: none;
+    transform: none;
+    opacity: 0.5;
+  }
+}

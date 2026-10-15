@@ -1,0 +1,1163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+/** Store currency is USD only. Money fields store integer microcents (1 USD = 1e8). */
+enum Currency {
+  USD
+}
+
+enum UserRole {
+  USER
+  SELLER
+  RESELLER
+  ADMIN
+}
+
+enum KeyStatus {
+  AVAILABLE
+  SOLD
+  DISABLED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  FAILED
+  REFUNDED
+}
+
+enum TransactionType {
+  DEPOSIT
+  PURCHASE
+  REFUND
+  REFERRAL_REWARD
+  ADMIN_ADJUSTMENT
+  PREMIUM_PURCHASE
+  /// 1% developer margin on Platform API purchases only.
+  API_FEE
+  /// Wallet credit from admin gift / redeem code (USD).
+  GIFT_CODE
+}
+
+enum GiftCodeStatus {
+  AVAILABLE
+  CLAIMED
+  DISABLED
+}
+
+enum SellerApiKeyMode {
+  LIVE
+  SANDBOX
+}
+
+enum SellerApiKeyStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum SellerApiWebhookStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+/** Deposit rails. Wallet credit is always USD microcents after confirm. */
+enum DepositMethod {
+  BINANCE
+  QRIS
+  UPI
+  ESEWA
+  MANUAL
+  MGCLOUDPAY
+}
+
+enum DepositStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum PromoScope {
+  GLOBAL
+  PRODUCT
+  DURATION
+}
+
+/** ALL | USER (retail) | SELLER (Seller + Reseller wholesale tier). */
+enum PromoAudience {
+  ALL
+  USER
+  SELLER
+}
+
+enum FlashSaleScope {
+  GLOBAL
+  PRODUCT
+  DURATION
+}
+
+enum ResellerRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/** Product reviews go live only after admin APPROVED. */
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  DISABLED
+}
+
+/** Pinned store announcement audience (admin Broadcast desk). */
+enum BroadcastAudience {
+  ALL
+  USER
+  SELLER
+  ADMIN
+}
+
+/** Customer issue report kind (submit-only tickets). */
+enum IssueReportKind {
+  KEY
+  DEPOSIT
+}
+
+enum IssueReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ProfileBorder {
+  NONE
+  PREMIUM
+  VIP
+}
+
+model User {
+  id                   String            @id @default(auto()) @map("_id") @db.ObjectId
+  name                 String
+  username             String            @unique
+  email                String            @unique
+  /// Null for Google-only accounts (no local password).
+  passwordHash         String?
+  /// Google subject (`sub`) when linked via Google OAuth.
+  /// Indexed (not unique) — MongoDB treats null as a value, so uniqueness is enforced in app code.
+  googleId             String?
+  emailVerified        Boolean           @default(false)
+  avatarUrl            String?
+  currency             Currency          @default(USD)
+  role                 UserRole          @default(USER)
+  /// Integer microcents (USD). 1 USD = 100_000_000.
+  walletBalance        Float             @default(0)
+  banned               Boolean           @default(false)
+  /// Admin-only note when banned (cleared on unban). Not exposed on public APIs.
+  banReason            String?
+  resellerDiscount     Float             @default(0)
+  /// SELLER may create RESELLER accounts when true (admin-granted).
+  canCreateResellers   Boolean           @default(false)
+  /// SELLER may ban/unban and delete own RESELLERs (admin-granted).
+  canManageResellers   Boolean           @default(false)
+  /// SELLER may add/cut balance on own RESELLERs (admin-granted).
+  canFundResellers     Boolean           @default(false)
+  referralCode         String?
+  referredById         String?           @db.ObjectId
+  referredBy           User?             @relation("UserReferrals", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  referrals            User[]            @relation("UserReferrals")
+  twoFactorEnabled     Boolean           @default(false)
+  /// AES-GCM encrypted TOTP secret (base64 payload).
+  twoFactorSecret      String?
+  /// Hashed unused backup codes for 2FA recovery.
+  twoFactorBackupCodes String[]          @default([])
+  /// Custom bio/about me text (max 500 characters).
+  bio                  String?
+  /// Profile privacy control - if false, profile is only visible to owner.
+  isProfilePublic      Boolean           @default(true)
+  /// Social media links as JSON object.
+  socialLinks          Json?
+  /// Product IDs to feature on profile (products user has purchased).
+  featuredProducts     String[]          @default([]) @db.ObjectId
+  /// Profile border style based on role/status.
+  profileBorder        ProfileBorder     @default(NONE)
+  /// Optional emoji status (single emoji character).
+  emojiStatus          String?
+  /// Bio Hub Theme Preset (DEFAULT, NEON_TOXIC, PHANTOM_VIOLET, GLACIER_CYAN, CRIMSON_FURY, GOLD_OBSIDIAN)
+  bioTheme             String?           @default("DEFAULT")
+  /// Short tagline under name (e.g. "Instant 24/7 Delivery • 1,400+ Vouches")
+  bioTagline           String?
+  /// Custom banner image or animated GIF URL
+  bioBannerUrl         String?
+  /// Custom promo code spotlighted on the bio page
+  bioPromoCode         String?
+  /// Custom link tiles: [{ id, title, url, icon, badge, isPinned }]
+  bioLinks             Json?
+  /// Toggle showing live verified vouches / rating
+  showVouches          Boolean           @default(true)
+  /// Custom Discord invite / widget ID
+  discordInvite        String?
+  /// Custom Telegram channel handle / link
+  telegramChannel      String?
+  /// YouTube showcase video URL (embeddable)
+  youtubeVideoUrl      String?
+  /// Lifetime Premium membership (wallet purchase).
+  isPremium            Boolean           @default(false)
+  premiumPurchasedAt   DateTime?
+  /// Last username change (Premium vanity; 30-day cooldown).
+  usernameChangedAt    DateTime?
+  /// Platform API access override (admin). Role allowlist still applies.
+  apiEnabled           Boolean           @default(true)
+  /// Self-serve deposit rails (Cashfree/Binance/manual…). Resellers default off — funded by seller; admin can toggle any user.
+  depositsEnabled      Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  orders               Order[]
+  transactions         Transaction[]
+  deposits             Deposit[]
+  notifications        Notification[]
+  promoRedemptions     PromoRedemption[]
+  resellerRequests     ResellerRequest[]
+  reviews              ProductReview[]
+  supportTickets       SupportTicket[]
+  supportInbox         SupportInboxMessage[]
+  supportMemory        SupportUserMemory?
+  issueReports         IssueReport[]
+  sellerApiKeys        SellerApiKey[]
+  sellerApiUsage       SellerApiUsage[]
+  sellerApiWebhooks    SellerApiWebhook[]
+  sellerApiIdempotency SellerApiIdempotency[]
+  specialPrices        UserSpecialPrice[]
+  giftCodesAssigned    GiftCode[]        @relation("GiftCodeAssigned")
+  giftCodesClaimed     GiftCode[]        @relation("GiftCodeClaimed")
+  giftCodesCreated     GiftCode[]        @relation("GiftCodeCreated")
+  pushSubscriptions    PushSubscription[]
+
+  @@index([googleId])
+  @@index([referredById])
+  @@index([referralCode])
+  @@index([role])
+  @@index([isProfilePublic])
+  @@index([isPremium])
+  @@index([apiEnabled])
+  @@index([depositsEnabled])
+}
+
+model PasswordResetOtp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model Category {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  slug      String    @unique
+  /// Optional Lucide React icon name (e.g. "Smartphone", "Flame", "Zap", "Shield", etc.)
+  icon      String?
+  sortOrder Int       @default(0)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String
+  /// Stable Platform API SKU (unique). Prefer over Mongo id in /api/v1.
+  apiCode      String?         @unique
+  /// Average of approved ProductReview stars when reviews exist; otherwise seed/default.
+  rating       Float           @default(0)
+  imageUrl     String?
+  /// Optional demo / trailer URL (YouTube etc.). Empty → site default demo URL.
+  demoUrl      String?
+  features     String[]
+  isBestSeller Boolean         @default(false)
+  isNew        Boolean         @default(false)
+  /// Admin pin — storefront sorts pinned products above bestsellers / newest.
+  isPinned     Boolean         @default(false)
+  /// Maintenance mode — disables purchase/demo buttons and displays maintenance overlay with blur.
+  isMaintenance Boolean       @default(false)
+  isActive     Boolean         @default(true)
+  /// Optional folder; null = Uncategorized (orphaned when category deleted).
+  categoryId   String?         @db.ObjectId
+  category     Category?       @relation(fields: [categoryId], references: [id])
+  durations    Duration[]
+  reviews      ProductReview[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([categoryId])
+}
+
+model ProductReview {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  productId        String       @db.ObjectId
+  product          Product      @relation(fields: [productId], references: [id])
+  userId           String?      @db.ObjectId
+  user             User?        @relation(fields: [userId], references: [id])
+  customAuthorName String?
+  customAvatarUrl  String?
+  /// 1–5 star rating.
+  rating           Int
+  body             String
+  /// True when the author had a PAID/FULFILLED order for this product at submit time.
+  verifiedBuyer    Boolean      @default(false)
+  /// PENDING until admin approves; DISABLED hides from storefront without delete.
+  status           ReviewStatus @default(PENDING)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([productId, createdAt])
+  @@index([productId, status])
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model Duration {
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  label      String
+  days       Int?
+  /// Optional storefront version group (e.g. Lite / Brutal). Empty = no version step.
+  version    String          @default("")
+  /// Globally unique Platform API SKU for pricing / stock / buy.
+  apiCode    String?         @unique
+  /// Upstream supplier catalog product id (licencedashboard). Null = local inventory only.
+  supplierProductId Int?
+  requiresAndroidId Boolean  @default(false)
+  deviceIdName      String   @default("")
+  productId  String          @db.ObjectId
+  product    Product         @relation(fields: [productId], references: [id])
+  prices     DurationPrice[]
+  keys       Key[]
+  orderItems OrderItem[]
+  specialPrices UserSpecialPrice[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@unique([productId, version, label])
+  @@index([productId])
+  @@index([supplierProductId])
+}
+
+/// Per-user exact sell price for a duration (USD microcents). Beats role tier; skips flash/promo.
+model UserSpecialPrice {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id])
+  durationId String   @db.ObjectId
+  duration   Duration @relation(fields: [durationId], references: [id])
+  /// Exact sell price — integer microcents (USD).
+  price      Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, durationId])
+  @@index([userId])
+  @@index([durationId])
+}
+
+/// Audit trail for special-price set / update / clear. Denormalized — survives user/product deletes.
+model UserSpecialPriceHistory {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// Target user who received (or lost) the special price.
+  userId        String   @db.ObjectId
+  username      String?
+  durationId    String   @db.ObjectId
+  durationLabel String?
+  productId     String?  @db.ObjectId
+  productTitle  String?
+  /// SET | UPDATE | CLEAR
+  action        String
+  /// Previous price — integer microcents (null on first SET).
+  previousPrice Float?
+  /// New price — integer microcents (null on CLEAR).
+  newPrice      Float?
+  adminId       String?  @db.ObjectId
+  adminUsername String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([durationId, createdAt])
+  @@index([action, createdAt])
+}
+
+model DurationPrice {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  durationId String   @db.ObjectId
+  duration   Duration @relation(fields: [durationId], references: [id])
+  currency   Currency @default(USD)
+  /// User sell price — integer microcents (USD).
+  price      Float
+  /// Reseller sell price — integer microcents (USD). Stored for admin / future wholesale.
+  resellerPrice Float @default(0)
+  /// Cost basis — integer microcents (USD). Admin stats only; never checkout.
+  buyPrice   Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([durationId, currency])
+  @@index([durationId])
+}
+
+model Key {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  code       String    @unique
+  status     KeyStatus @default(AVAILABLE)
+  durationId String    @db.ObjectId
+  duration   Duration  @relation(fields: [durationId], references: [id])
+  soldAt     DateTime?
+  orderId    String?   @db.ObjectId
+  order      Order?    @relation(fields: [orderId], references: [id])
+  orderItem          OrderItem?
+  /// When true, key belongs to temporary isolated special inventory (excluded from developer settlements & stats share).
+  isSpecialInventory Boolean   @default(false)
+  specialBatchTag    String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([durationId, status])
+  @@index([orderId])
+  @@index([isSpecialInventory, status])
+}
+
+model Order {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String?     @db.ObjectId
+  user         User?       @relation(fields: [userId], references: [id])
+  buyerEmail   String
+  buyerDiscord String?
+  status       OrderStatus @default(PENDING)
+  /// Integer microcents (USD).
+  total        Float
+  currency     Currency    @default(USD)
+  accessToken  String      @unique
+  promoCodeId  String?     @db.ObjectId
+  promoCode    PromoCode?  @relation(fields: [promoCodeId], references: [id])
+  flashSaleId  String?     @db.ObjectId
+  flashSale    FlashSale?  @relation(fields: [flashSaleId], references: [id])
+  items        OrderItem[]
+  keys         Key[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([promoCodeId])
+  @@index([flashSaleId])
+}
+
+model OrderItem {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId       String   @db.ObjectId
+  order         Order    @relation(fields: [orderId], references: [id])
+  durationId    String   @db.ObjectId
+  duration      Duration @relation(fields: [durationId], references: [id])
+  keyId         String?  @unique @db.ObjectId
+  key           Key?     @relation(fields: [keyId], references: [id])
+  productTitle  String
+  durationLabel String
+  /// Integer microcents (USD).
+  unitPrice     Float
+  androidId     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([durationId])
+}
+
+model Transaction {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String            @db.ObjectId
+  user      User              @relation(fields: [userId], references: [id])
+  type      TransactionType
+  status    TransactionStatus @default(COMPLETED)
+  /// Signed integer microcents (USD). Credits positive, debits negative.
+  amount    Float
+  currency  Currency          @default(USD)
+  note      String?
+  reference String?
+  createdAt DateTime          @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Deposit {
+  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String             @db.ObjectId
+  user               User               @relation(fields: [userId], references: [id])
+  method             DepositMethod      @default(BINANCE)
+  status             DepositStatus      @default(PENDING)
+  /// Wallet credit currency — always USD.
+  currency           Currency           @default(USD)
+  /// Local rail currency code (USD / INR / IDR / NPR / admin-added). Wallet credit stays USD.
+  payCurrency        String             @default("USD")
+  /// Integer microcents (USD) to credit on confirmation.
+  amount             Float
+  /// Local amount the user requested.
+  requestedAmount    Float              @default(0)
+  /// Exact local amount to pay (may differ for QRIS unique code).
+  payableAmount      Float              @default(0)
+  providerDepositId  String?
+  providerReference  String?
+  secretCode         String?
+  qrImage            String?
+  qrString           String?
+  paymentUrl         String?
+  instructions       String?
+  paidAmount         Float?
+  /// Ledger Transaction id after credit (idempotency).
+  transactionId      String?            @db.ObjectId
+  proofImage         String?
+  proofUploadedAt    DateTime?
+  adminAction        String?
+  adminNote          String?
+  reviewedById       String?            @db.ObjectId
+  reviewedAt         DateTime?
+  failReason         String?
+  expiresAt          DateTime?
+  cancelledAt        DateTime?
+  completedAt        DateTime?
+  recheckRequestedAt DateTime?
+  /// AppSetting manual_deposit_methods slug when method is MANUAL.
+  manualMethodKey    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([status, expiresAt])
+  @@index([method, status, expiresAt])
+  @@index([providerDepositId])
+  @@index([manualMethodKey])
+  @@index([secretCode])
+  @@index([adminAction])
+}
+
+/**
+ * Admin-created USD wallet gift codes (Binance USD credit).
+ * Optional assignedUserId → only that user may claim; unset → first claimer wins.
+ */
+model GiftCode {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  /// Normalized uppercase redeem code (unique).
+  code           String         @unique
+  /// USD microcents credited on claim.
+  amount         Float
+  status         GiftCodeStatus @default(AVAILABLE)
+  /// When set, only this user can redeem. Null/unset = open (first claimer).
+  assignedUserId String?        @db.ObjectId
+  assignedUser   User?          @relation("GiftCodeAssigned", fields: [assignedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  claimedById    String?        @db.ObjectId
+  claimedBy      User?          @relation("GiftCodeClaimed", fields: [claimedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  claimedAt      DateTime?
+  /// Ledger Transaction id after credit (idempotency).
+  transactionId  String?        @db.ObjectId
+  note           String?
+  createdById    String         @db.ObjectId
+  createdBy      User           @relation("GiftCodeCreated", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  expiresAt      DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([status, createdAt])
+  @@index([assignedUserId, status])
+  @@index([claimedById, claimedAt])
+  @@index([createdById, createdAt])
+  @@index([expiresAt])
+}
+
+/// Snapshot of each `/api/cron/deposits/poll` run.
+model DepositCronRun {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  startedAt            DateTime
+  finishedAt           DateTime?
+  durationMs           Int       @default(0)
+  expired              Int       @default(0)
+  providerGraceMinutes Int       @default(0)
+  providers            Json
+  ok                   Boolean   @default(true)
+  errorMessage         String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([createdAt])
+  @@index([startedAt])
+  @@index([ok, createdAt])
+}
+
+model PromoCode {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  code            String            @unique
+  description     String?
+  discountPercent Float             @default(0)
+  discountAmount  Float             @default(0)
+  scope           PromoScope        @default(GLOBAL)
+  targetRole      PromoAudience     @default(ALL)
+  productId       String?           @db.ObjectId
+  durationId      String?           @db.ObjectId
+  maxRedemptions  Int?
+  /// Max redemptions per user; also caps discountable units per apply.
+  perUserLimit    Int               @default(1)
+  active          Boolean           @default(true)
+  /// When true and promo is in window, show storefront special-offer banner.
+  showBanner      Boolean           @default(false)
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  orders          Order[]
+  redemptions     PromoRedemption[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([active, startsAt, expiresAt])
+  @@index([active, showBanner, startsAt, expiresAt])
+}
+
+model PromoRedemption {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  promoCodeId String    @db.ObjectId
+  userId      String    @db.ObjectId
+  orderId     String?   @db.ObjectId
+  discount    Float
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([promoCodeId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model FlashSale {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  discountPercent Float
+  scope           FlashSaleScope @default(GLOBAL)
+  targetRole      PromoAudience  @default(ALL)
+  productId       String?        @db.ObjectId
+  durationId      String?        @db.ObjectId
+  active          Boolean        @default(true)
+  /// When true and sale is in window, show storefront special-offer banner.
+  showBanner      Boolean        @default(true)
+  /// Optional subtitle under the banner title.
+  bannerDescription String?
+  /// Optional promo code string shown for copy (does not auto-apply).
+  displayPromoCode  String?
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  orders          Order[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([active, startsAt, expiresAt])
+  @@index([active, showBanner, startsAt, expiresAt])
+}
+
+model Banner {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String?
+  imageUrl        String?
+  ctaText         String?
+  ctaLink         String?
+  displayLocation String   @default("home")
+  active          Boolean  @default(true)
+  priority        Int      @default(100)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([active, displayLocation, priority])
+}
+
+model FaqItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  question  String
+  answer    String
+  category  String?
+  active    Boolean  @default(true)
+  sortOrder Int      @default(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model StaticPage {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug           String   @unique
+  title          String
+  seoTitle       String?
+  seoDescription String?
+  content        String
+  active         Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model ResellerRequest {
+  id                 String                @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String                @db.ObjectId
+  user               User                  @relation(fields: [userId], references: [id])
+  status             ResellerRequestStatus @default(PENDING)
+  fullName           String
+  phone              String
+  country            String
+  facebookUrl        String
+  telegram           String
+  youtubeUrl         String?
+  telegramChannelUrl String?
+  websiteUrl         String?
+  followerCount      String
+  experience         String?
+  sellingPlatform    String
+  reason             String
+  /// Legacy optional fields (kept for older rows).
+  whatsapp           String?
+  adminNote          String?
+  reviewedById       String?               @db.ObjectId
+  reviewedAt         DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  message   String
+  actionUrl String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
+}
+
+model AppSetting {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  intValue  Int?
+  textValue String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Telegram-style button tree for the support bot (admin-managed in Settings).
+model SupportBotStep {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String   @unique
+  title       String
+  messageText String
+  isEntry     Boolean  @default(false)
+  isFallback  Boolean  @default(false)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(100)
+  /// [{ id, label, type: "step"|"link"|"back"|"input", targetStepId?, href? }]
+  buttons     Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, isEntry])
+}
+
+/// Trainable keyword routes for the support “Little AI” router.
+model SupportRoute {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug         String   @unique
+  name         String
+  replyText    String
+  isSerious    Boolean  @default(false)
+  /// Empty = public / any role. Otherwise session role must be listed.
+  requireRoles String[] @default([])
+  isFallback   Boolean  @default(false)
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(100)
+  /// [{ phrase: string, weight: number }]
+  keywords     Json
+  /// Up to 3: [{ id, label, href?, action? }]
+  buttons      Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active, isFallback, sortOrder])
+}
+
+model SupportTicket {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String         @db.ObjectId
+  user           User           @relation(fields: [userId], references: [id])
+  status         TicketStatus   @default(OPEN)
+  priority       TicketPriority @default(NORMAL)
+  routeId        String
+  subject        String
+  message        String
+  /// JSON snapshot of recent chat messages when available.
+  context        String?
+  /// Image proof URLs from guided deposit/key flows.
+  attachmentUrls String[]       @default([])
+  /// When true, bot stays paused while ticket is OPEN/IN_PROGRESS.
+  freezeBot      Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  replies        SupportTicketReply[]
+
+  @@index([userId, createdAt])
+  @@index([status, priority, createdAt])
+  @@index([userId, freezeBot, status])
+}
+
+/// Admin ↔ user replies on a support ticket (also mirrored into SupportInboxMessage).
+model SupportTicketReply {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  ticketId   String        @db.ObjectId
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id])
+  /// ADMIN | USER
+  authorRole String
+  authorId   String?
+  body       String
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+/// Persistent support chat thread for a user (bot, admin, notifications).
+model SupportInboxMessage {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  user           User     @relation(fields: [userId], references: [id])
+  /// user | assistant | admin | notification | system
+  role           String
+  content        String
+  buttons        Json?
+  ticketId       String?
+  notificationId String?
+  attachmentUrl  String?
+  /// Unread inbound (admin / notification) until the user opens chat.
+  read           Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, read, createdAt])
+}
+
+/// Durable support memory — survives chat clear.
+model SupportUserMemory {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String   @unique @db.ObjectId
+  user                  User     @relation(fields: [userId], references: [id])
+  preferredLanguage     String   @default("unknown")
+  lastIssueSummary      String?
+  lastAdminReplySummary String?
+  lastTicketId          String?
+  awaitingAdmin         Boolean  @default(false)
+  /// JSON SupportPendingFlow | null
+  pendingFlow           Json?
+  updatedAt             DateTime @updatedAt
+  createdAt             DateTime @default(now())
+}
+
+/// Admin-only developer payout ledger (does not touch wallet / purchases).
+enum DeveloperSettlementStatus {
+  PENDING
+  PAID
+}
+
+model DeveloperSettlementDay {
+  id        String                     @id @default(auto()) @map("_id") @db.ObjectId
+  /// UTC calendar day `YYYY-MM-DD`
+  dateKey   String                     @unique
+  status    DeveloperSettlementStatus  @default(PENDING)
+  /// Developer share snapshot at mark-paid time (USD microcents). Live rows recompute from orders.
+  amount    Float                      @default(0)
+  paidAt    DateTime?
+  paidById  String?                    @db.ObjectId
+  note      String?
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @updatedAt
+
+  @@index([status, dateKey])
+}
+
+/// Premium membership 50% developer-share settlement (ops ledger; no wallet side effects).
+model PremiumSettlementDay {
+  id        String                     @id @default(auto()) @map("_id") @db.ObjectId
+  /// UTC calendar day `YYYY-MM-DD`
+  dateKey   String                     @unique
+  status    DeveloperSettlementStatus  @default(PENDING)
+  /// Developer share snapshot at mark-paid time (USD microcents). Live rows recompute from PREMIUM_PURCHASE txs.
+  amount    Float                      @default(0)
+  paidAt    DateTime?
+  paidById  String?                    @db.ObjectId
+  note      String?
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @updatedAt
+
+  @@index([status, dateKey])
+}
+
+/// Platform API 1% developer-margin settlement (ops ledger; no wallet side effects).
+model ApiDeveloperMarginDay {
+  id        String                    @id @default(auto()) @map("_id") @db.ObjectId
+  /// UTC calendar day `YYYY-MM-DD`
+  dateKey   String                    @unique
+  status    DeveloperSettlementStatus @default(PENDING)
+  /// Margin snapshot at mark-paid (USD microcents). Live rows sum TransactionType.API_FEE.
+  amount    Float                     @default(0)
+  paidAt    DateTime?
+  paidById  String?                   @db.ObjectId
+  note      String?
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
+
+  @@index([status, dateKey])
+}
+
+/// Special Stock 50-50 developer-share settlement (ops ledger; no wallet side effects).
+model SpecialStockSettlementDay {
+  id        String                     @id @default(auto()) @map("_id") @db.ObjectId
+  /// UTC calendar day `YYYY-MM-DD`
+  dateKey   String                     @unique
+  status    DeveloperSettlementStatus  @default(PENDING)
+  /// Developer share snapshot at mark-paid time (USD microcents). Live rows recompute from special stock sales.
+  amount    Float                      @default(0)
+  paidAt    DateTime?
+  paidById  String?                    @db.ObjectId
+  note      String?
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @updatedAt
+
+  @@index([status, dateKey])
+}
+
+model SellerApiKey {
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String             @db.ObjectId
+  user         User               @relation(fields: [userId], references: [id])
+  name         String
+  /// Public hint e.g. drip_sk_live_abcd…
+  keyPrefix    String
+  /// SHA-256 hex of full secret.
+  keyHash      String             @unique
+  mode         SellerApiKeyMode   @default(LIVE)
+  status       SellerApiKeyStatus @default(ACTIVE)
+  scopes       String[]           @default([])
+  ipAllowlist  String[]           @default([])
+  /// Null = use admin default RPM.
+  rateLimitRpm Int?
+  lastUsedAt   DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  usage        SellerApiUsage[]
+
+  @@index([userId, status])
+  @@index([keyPrefix])
+}
+
+model SellerApiUsage {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String       @db.ObjectId
+  user          User         @relation(fields: [userId], references: [id])
+  apiKeyId      String       @db.ObjectId
+  apiKey        SellerApiKey @relation(fields: [apiKeyId], references: [id])
+  requestId     String
+  method        String
+  path          String
+  statusCode    Int
+  /// Usually 0; set on purchase routes when fee applied.
+  feeMicrocents Float        @default(0)
+  durationMs    Int          @default(0)
+  ip            String?
+  errorCode     String?
+  createdAt     DateTime     @default(now())
+
+  @@index([userId, createdAt])
+  @@index([apiKeyId, createdAt])
+  @@index([createdAt])
+}
+
+model SellerApiWebhook {
+  id            String                 @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String                 @db.ObjectId
+  user          User                   @relation(fields: [userId], references: [id])
+  url           String
+  /// SHA-256 of signing secret (plaintext shown once).
+  secretHash    String
+  /// Public prefix hint for the secret.
+  secretPrefix  String
+  events        String[]               @default([])
+  status        SellerApiWebhookStatus @default(ACTIVE)
+  failCount     Int                    @default(0)
+  lastDeliveryAt DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([userId, status])
+}
+
+model SellerApiIdempotency {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id])
+  key          String
+  responseJson String
+  statusCode   Int
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, key])
+  @@index([expiresAt])
+}
+
+/// Pinned announcement shown on customer `/app/broadcast` when active.
+model Broadcast {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  message     String
+  actionUrl   String?
+  audience    BroadcastAudience @default(ALL)
+  active      Boolean           @default(true)
+  createdById String?           @db.ObjectId
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([active, createdAt])
+  @@index([audience, active, createdAt])
+}
+
+/// Submit-only customer issue ticket (no live reply thread).
+model IssueReport {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  user          User              @relation(fields: [userId], references: [id])
+  kind          IssueReportKind
+  status        IssueReportStatus @default(OPEN)
+  subject       String
+  explanation   String
+  screenshotUrl String?
+  depositId     String?           @db.ObjectId
+  orderId       String?           @db.ObjectId
+  keyId         String?           @db.ObjectId
+  adminNote     String?
+  reviewedById  String?           @db.ObjectId
+  reviewedAt    DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([kind, status])
+  @@index([depositId])
+}
+
+/// Platform activity audit trail (login → purchases). Auto-purged after 7 days.
+model ActivityLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// Actor user id when known (denormalized — no FK so logs survive user deletes).
+  userId    String?  @db.ObjectId
+  username  String?
+  email     String?
+  role      String?
+  /// Machine action key e.g. LOGIN_SUCCESS, PURCHASE, DEPOSIT_CREATE.
+  action    String
+  /// Group: AUTH | WALLET | ORDER | ACCOUNT | ADMIN | API | SECURITY
+  category  String
+  message   String
+  metadata  Json?
+  ip        String?
+  userAgent String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([category, createdAt])
+  @@index([success, createdAt])
+}
+
+/// Upstream supplier API call log (balance / catalog / generate / history).
+model SupplierApiLog {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// balance | catalog | generate | history
+  endpoint       String
+  method         String
+  httpStatus     Int
+  ok             Boolean
+  productId      Int?
+  quantity       Int?
+  idempotencyKey String?
+  orderId        String?  @db.ObjectId
+  durationId     String?  @db.ObjectId
+  userId         String?  @db.ObjectId
+  requestJson    String
+  responseJson   String
+  usedFallback   Boolean  @default(false)
+  errorCode      String?
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([orderId])
+  @@index([ok, createdAt])
+  @@index([endpoint, createdAt])
+}
+
+/// Web Push (VAPID) browser notification subscriptions per device/user.
+model PushSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?  @db.ObjectId
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+

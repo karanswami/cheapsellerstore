@@ -1,0 +1,91 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# Android APKs (signed builds live in /releases; served via /downloads/[file] route)
+/releases/*.apk
+*.apk
+# Keep empty downloads folder (APKs not in git)
+/public/downloads/*
+!/public/downloads/.gitkeep
+
+# misc
+.DS_Store
+*.pem
+*.bak
+*.ico.bak
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/src/generated/prisma
+
+# User-uploaded avatars (keep folder)
+/public/uploads/avatars/*
+!/public/uploads/avatars/.gitkeep
+
+# Public banner images (keep folder)
+/public/uploads/banners/*
+!/public/uploads/banners/.gitkeep
+
+# Product / site / deposit / support / icon uploads (keep folders)
+/public/uploads/products/*
+!/public/uploads/products/.gitkeep
+/public/uploads/site/*
+!/public/uploads/site/.gitkeep
+/public/uploads/deposits/*
+!/public/uploads/deposits/.gitkeep
+/public/uploads/support/*
+!/public/uploads/support/.gitkeep
+/public/uploads/icons/*
+!/public/uploads/icons/.gitkeep
+/public/uploads/sounds/*
+!/public/uploads/sounds/.gitkeep
+
+# Encrypted private avatar storage
+/storage/avatars/*
+!/storage/avatars/.gitkeep
+
+# Capacitor / Android
+/android/.gradle/
+/android/**/build/
+/android/local.properties
+/android/release.keystore
+/android/keystore.properties
+*.keystore
+!android/keystore.properties.example
+
+# Local Android build toolchain (JDK + SDK)
+/.tools/

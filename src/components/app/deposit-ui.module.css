@@ -1,0 +1,372 @@
+/* Shared deposit desk — neo glow panels + 3D CTAs */
+
+.walletHero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--success) 28%, var(--border));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in oklab, var(--card) 82%, transparent),
+      color-mix(in oklab, var(--background) 88%, transparent)
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--success) 14%, transparent),
+    0 16px 36px -20px color-mix(in oklab, var(--success) 42%, transparent),
+    var(--glow-soft);
+}
+
+.walletHeroGlow {
+  pointer-events: none;
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(
+    42% 38% at 18% 22%,
+    color-mix(in oklab, var(--success) 28%, transparent),
+    transparent 72%
+  );
+  filter: blur(24px);
+  opacity: 0.85;
+}
+
+.panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 26%, var(--border));
+  background:
+    linear-gradient(
+      168deg,
+      color-mix(in oklab, var(--card) 76%, transparent),
+      color-mix(in oklab, var(--card) 92%, #0a0612) 52%,
+      color-mix(in oklab, #0c0814 90%, var(--card)) 100%
+    );
+  box-shadow:
+    var(--elevation-1),
+    0 0 0 1px color-mix(in oklab, var(--primary) 18%, transparent),
+    0 0 18px -4px color-mix(in oklab, var(--primary) 32%, transparent),
+    inset 0 1px 0 color-mix(in oklab, #fff 10%, transparent);
+}
+
+.panelHeader {
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+  background: color-mix(in oklab, var(--muted) 38%, transparent);
+}
+
+.methodChip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 1rem;
+  padding: 0.65rem 0.4rem;
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  background: color-mix(in oklab, var(--background) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 6%, transparent),
+    0 4px 10px -6px rgba(0, 0, 0, 0.55);
+  transition:
+    transform var(--motion-fast) var(--ease-smooth),
+    box-shadow var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    background var(--motion-fast) ease;
+}
+
+.methodChip:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--primary) 42%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 8%, transparent),
+    0 0 14px -4px color-mix(in oklab, var(--primary) 38%, transparent),
+    0 6px 14px -8px rgba(0, 0, 0, 0.6);
+}
+
+.methodChipActive {
+  border-color: color-mix(in oklab, var(--primary) 58%, transparent);
+  background: color-mix(in oklab, var(--primary) 12%, var(--card));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 12%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--primary) 32%, transparent),
+    0 0 22px -2px color-mix(in oklab, var(--primary) 48%, transparent),
+    0 8px 18px -10px color-mix(in oklab, var(--brand-accent, var(--neon-magenta)) 42%, transparent);
+  transform: translateY(-1px);
+}
+
+.amountChip {
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.35rem;
+  border: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
+  background: color-mix(in oklab, var(--muted) 55%, transparent);
+  color: var(--muted-foreground);
+  transition:
+    transform var(--motion-fast) var(--ease-smooth),
+    box-shadow var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    background var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.amountChip:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+  color: var(--foreground);
+}
+
+.amountChipActive {
+  border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+  background: var(--gradient-primary);
+  color: var(--primary-foreground);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--primary) 40%, transparent),
+    0 0 18px -2px color-mix(in oklab, var(--primary) 55%, transparent),
+    0 6px 14px -8px rgba(0, 0, 0, 0.55);
+  transform: translateY(-1px);
+}
+
+.glowBtn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 0.95rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 45%, transparent);
+  background: var(--gradient-primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 22%, transparent),
+    inset 0 -2px 0 color-mix(in oklab, #000 18%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent),
+    0 0 24px -2px color-mix(in oklab, var(--primary) 55%, transparent),
+    0 10px 22px -10px color-mix(in oklab, var(--brand-accent, var(--neon-magenta)) 45%, transparent);
+  transition:
+    transform var(--motion-fast) var(--ease-smooth),
+    box-shadow var(--motion-fast) ease,
+    filter var(--motion-fast) ease;
+}
+
+.glowBtn::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, #fff 18%, transparent) 0%,
+    transparent 42%
+  );
+  opacity: 0.75;
+}
+
+.glowBtn:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 28%, transparent),
+    inset 0 -2px 0 color-mix(in oklab, #000 16%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--primary) 48%, transparent),
+    0 0 32px 0 color-mix(in oklab, var(--primary) 62%, transparent),
+    0 14px 28px -12px color-mix(in oklab, var(--brand-accent, var(--neon-magenta)) 52%, transparent);
+}
+
+.glowBtn:active:not(:disabled) {
+  transform: translateY(2px) scale(0.99);
+  box-shadow:
+    inset 0 2px 6px color-mix(in oklab, #000 22%, transparent),
+    0 0 12px -4px color-mix(in oklab, var(--primary) 42%, transparent);
+}
+
+.glowBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.glowBtnSecondary {
+  border-radius: 0.95rem;
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  background: color-mix(in oklab, var(--secondary) 88%, transparent);
+  color: var(--secondary-foreground);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 8%, transparent),
+    inset 0 -2px 0 color-mix(in oklab, #000 14%, transparent),
+    0 6px 16px -10px rgba(0, 0, 0, 0.55);
+  transition:
+    transform var(--motion-fast) var(--ease-smooth),
+    box-shadow var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
+}
+
+.glowBtnSecondary:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 10%, transparent),
+    0 0 16px -6px color-mix(in oklab, var(--primary) 32%, transparent),
+    0 8px 18px -10px rgba(0, 0, 0, 0.55);
+}
+
+.glowBtnSecondary:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.glowBtnSuccess {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 0.95rem;
+  border: 1px solid color-mix(in oklab, var(--success) 45%, transparent);
+  background: linear-gradient(135deg, #00e676, #00c853);
+  color: #fff;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 22%, transparent),
+    inset 0 -2px 0 color-mix(in oklab, #000 18%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--success) 35%, transparent),
+    0 0 24px -2px color-mix(in oklab, var(--success) 55%, transparent),
+    0 10px 22px -10px color-mix(in oklab, var(--success) 38%, transparent);
+  transition:
+    transform var(--motion-fast) var(--ease-smooth),
+    box-shadow var(--motion-fast) ease,
+    filter var(--motion-fast) ease;
+}
+
+.glowBtnSuccess:hover:not(:disabled) {
+  filter: brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 28%, transparent),
+    0 0 32px 0 color-mix(in oklab, var(--success) 62%, transparent),
+    0 14px 28px -12px color-mix(in oklab, var(--success) 45%, transparent);
+}
+
+.glowBtnSuccess:active:not(:disabled) {
+  transform: translateY(2px) scale(0.99);
+}
+
+.glowBtnOutline {
+  border-radius: 0.95rem;
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+  background: color-mix(in oklab, var(--background) 80%, transparent);
+  color: var(--foreground);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 6%, transparent),
+    0 6px 14px -10px rgba(0, 0, 0, 0.5);
+  transition:
+    transform var(--motion-fast) var(--ease-smooth),
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.glowBtnOutline:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--primary) 40%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 8%, transparent),
+    0 0 14px -6px color-mix(in oklab, var(--primary) 35%, transparent);
+}
+
+.glowBtnOutline:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  ring: 1px solid transparent;
+}
+
+.statusPending {
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+  color: var(--primary);
+  box-shadow: 0 0 12px -4px color-mix(in oklab, var(--primary) 45%, transparent);
+}
+
+.statusSuccess {
+  background: color-mix(in oklab, var(--success) 14%, transparent);
+  color: var(--success);
+  box-shadow: 0 0 12px -4px color-mix(in oklab, var(--success) 45%, transparent);
+}
+
+.statusDanger {
+  background: color-mix(in oklab, var(--destructive) 14%, transparent);
+  color: var(--destructive);
+  box-shadow: 0 0 12px -4px color-mix(in oklab, var(--destructive) 45%, transparent);
+}
+
+.statusMuted {
+  background: color-mix(in oklab, var(--muted) 70%, transparent);
+  color: var(--muted-foreground);
+}
+
+.ticketCard {
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, var(--border));
+  background:
+    linear-gradient(
+      168deg,
+      color-mix(in oklab, var(--card) 80%, transparent),
+      color-mix(in oklab, var(--card) 94%, #0a0612) 100%
+    );
+  box-shadow:
+    var(--elevation-2),
+    0 0 0 1px color-mix(in oklab, var(--primary) 14%, transparent),
+    0 0 20px -6px color-mix(in oklab, var(--primary) 28%, transparent);
+}
+
+.terminalShell {
+  position: relative;
+  display: flex;
+  min-height: 100%;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 2.5rem 1rem;
+}
+
+.terminalGlow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+}
+
+.terminalIcon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 18%, transparent),
+    0 0 0 4px color-mix(in oklab, currentColor 12%, transparent);
+}
+
+.stickyBar {
+  border-top: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -8px 28px -8px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .methodChip,
+  .amountChip,
+  .glowBtn,
+  .glowBtnSecondary {
+    transition: none;
+  }
+
+  .methodChipActive,
+  .amountChipActive {
+    transform: none;
+  }
+}

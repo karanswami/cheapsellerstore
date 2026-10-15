@@ -1,0 +1,43 @@
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 12rem;
+}
+
+.searchIcon {
+  pointer-events: none;
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted-foreground);
+}
+
+.searchInput {
+  height: 2.5rem;
+  padding-left: 2.25rem;
+  border-radius: 0.85rem;
+  background: color-mix(in oklab, var(--card) 80%, transparent);
+  border-color: color-mix(in oklab, var(--primary) 20%, var(--border));
+  backdrop-filter: blur(8px);
+}
+
+.searchInput:focus-visible {
+  border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 16%, transparent);
+}
