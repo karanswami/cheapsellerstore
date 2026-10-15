@@ -63,8 +63,6 @@ export function SiteHeader() {
 
   return (
     <header className={styles.header}>
-      <div className={styles.wash} aria-hidden />
-
       <div className={cn(styles.inner, "mx-auto max-w-5xl")}>
         <Link
           href={user ? "/app" : "/"}

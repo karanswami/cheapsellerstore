@@ -33,12 +33,9 @@ export function ConsoleHeader({
   const page = resolveConsolePageMeta(pathname);
   const title = page?.title ?? fallbackTitle;
   const subtitle = page?.subtitle ?? fallbackSubtitle;
-  const PageIcon = page?.icon;
 
   return (
     <header className={cn(styles.header, className)}>
-      <div className={styles.wash} aria-hidden />
-
       <div className={styles.inner}>
         <div className={styles.leading}>
           <button
@@ -62,11 +59,6 @@ export function ConsoleHeader({
 
           <div className={styles.titleBlock}>
             <div className={styles.titleRow}>
-              {PageIcon ? (
-                <span className={styles.pageIcon} aria-hidden>
-                  <PageIcon />
-                </span>
-              ) : null}
               <h1 className={styles.pageTitle}>{title}</h1>
             </div>
             <p className={styles.pageDesc}>{subtitle}</p>
