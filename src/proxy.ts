@@ -141,8 +141,8 @@ export async function proxy(request: NextRequest) {
   // Old admin login removed — send people through normal auth
   if (pathname === "/admin/login" || pathname.startsWith("/admin/login/")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
-    url.searchParams.set("auth", "login");
+    url.pathname = "/login";
+    url.search = "";
     url.searchParams.set("next", "/admin");
     return NextResponse.redirect(url);
   }
@@ -153,7 +153,12 @@ export async function proxy(request: NextRequest) {
   // (clears session, stays on `/`). Never bounce / ↔ /app.
   if (pathname === "/") {
     if (forcingAuthDialog) {
-      return nextWithPath(request);
+      const url = request.nextUrl.clone();
+      const next = url.searchParams.get("next");
+      url.pathname = authMode === "register" ? "/register" : "/login";
+      url.search = "";
+      if (next) url.searchParams.set("next", next);
+      return NextResponse.redirect(url);
     }
 
     if (customer) {
@@ -163,6 +168,12 @@ export async function proxy(request: NextRequest) {
       return redirectToHub(request, customer);
     }
 
+    return nextWithPath(request);
+  }
+
+  // Auth pages are guests-only — logged-in users go to their hub.
+  if (pathname === "/login" || pathname === "/register") {
+    if (customer) return redirectToHub(request, customer);
     return nextWithPath(request);
   }
 
@@ -178,8 +189,8 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/admin")) {
     if (!customer) {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
-      url.searchParams.set("auth", "login");
+      url.pathname = "/login";
+      url.search = "";
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }
@@ -195,8 +206,8 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/app")) {
     if (!customer) {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
-      url.searchParams.set("auth", "login");
+      url.pathname = "/login";
+      url.search = "";
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }

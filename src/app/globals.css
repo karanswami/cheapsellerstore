@@ -1,0 +1,244 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Gaming store tokens (dark-first). A palette = a handful of variables on
+  <html data-palette="…">; every component reads tokens only, so swapping a
+  palette re-skins the whole site.
+*/
+:root {
+  --radius: 0.75rem;
+
+  --background: #070d17;
+  --foreground: #e6f1fb;
+  --card: #0d1626;
+  --card-foreground: #e6f1fb;
+  --popover: #101b2e;
+  --popover-foreground: #e6f1fb;
+  --muted: #142036;
+  --muted-foreground: #8ea3bd;
+  --accent: #1a2a45;
+  --accent-foreground: #e6f1fb;
+  --border: #22365a;
+  --input: #142036;
+  --primary: #38bdf8;
+  --primary-foreground: #03131c;
+  --highlight: #f472b6;
+  --highlight-foreground: #230612;
+  --ring: #38bdf8;
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --destructive: #fb4b6a;
+}
+
+[data-palette="violet"] {
+  --background: #0a0a14;
+  --foreground: #eceaf8;
+  --card: #11111f;
+  --card-foreground: #eceaf8;
+  --popover: #14142a;
+  --popover-foreground: #eceaf8;
+  --muted: #181830;
+  --muted-foreground: #9795b5;
+  --accent: #1d1d3a;
+  --accent-foreground: #eceaf8;
+  --border: #25254a;
+  --input: #1a1a34;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --highlight: #22d3ee;
+  --highlight-foreground: #04161a;
+  --ring: #8b5cf6;
+}
+
+[data-palette="lime"] {
+  --background: #090c09;
+  --foreground: #eef4e8;
+  --card: #111711;
+  --card-foreground: #eef4e8;
+  --popover: #141b14;
+  --popover-foreground: #eef4e8;
+  --muted: #182018;
+  --muted-foreground: #98a690;
+  --accent: #1e281e;
+  --accent-foreground: #eef4e8;
+  --border: #263326;
+  --input: #1a231a;
+  --primary: #a3e635;
+  --primary-foreground: #0d1503;
+  --highlight: #e879f9;
+  --highlight-foreground: #1a0420;
+  --ring: #a3e635;
+}
+
+[data-palette="ember"] {
+  --background: #0d0908;
+  --foreground: #f7ece8;
+  --card: #170f0d;
+  --card-foreground: #f7ece8;
+  --popover: #1c1210;
+  --popover-foreground: #f7ece8;
+  --muted: #221614;
+  --muted-foreground: #b09a94;
+  --accent: #2b1b18;
+  --accent-foreground: #f7ece8;
+  --border: #3a2521;
+  --input: #251715;
+  --primary: #f43f3f;
+  --primary-foreground: #ffffff;
+  --highlight: #f59e0b;
+  --highlight-foreground: #1c1000;
+  --ring: #f43f3f;
+}
+
+
+[data-palette="gold"] {
+  --background: #0b0a08;
+  --foreground: #f6f0e4;
+  --card: #15130e;
+  --card-foreground: #f6f0e4;
+  --popover: #1a1710;
+  --popover-foreground: #f6f0e4;
+  --muted: #201c14;
+  --muted-foreground: #a99f88;
+  --accent: #29231a;
+  --accent-foreground: #f6f0e4;
+  --border: #38301f;
+  --input: #221e15;
+  --primary: #f5b942;
+  --primary-foreground: #1c1203;
+  --highlight: #a78bfa;
+  --highlight-foreground: #120a2a;
+  --ring: #f5b942;
+}
+
+@theme inline {
+  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-display: var(--font-display), system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Soft brand glow, tinted by the active palette */
+  .glow-primary {
+    box-shadow: 0 0 28px -6px color-mix(in oklab, var(--primary) 65%, transparent);
+  }
+  .glow-highlight {
+    box-shadow: 0 0 28px -6px color-mix(in oklab, var(--highlight) 60%, transparent);
+  }
+  .text-gradient {
+    background: linear-gradient(120deg, var(--primary), var(--highlight));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--primary) 55%, var(--highlight)));
+  }
+  /* Gaming "cut corner" silhouette */
+  .cut-corner {
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 36px 36px;
+  }
+}
+
+/* Auth page motion (CSS-only, disabled for reduced-motion users) */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes blob-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(40px, -30px, 0) scale(1.12); }
+  66% { transform: translate3d(-30px, 35px, 0) scale(0.94); }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-14px) rotate(var(--r, 0deg)); }
+}
+@keyframes grid-pan {
+  to { background-position: 36px 36px; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+@keyframes sheen {
+  from { transform: translateX(-120%) skewX(-20deg); }
+  to { transform: translateX(260%) skewX(-20deg); }
+}
+
+@layer utilities {
+  .anim-fade-up { animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--d, 0ms); }
+  .anim-blob { animation: blob-drift 16s ease-in-out infinite; animation-delay: var(--d, 0ms); }
+  .anim-float { animation: float-y 6s ease-in-out infinite; animation-delay: var(--d, 0ms); }
+  .anim-grid { animation: grid-pan 4s linear infinite; }
+  .anim-shake { animation: shake 0.4s ease-in-out; }
+  .btn-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+    transform: translateX(-120%) skewX(-20deg);
+    pointer-events: none;
+  }
+  .btn-sheen:hover::after { animation: sheen 0.9s ease; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-up, .anim-blob, .anim-float, .anim-grid, .anim-shake { animation: none !important; }
+}
