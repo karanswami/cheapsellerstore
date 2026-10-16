@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/app-ui";
 import { getCurrentUser } from "@/lib/auth/customer";
 import { formatMoney } from "@/lib/currencies";
 import { getDepositCurrencies, getDepositFxRates } from "@/lib/deposit-currency-rates";
-import { getDepositMethodsConfig, toPublicDepositMethods } from "@/lib/deposit-methods";
+import { getAutoGateways, toPublicGateways } from "@/lib/auto-gateways";
 import { getDepositMinsForRole } from "@/lib/deposit-mins";
 import { getDepositQuickAmounts } from "@/lib/deposit-quick-amounts";
 import { getManualDepositMethods, toPublicManualMethods } from "@/lib/manual-deposit-methods";
@@ -20,7 +20,7 @@ export default async function DepositPage() {
     getDepositFxRates(),
     getDepositCurrencies(),
     getDepositMinsForRole(user.role),
-    getDepositMethodsConfig().then(toPublicDepositMethods),
+    getAutoGateways().then(toPublicGateways),
     getManualDepositMethods().then(toPublicManualMethods),
     getDepositQuickAmounts(),
   ]);
@@ -53,7 +53,7 @@ export default async function DepositPage() {
         currencies={currencies.map((c) => ({ code: c.code, name: c.name, symbol: c.symbol }))}
         mins={mins}
         quick={quick}
-        autoMethods={methods}
+        gateways={methods}
         manualMethods={manual}
         deposits={deposits}
       />

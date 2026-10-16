@@ -2,6 +2,7 @@ import "server-only";
 import { getSettingText, SETTING_KEYS, upsertSetting } from "@/lib/settings";
 import { isDepositQrImageUrl } from "@/lib/public-uploads";
 import { DepositMethod } from "@prisma/client";
+import { currentGateway } from "@/lib/gateway-context";
 
 export type DepositMethodId =
   | "QRIS"
@@ -140,6 +141,8 @@ function envOrDefaultQr(method: "BINANCE" | "ESEWA"): string {
 export async function resolveManualDepositQrUrl(
   method: "BINANCE" | "ESEWA",
 ): Promise<string> {
+  const scoped = currentGateway()?.qrUrl.trim();
+  if (scoped && isDepositQrImageUrl(scoped)) return scoped;
   const config = await getDepositMethodsConfig();
   const uploaded = config[method].qrUrl.trim();
   if (uploaded && isDepositQrImageUrl(uploaded)) return uploaded;

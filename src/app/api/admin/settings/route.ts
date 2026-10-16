@@ -53,6 +53,7 @@ import {
   syncDepositQuickAmountsToCurrencies,
   type DepositQuickAmounts,
 } from "@/lib/deposit-quick-amounts";
+import { getAutoGateways, saveAutoGateways, normalizeGateways } from "@/lib/auto-gateways";
 import {
   DEPOSIT_METHOD_IDS,
   getDepositMethodsConfig,
@@ -142,6 +143,18 @@ const depositMethodsSchema = z.object({
   MGCLOUDPAY: methodEntrySchema.optional(),
 });
 
+const gatewaySchema = z.object({
+  id: z.string().max(40).optional(),
+  provider: z.enum(["QRIS", "UPI", "BINANCE", "ESEWA"]),
+  name: z.string().trim().min(1).max(60),
+  currency: z.string().trim().max(8),
+  enabled: z.boolean(),
+  maintenance: z.boolean(),
+  maintenanceNote: z.string().max(200).optional(),
+  qrUrl: z.string().max(500).optional(),
+  creds: z.record(z.string(), z.string().max(500)).optional(),
+});
+
 const manualMethodSchema = z.object({
   id: z.string().max(50).optional(),
   name: z.string().max(80).optional(),
@@ -213,6 +226,7 @@ export async function GET() {
     depositFxRates: ratesMapFromCurrencies(depositCurrencies),
     depositQuickAmounts: await getDepositQuickAmounts(),
     depositMethods: await getDepositMethodsConfig(),
+    autoGateways: await getAutoGateways(),
     manualDepositMethods: await getManualDepositMethods(),
     feedbackSounds: await getFeedbackSoundConfig(),
     telegramNotifications: await getTelegramNotifyConfig(),
@@ -268,6 +282,7 @@ const schema = z.object({
   depositCurrencies: depositCurrenciesSchema.optional(),
   depositQuickAmounts: depositQuickAmountsSchema.optional(),
   depositMethods: depositMethodsSchema.optional(),
+  autoGateways: z.array(gatewaySchema).max(40).optional(),
   manualDepositMethods: manualDepositMethodsSchema.optional(),
   feedbackSounds: feedbackSoundsSchema.optional(),
   telegramNotifications: telegramNotificationsSchema.optional(),
@@ -404,6 +419,16 @@ export async function PATCH(request: Request) {
     }
     await saveDepositMethodsConfig(normalizedMethods);
   }
+  if (d.autoGateways !== undefined) {
+    const list = normalizeGateways(d.autoGateways);
+    const registered = new Set((await getDepositCurrencies()).map((c) => c.code));
+    for (const g of list) {
+      if (!registered.has(g.currency)) {
+        return jsonError("VALIDATION", `Create the ${g.currency} currency before attaching it to "${g.name}".`, 400);
+      }
+    }
+    await saveAutoGateways(list);
+  }
   if (d.manualDepositMethods !== undefined) {
     const normalized = normalizeManualDepositMethods(
       d.manualDepositMethods as ManualDepositMethod[],
@@ -419,13 +444,6 @@ export async function PATCH(request: Request) {
         err instanceof Error ? err.message : "Invalid manual methods.",
         400,
       );
-    }
-    const methods = await getDepositMethodsConfig();
-    if (methods.ESEWA.enabled) {
-      await saveDepositMethodsConfig({
-        ...methods,
-        ESEWA: { ...methods.ESEWA, enabled: false },
-      });
     }
   }
   if (d.feedbackSounds !== undefined) {

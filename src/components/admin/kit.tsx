@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Search, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, Trash2, UploadCloud, type LucideIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -294,15 +294,28 @@ export function ImageUpload({
   onChange,
   endpoint,
   label = "Image",
+  hint,
+  maxMb = 4,
 }: {
   value: string | null;
   onChange: (url: string | null) => void;
   endpoint: string;
   label?: string;
+  hint?: string;
+  maxMb?: number;
 }) {
   const [busy, setBusy] = useState(false);
+  const [drag, setDrag] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   async function pick(file: File | undefined) {
     if (!file) return;
+    const { toast } = await import("sonner");
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return void toast.error("Use a PNG, JPG or WebP image.");
+    if (file.size > maxMb * 1024 * 1024) return void toast.error(`Image must be ${maxMb} MB or smaller.`);
+    const local = URL.createObjectURL(file);
+    setPreview(local);
     setBusy(true);
     try {
       const fd = new FormData();
@@ -310,36 +323,50 @@ export function ImageUpload({
       const res = await adminFetch<{ upload: { url: string } }>(endpoint, { method: "POST", body: fd });
       onChange(res.upload.url);
     } catch (e) {
-      const { toast } = await import("sonner");
       toast.error(errMsg(e));
     } finally {
       setBusy(false);
+      setPreview(null);
+      URL.revokeObjectURL(local);
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
+
+  const shown = preview ?? value;
   return (
-    <Field label={label}>
-      <div className="flex items-center gap-3">
-        <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted">
-          {value ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt="" className="size-full object-cover" />
-          ) : (
-            <span className="text-xs text-muted-foreground">None</span>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="secondary" size="sm" disabled={busy}>
-            <label className="cursor-pointer">
-              {busy ? <Loader2 className="animate-spin" /> : null} {value ? "Replace" : "Upload"}
-              <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
-            </label>
-          </Button>
-          {value ? (
-            <Button variant="ghost" size="sm" onClick={() => onChange(null)}>
-              Remove
-            </Button>
-          ) : null}
-        </div>
+    <Field label={label} hint={hint}>
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => { e.preventDefault(); setDrag(false); void pick(e.dataTransfer.files?.[0]); }}
+        onPaste={(e) => void pick(Array.from(e.clipboardData.files)[0])}
+        className={cn("relative overflow-hidden rounded-xl border-2 border-dashed bg-muted/30 transition-colors", drag ? "border-primary bg-primary/10" : "border-border hover:border-primary/50")}
+      >
+        <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => void pick(e.target.files?.[0])} />
+        {shown ? (
+          <div className="flex items-center gap-4 p-3">
+            <div className="relative size-28 shrink-0 overflow-hidden rounded-lg border bg-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={shown} alt="" className="size-full object-contain" />
+              {busy ? (
+                <div className="absolute inset-0 grid place-items-center bg-background/70"><Loader2 className="size-6 animate-spin text-primary" /></div>
+              ) : null}
+            </div>
+            <div className="grid gap-2">
+              <p className="text-sm font-medium">{busy ? "Uploading…" : "Image uploaded"}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => inputRef.current?.click()}><RefreshCw /> Replace</Button>
+                <Button type="button" variant="ghost" size="sm" disabled={busy} className="text-destructive hover:text-destructive" onClick={() => onChange(null)}><Trash2 /> Remove</Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <button type="button" disabled={busy} onClick={() => inputRef.current?.click()} className="flex w-full flex-col items-center gap-1.5 px-4 py-7 text-center">
+            <span className="grid size-11 place-items-center rounded-full bg-primary/10 text-primary"><UploadCloud className="size-5" /></span>
+            <span className="text-sm font-medium">Click to upload, drag &amp; drop, or paste</span>
+            <span className="text-xs text-muted-foreground">PNG, JPG or WebP · up to {maxMb} MB</span>
+          </button>
+        )}
       </div>
     </Field>
   );

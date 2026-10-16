@@ -17,7 +17,7 @@ import {
   getDepositProviderAdapter,
   getDepositProviderLabel,
 } from "@/lib/deposit-providers";
-import { getMethodPayCurrency, isDepositMethodEnabled } from "@/lib/deposit-methods";
+import { getAutoGateways, getGatewayById, gatewayForDeposit, runInGateway } from "@/lib/auto-gateways";
 import {
   getManualMethodById,
   manualMethodPayCurrency,
@@ -74,20 +74,29 @@ export async function createProviderDeposit(input: {
   email: string | null;
   phone?: string | null;
   role: import("@prisma/client").UserRole;
-  method: DepositMethod;
-  /** Local amount in method currency (USD for Binance, INR, IDR, NPR). */
+  /** Auto gateway id (admin → Payments → Gateways). */
+  gatewayId: string;
+  /** Local amount in the gateway's pay currency. */
   localAmount: number;
 }) {
-  const method = input.method;
-  if (!(await isDepositMethodEnabled(method))) {
+  const gateway = await getGatewayById(input.gatewayId);
+  if (!gateway || !gateway.enabled) {
     return {
       ok: false as const,
       code: "METHOD_DISABLED",
       message: "This payment method is temporarily unavailable.",
     };
   }
+  if (gateway.maintenance) {
+    return {
+      ok: false as const,
+      code: "MAINTENANCE",
+      message: gateway.maintenanceNote || `${gateway.name} is under maintenance. Please try another method.`,
+    };
+  }
 
-  const payCurrency = await getMethodPayCurrency(method);
+  const method = gateway.provider as DepositMethod;
+  const payCurrency = gateway.currency;
   const localAmount = normalizeLocalAmount(input.localAmount, method);
   if (!Number.isFinite(localAmount) || localAmount <= 0) {
     return {
@@ -120,20 +129,22 @@ export async function createProviderDeposit(input: {
 
   let invoice;
   try {
-    invoice = await adapter.createInvoice({
-      user: {
-        id: input.userId,
-        username: input.username,
-        email: input.email,
-        phone: input.phone,
-        role: input.role,
-      },
-      method,
-      payCurrency,
-      localAmount,
-      amountMicrocents,
-      expiresAt,
-    });
+    invoice = await runInGateway(gateway, () =>
+      adapter.createInvoice!({
+        user: {
+          id: input.userId,
+          username: input.username,
+          email: input.email,
+          phone: input.phone,
+          role: input.role,
+        },
+        method,
+        payCurrency,
+        localAmount,
+        amountMicrocents,
+        expiresAt,
+      }),
+    );
   } catch (err) {
     return {
       ok: false as const,
@@ -147,6 +158,7 @@ export async function createProviderDeposit(input: {
     data: {
       userId: input.userId,
       method,
+      gatewayKey: gateway.id,
       status: DepositStatus.PENDING,
       currency: Currency.USD,
       payCurrency,
@@ -167,7 +179,7 @@ export async function createProviderDeposit(input: {
   logActivity({
     action: "DEPOSIT_CREATE",
     category: "WALLET",
-    message: `Deposit created ${formatMoney(amountMicrocents)} via ${getDepositProviderLabel(method)}`,
+    message: `Deposit created ${formatMoney(amountMicrocents)} via ${gateway.name}`,
     userId: input.userId,
     username: input.username,
     email: input.email,
@@ -175,6 +187,7 @@ export async function createProviderDeposit(input: {
     metadata: {
       depositId: deposit.id,
       method,
+      gatewayId: gateway.id,
       payCurrency,
       localAmount,
       amount: amountMicrocents,
@@ -185,7 +198,7 @@ export async function createProviderDeposit(input: {
     ok: true as const,
     deposit,
     invoice,
-    label: getDepositProviderLabel(method),
+    label: gateway.name,
     redirectPath: `/app/deposit/${deposit.id}`,
   };
 }
@@ -330,13 +343,18 @@ export async function createManualDeposit(input: {
   if (!user) {
     return { ok: false as const, code: "NOT_FOUND", message: "User not found." };
   }
+  const wanted = input.method ?? DepositMethod.BINANCE;
+  const gateway = (await getAutoGateways()).find((g) => g.provider === wanted && g.enabled && !g.maintenance);
+  if (!gateway) {
+    return { ok: false as const, code: "METHOD_DISABLED", message: "This payment method is temporarily unavailable." };
+  }
   const result = await createProviderDeposit({
     userId: user.id,
     username: user.username,
     email: user.email,
     phone: null,
     role: user.role,
-    method: input.method ?? DepositMethod.BINANCE,
+    gatewayId: gateway.id,
     localAmount: input.amountUsd,
   });
   if (!result.ok) return result;
@@ -602,10 +620,14 @@ export async function getDepositStatusForUser(depositId: string, userId: string)
     deposit.failReason = "expired";
   }
 
+  const gateway =
+    deposit.method === DepositMethod.MANUAL ? undefined : await gatewayForDeposit(deposit);
   const binanceMeta =
-    deposit.method === DepositMethod.BINANCE ? await getBinancePayMeta() : null;
+    deposit.method === DepositMethod.BINANCE
+      ? await runInGateway(gateway, () => getBinancePayMeta())
+      : null;
 
-  let label = getDepositProviderLabel(deposit.method);
+  let label = gateway?.name ?? getDepositProviderLabel(deposit.method);
   let methodIconUrl: string | null = null;
   let methodIconKey: string | null = null;
   if (deposit.method === DepositMethod.MANUAL && deposit.manualMethodKey) {

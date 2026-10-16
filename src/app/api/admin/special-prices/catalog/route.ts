@@ -30,7 +30,7 @@ export async function GET(request: Request) {
   const q = searchParams.get("q")?.trim() ?? "";
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
   const limit = Math.min(
-    48,
+    200,
     Math.max(1, Number(searchParams.get("limit") ?? "20") || 20),
   );
 

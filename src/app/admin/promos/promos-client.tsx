@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { BadgePercent, Pencil, Plus, Tag, Trash2, Zap } from "lucide-react";
+import { Pencil, Plus, Tag, Trash2, Zap } from "lucide-react";
 import { EmptyState } from "@/components/app-ui";
 import { ConfirmDialog, Field, SubmitButton, TableSkeleton, ToggleRow, adminFetch, errMsg, useAdminQuery } from "@/components/admin/kit";
 import { AudienceSelect, ScopeFields, type Audience, type Scope } from "@/components/admin/pickers";
@@ -15,7 +15,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { flashDateTimeInput, flashDateTimeLabel, localDateTimeToIso } from "@/lib/flash-sale-format";
 import { formatMoney, microcentsToUsd } from "@/lib/currencies";
-import { SpecialPricesTab } from "./special-prices";
 
 export function AdminPromosClient() {
   return (
@@ -27,18 +26,12 @@ export function AdminPromosClient() {
         <TabsTrigger value="flash">
           <Zap className="size-4" /> Flash sales
         </TabsTrigger>
-        <TabsTrigger value="special">
-          <BadgePercent className="size-4" /> Special prices
-        </TabsTrigger>
       </TabsList>
       <TabsContent value="promos">
         <PromosTab />
       </TabsContent>
       <TabsContent value="flash">
         <FlashTab />
-      </TabsContent>
-      <TabsContent value="special">
-        <SpecialPricesTab />
       </TabsContent>
     </Tabs>
   );

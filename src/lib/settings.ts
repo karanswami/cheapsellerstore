@@ -103,6 +103,8 @@ export const SETTING_KEYS = {
   depositMins: "deposit_mins",
   /** JSON { QRIS|BINANCE|UPI|ESEWA|MGCLOUDPAY: { enabled, qrUrl? } } */
   depositMethods: "deposit_methods",
+  /** JSON array of auto payment gateways (provider, currency, creds, status) */
+  autoGateways: "auto_gateways",
   /** JSON array of admin-defined manual deposit methods */
   manualDepositMethods: "manual_deposit_methods",
   /** % credited when a referred USER/ADMIN purchases */

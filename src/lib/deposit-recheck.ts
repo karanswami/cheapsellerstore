@@ -2,6 +2,7 @@ import "server-only";
 import { DepositMethod, DepositStatus, type Deposit } from "@prisma/client";
 import { getDepositProviderAdapter } from "@/lib/deposit-providers";
 import type { DepositProviderRecheckOptions } from "@/lib/deposit-providers";
+import { runForDeposit } from "@/lib/auto-gateways";
 import { DEPOSIT_REVIEW_ACTION } from "@/lib/deposit-review";
 
 export const ADMIN_RECHECK_ALLOWED_STATUSES: DepositStatus[] = [
@@ -58,5 +59,5 @@ export async function recheckDepositNow(
   }
 
   const adapter = getDepositProviderAdapter(deposit.method);
-  return adapter.recheck(deposit, options);
+  return runForDeposit(deposit, () => adapter.recheck(deposit, options));
 }

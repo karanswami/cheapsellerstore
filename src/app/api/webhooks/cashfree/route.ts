@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { jsonError, jsonOk } from "@/lib/api";
 import { verifyCashfreeWebhookSignature } from "@/lib/cashfree";
 import { completeDepositOnce, failDepositOnce } from "@/lib/deposit-credit";
+import { verifyAcrossGateways } from "@/lib/auto-gateways";
 import { prisma } from "@/lib/prisma";
 import { DepositMethod } from "@prisma/client";
 
@@ -57,7 +58,10 @@ export async function POST(req: Request) {
   // makes duplicate deliveries safe regardless.
   void req.headers.get("x-idempotency-header");
 
-  if (!(await verifyCashfreeWebhookSignature(rawBody, timestamp, signature))) {
+  const verified = await verifyAcrossGateways("UPI", () =>
+    verifyCashfreeWebhookSignature(rawBody, timestamp, signature),
+  );
+  if (!verified) {
     return jsonError("UNAUTHORIZED", "Invalid Cashfree webhook signature.", 401);
   }
 

@@ -4,7 +4,7 @@ import { AdminPaymentsClient } from "./payments-client";
 export default function AdminPaymentsPage() {
   return (
     <>
-      <PageHeader title="Payments" subtitle="Deposit methods, pay currencies, manual accounts and provider credentials." />
+      <PageHeader title="Payments" subtitle="Auto gateways (per-gateway keys, Live / Maintenance / Off), manual accounts and pay currencies." />
       <AdminPaymentsClient />
     </>
   );

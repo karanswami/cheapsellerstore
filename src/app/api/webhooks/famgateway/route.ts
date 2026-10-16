@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { jsonError, jsonOk } from "@/lib/api";
 import { verifyFamgatewayWebhookSignature } from "@/lib/famgateway";
 import { completeDepositOnce, failDepositOnce } from "@/lib/deposit-credit";
+import { verifyAcrossGateways } from "@/lib/auto-gateways";
 import { prisma } from "@/lib/prisma";
 import { DepositMethod } from "@prisma/client";
 
@@ -37,7 +38,9 @@ export async function POST(req: Request) {
     req.headers.get("x-famgateway-signature") ||
     req.headers.get("X-FamGateway-Signature");
 
-  const isVerified = await verifyFamgatewayWebhookSignature(rawBody, signature);
+  const isVerified = await verifyAcrossGateways("UPI", () =>
+    verifyFamgatewayWebhookSignature(rawBody, signature),
+  );
   if (!isVerified) {
     return jsonError(
       "UNAUTHORIZED",

@@ -13,6 +13,7 @@ export type AdminSettings = {
   depositCurrencies: { code: string; name: string; symbol: string; rate: number; sortOrder: number }[];
   depositQuickAmounts: Record<string, number[]>;
   depositMethods: Record<string, { enabled: boolean; qrUrl: string; currency: string }>;
+  autoGateways: AdminGateway[];
   manualDepositMethods: ManualMethod[];
   feedbackSounds: { hapticsEnabled: boolean; soundsEnabled: boolean; sounds: Record<string, string> };
   telegramNotifications: { enabled: boolean; botToken: string; channels: Record<string, { enabled: boolean; chatId: string; inviteLink: string; label: string }> };
@@ -44,6 +45,18 @@ export type AdminSettings = {
   cashfreeSecretKey: string;
   cashfreeWebhookSecret: string;
   cashfreeEnv: "sandbox" | "production";
+};
+
+export type AdminGateway = {
+  id: string;
+  provider: "QRIS" | "UPI" | "BINANCE" | "ESEWA";
+  name: string;
+  currency: string;
+  enabled: boolean;
+  maintenance: boolean;
+  maintenanceNote: string;
+  qrUrl: string;
+  creds: Record<string, string>;
 };
 
 export type ManualMethod = {

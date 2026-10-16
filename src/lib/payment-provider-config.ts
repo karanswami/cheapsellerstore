@@ -1,5 +1,6 @@
 import { getSettingText, SETTING_KEYS } from "@/lib/settings";
 import { cache } from "react";
+import { gatewayCred } from "@/lib/gateway-context";
 
 /** Deposit rail credentials — DB (admin Settings) first, env fallback. */
 
@@ -13,17 +14,23 @@ async function settingOrEnv(settingKey: string, envName: string, fallback = "") 
   return envText(envName, fallback);
 }
 
-export const getBinanceApiKey = cache(async (): Promise<string> =>
+const base_getBinanceApiKey = cache(async (): Promise<string> =>
   settingOrEnv(SETTING_KEYS.binanceApiKey, "BINANCE_API_KEY"),
 );
 
-export const getBinanceSecretKey = cache(async (): Promise<string> =>
+export const getBinanceApiKey = async (): Promise<string> => gatewayCred("binanceApiKey") ?? (await base_getBinanceApiKey());
+
+const base_getBinanceSecretKey = cache(async (): Promise<string> =>
   settingOrEnv(SETTING_KEYS.binanceSecretKey, "BINANCE_SECRET_KEY"),
 );
 
-export const getBinancePayId = cache(async (): Promise<string> =>
+export const getBinanceSecretKey = async (): Promise<string> => gatewayCred("binanceSecretKey") ?? (await base_getBinanceSecretKey());
+
+const base_getBinancePayId = cache(async (): Promise<string> =>
   settingOrEnv(SETTING_KEYS.binancePayId, "BINANCE_PAY_ID"),
 );
+
+export const getBinancePayId = async (): Promise<string> => gatewayCred("binancePayId") ?? (await base_getBinancePayId());
 
 export async function isBinanceConfigured(): Promise<boolean> {
   const [apiKey, secretKey] = await Promise.all([
@@ -33,7 +40,7 @@ export async function isBinanceConfigured(): Promise<boolean> {
   return Boolean(apiKey && secretKey);
 }
 
-export const getAutogopayApiKey = cache(async (): Promise<string> => {
+const base_getAutogopayApiKey = cache(async (): Promise<string> => {
   const fromDb = (
     await getSettingText(SETTING_KEYS.autogopayApiKey, "")
   ).trim();
@@ -41,7 +48,9 @@ export const getAutogopayApiKey = cache(async (): Promise<string> => {
   return process.env.AUTOGOPAY_API_KEY?.trim() || "";
 });
 
-export const getAutogopayBaseUrl = cache(async (): Promise<string> => {
+export const getAutogopayApiKey = async (): Promise<string> => gatewayCred("autogopayApiKey") ?? (await base_getAutogopayApiKey());
+
+const base_getAutogopayBaseUrl = cache(async (): Promise<string> => {
   const fromDb = (
     await getSettingText(SETTING_KEYS.autogopayBaseUrl, "")
   ).trim();
@@ -51,6 +60,11 @@ export const getAutogopayBaseUrl = cache(async (): Promise<string> => {
     "https://v1-gateway.autogopay.site";
   return value.trim().replace(/\/$/, "");
 });
+
+export const getAutogopayBaseUrl = async (): Promise<string> => {
+  const o = gatewayCred("autogopayBaseUrl");
+  return o ? o.replace(/\/$/, "") : base_getAutogopayBaseUrl();
+};
 
 export async function isAutogopayConfigured(): Promise<boolean> {
   return Boolean(await getAutogopayApiKey());
@@ -96,11 +110,13 @@ export async function isMgcloudpayConfigured(): Promise<boolean> {
   return Boolean(await getMgcloudpayApiKey());
 }
 
-export const getFamgatewayApiKey = cache(async (): Promise<string> =>
+const base_getFamgatewayApiKey = cache(async (): Promise<string> =>
   settingOrEnv(SETTING_KEYS.famgatewayApiKey, "FAMGATEWAY_API_KEY"),
 );
 
-export const getFamgatewayBaseUrl = cache(async (): Promise<string> => {
+export const getFamgatewayApiKey = async (): Promise<string> => gatewayCred("famgatewayApiKey") ?? (await base_getFamgatewayApiKey());
+
+const base_getFamgatewayBaseUrl = cache(async (): Promise<string> => {
   const value = await settingOrEnv(
     SETTING_KEYS.famgatewayBaseUrl,
     "FAMGATEWAY_BASE_URL",
@@ -109,30 +125,47 @@ export const getFamgatewayBaseUrl = cache(async (): Promise<string> => {
   return value.replace(/\/$/, "");
 });
 
+export const getFamgatewayBaseUrl = async (): Promise<string> => {
+  const o = gatewayCred("famgatewayBaseUrl");
+  return o ? o.replace(/\/$/, "") : base_getFamgatewayBaseUrl();
+};
+
 export async function isFamgatewayConfigured(): Promise<boolean> {
   return Boolean(await getFamgatewayApiKey());
 }
 
-export const getCashfreeAppId = cache(async (): Promise<string> =>
+const base_getCashfreeAppId = cache(async (): Promise<string> =>
   settingOrEnv(SETTING_KEYS.cashfreeAppId, "CASHFREE_APP_ID"),
 );
 
-export const getCashfreeSecretKey = cache(async (): Promise<string> =>
+export const getCashfreeAppId = async (): Promise<string> => gatewayCred("cashfreeAppId") ?? (await base_getCashfreeAppId());
+
+const base_getCashfreeSecretKey = cache(async (): Promise<string> =>
   settingOrEnv(SETTING_KEYS.cashfreeSecretKey, "CASHFREE_SECRET_KEY"),
 );
 
-export const getCashfreeWebhookSecret = cache(async (): Promise<string> =>
+export const getCashfreeSecretKey = async (): Promise<string> => gatewayCred("cashfreeSecretKey") ?? (await base_getCashfreeSecretKey());
+
+const base_getCashfreeWebhookSecret = cache(async (): Promise<string> =>
   settingOrEnv(SETTING_KEYS.cashfreeWebhookSecret, "CASHFREE_WEBHOOK_SECRET"),
 );
 
+export const getCashfreeWebhookSecret = async (): Promise<string> => gatewayCred("cashfreeWebhookSecret") ?? (await base_getCashfreeWebhookSecret());
+
 export type CashfreeEnvMode = "sandbox" | "production";
 
-export const getCashfreeEnv = cache(async (): Promise<CashfreeEnvMode> => {
+const baseCashfreeEnv = cache(async (): Promise<CashfreeEnvMode> => {
   const raw = (
     await settingOrEnv(SETTING_KEYS.cashfreeEnv, "CASHFREE_ENV", "sandbox")
   ).toLowerCase();
   return raw === "production" ? "production" : "sandbox";
 });
+
+export const getCashfreeEnv = async (): Promise<CashfreeEnvMode> => {
+  const o = gatewayCred("cashfreeEnv")?.toLowerCase();
+  if (o) return o === "production" ? "production" : "sandbox";
+  return baseCashfreeEnv();
+};
 
 export async function isCashfreeConfigured(): Promise<boolean> {
   const [appId, secretKey] = await Promise.all([

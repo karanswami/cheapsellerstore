@@ -526,6 +526,8 @@ model Deposit {
   recheckRequestedAt DateTime?
   /// AppSetting manual_deposit_methods slug when method is MANUAL.
   manualMethodKey    String?
+  /// AppSetting auto_gateways id that created this deposit (auto rails).
+  gatewayKey         String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 

@@ -17,6 +17,7 @@ import {
   Menu,
   ScrollText,
   Settings,
+  BadgePercent,
   CreditCard,
   ShieldCheck,
   ShoppingBag,
@@ -63,7 +64,8 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/admin/products", label: "Products", icon: Boxes },
       { href: "/admin/keys", label: "Keys", icon: KeyRound },
-      { href: "/admin/promos", label: "Pricing & promos", icon: Tag },
+      { href: "/admin/promos", label: "Promos & flash sales", icon: Tag },
+      { href: "/admin/special-prices", label: "Special prices", icon: BadgePercent },
     ],
   },
   {

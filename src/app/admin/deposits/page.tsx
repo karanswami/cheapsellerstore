@@ -4,7 +4,7 @@ import { AdminDepositsClient } from "./deposits-client";
 export default function AdminDepositsPage() {
   return (
     <>
-      <PageHeader title="Pending deposits" subtitle="Review manual payment proofs and credit or reject them." />
+      <PageHeader title="Pending deposits" subtitle="Review payment proofs, then approve or reject." />
       <AdminDepositsClient />
     </>
   );

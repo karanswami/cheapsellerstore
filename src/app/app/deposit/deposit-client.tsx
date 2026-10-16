@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowRight, Banknote, Bitcoin, ImageUp, Landmark, Loader2, Lock, QrCode, Wallet } from "lucide-react";
+import { ArrowRight, Banknote, Bitcoin, ImageUp, Landmark, Loader2, Lock, QrCode, Wallet, Wrench } from "lucide-react";
 import { EmptyState, Panel, StatusBadge, formatDate } from "@/components/app-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatMoney } from "@/lib/currencies";
 import { depositMethodLabel } from "@/lib/deposit-labels";
 import { cn } from "@/lib/utils";
+import type { PublicGateway } from "@/lib/auto-gateways";
 import type { PublicManualDepositMethod } from "@/types/manual-deposit";
 
 export type DepositRow = {
@@ -24,7 +25,6 @@ export type DepositRow = {
   createdAt: string;
 };
 
-type AutoId = "QRIS" | "BINANCE" | "UPI" | "ESEWA";
 type Currency = { code: string; name: string; symbol: string };
 
 type Props = {
@@ -33,7 +33,7 @@ type Props = {
   currencies: Currency[];
   mins: Record<string, number>;
   quick: Record<string, number[]>;
-  autoMethods: Record<AutoId, { enabled: boolean }>;
+  gateways: PublicGateway[];
   manualMethods: PublicManualDepositMethod[];
   deposits: DepositRow[];
 };
@@ -46,21 +46,29 @@ type Choice = {
   hint: string;
   icon: React.ComponentType<{ className?: string }>;
   manual?: PublicManualDepositMethod;
+  /** Set when the gateway is under maintenance: shown but not selectable. */
+  paused?: string;
 };
 
-const AUTO: Record<AutoId, Omit<Choice, "key" | "kind" | "manual">> = {
-  UPI: { name: "UPI / INR", currency: "INR", hint: "Instant via Cashfree", icon: Landmark },
-  QRIS: { name: "QRIS", currency: "IDR", hint: "Instant · Indonesian Rupiah", icon: QrCode },
-  BINANCE: { name: "Binance Pay", currency: "USD", hint: "Crypto · USD", icon: Bitcoin },
-  ESEWA: { name: "eSewa Nepal", currency: "NPR", hint: "Upload payment proof", icon: Banknote },
+const AUTO: Record<PublicGateway["provider"], { hint: string; icon: Choice["icon"] }> = {
+  UPI: { hint: "Instant · UPI", icon: Landmark },
+  QRIS: { hint: "Instant · QRIS", icon: QrCode },
+  BINANCE: { hint: "Crypto · Binance Pay", icon: Bitcoin },
+  ESEWA: { hint: "Upload payment proof", icon: Banknote },
 };
 
-export function DepositClient({ canDeposit, rates, currencies, mins, quick, autoMethods, manualMethods, deposits }: Props) {
+export function DepositClient({ canDeposit, rates, currencies, mins, quick, gateways, manualMethods, deposits }: Props) {
   const router = useRouter();
   const choices = useMemo<Choice[]>(() => {
-    const auto = (Object.keys(AUTO) as AutoId[])
-      .filter((id) => autoMethods[id]?.enabled)
-      .map((id) => ({ key: id, kind: "auto" as const, ...AUTO[id] }));
+    const auto = gateways.map((g) => ({
+      key: g.id,
+      kind: "auto" as const,
+      name: g.name,
+      currency: g.currency,
+      hint: AUTO[g.provider].hint,
+      icon: AUTO[g.provider].icon,
+      paused: g.maintenance ? g.note || "Under maintenance" : undefined,
+    }));
     const manual = manualMethods.map((m) => ({
       key: `manual:${m.id}`,
       kind: "manual" as const,
@@ -71,9 +79,9 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, auto
       manual: m,
     }));
     return [...auto, ...manual];
-  }, [autoMethods, manualMethods]);
+  }, [gateways, manualMethods]);
 
-  const [selected, setSelected] = useState(choices[0]?.key ?? "");
+  const [selected, setSelected] = useState(choices.find((c) => !c.paused)?.key ?? "");
   const [amount, setAmount] = useState("");
   const [proof, setProof] = useState<{ url: string; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -106,7 +114,7 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, auto
   }
 
   async function submit() {
-    if (!choice) return;
+    if (!choice || choice.paused) return;
     if (!valid) return toast.error(`Minimum deposit is ${money(min)}.`);
     if (choice.kind === "manual" && !proof) return toast.error("Upload your payment screenshot first.");
     setBusy(true);
@@ -114,7 +122,7 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, auto
       const body =
         choice.kind === "manual"
           ? { amount: value, manualMethodKey: choice.manual!.id, proofImage: proof!.url }
-          : { amount: value, method: choice.key };
+          : { amount: value, gatewayId: choice.key };
       const res = await fetch("/api/deposits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -150,6 +158,7 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, auto
               {choices.map((c) => (
                 <button
                   key={c.key}
+                  disabled={Boolean(c.paused)}
                   onClick={() => {
                     setSelected(c.key);
                     setProof(null);
@@ -157,6 +166,7 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, auto
                   className={cn(
                     "flex items-center gap-3 rounded-xl border p-3 text-left transition-colors hover:border-primary/50",
                     selected === c.key ? "border-primary bg-primary/10" : "bg-muted/40",
+                    c.paused && "cursor-not-allowed opacity-60 hover:border-border",
                   )}
                 >
                   <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-background text-primary">
@@ -164,9 +174,15 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, auto
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold">{c.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {c.currency} · {c.hint}
-                    </span>
+                    {c.paused ? (
+                      <span className="flex items-center gap-1 truncate text-xs font-medium text-warning">
+                        <Wrench className="size-3 shrink-0" /> {c.paused}
+                      </span>
+                    ) : (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {c.currency} · {c.hint}
+                      </span>
+                    )}
                   </span>
                 </button>
               ))}
@@ -292,7 +308,7 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, auto
               </dd>
             </div>
           </dl>
-          <Button onClick={submit} disabled={busy || !choice || !valid || uploading} className="mt-5 w-full" size="lg">
+          <Button onClick={submit} disabled={busy || !choice || Boolean(choice.paused) || !valid || uploading} className="mt-5 w-full" size="lg">
             {busy ? <Loader2 className="animate-spin" /> : null}
             {choice?.kind === "manual" ? "Submit for review" : "Continue to pay"}
             {!busy ? <ArrowRight /> : null}

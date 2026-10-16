@@ -171,6 +171,44 @@ export async function GET(request: Request) {
     });
   }
 
+  if (searchParams.get("pick") === "1") {
+    const page = Math.max(1, Number(searchParams.get("page") ?? 1) || 1);
+    const limit = 30;
+    const where = q
+      ? {
+          OR: [
+            { username: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+            { name: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {};
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        orderBy: { username: "asc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: { id: true, username: true, email: true, role: true, _count: { select: { specialPrices: true } } },
+      }),
+    ]);
+    return jsonOk({
+      total,
+      hasMore: page * limit < total,
+      users: users.map((u) => ({ id: u.id, username: u.username, email: u.email, role: u.role, specialPriceCount: u._count.specialPrices })),
+    });
+  }
+
+  if (searchParams.get("all") === "1") {
+    const users = await prisma.user.findMany({
+      take: 1000,
+      orderBy: { username: "asc" },
+      select: { id: true, username: true, email: true, role: true },
+    });
+    return jsonOk({ users });
+  }
+
   if (q) {
     const users = await prisma.user.findMany({
       where: {

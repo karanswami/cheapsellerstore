@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BadgePercent,
   BarChart3,
   Clock,
   Code2,
@@ -264,6 +265,12 @@ const ADMIN_ROUTES: RouteEntry[] = [
     title: "Promos",
     subtitle: "Discount codes and audiences",
     icon: Tag,
+  },
+  {
+    path: "/admin/special-prices",
+    title: "Special prices",
+    subtitle: "Per-user price overrides",
+    icon: BadgePercent,
   },
   {
     path: "/admin/flash-sales",

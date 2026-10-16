@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { jsonError, jsonOk } from "@/lib/api";
 import { verifyAutogopayWebhookSignature } from "@/lib/autogopay";
 import { completeDepositOnce, failDepositOnce } from "@/lib/deposit-credit";
+import { verifyAcrossGateways } from "@/lib/auto-gateways";
 import { prisma } from "@/lib/prisma";
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { DepositMethod, DepositStatus } from "@prisma/client";
@@ -31,9 +32,8 @@ export async function POST(req: Request) {
     const rawBody = await req.text();
     const signature = req.headers.get("x-signature");
 
-    const isVerified = await verifyAutogopayWebhookSignature(
-      rawBody,
-      signature,
+    const isVerified = await verifyAcrossGateways("QRIS", () =>
+      verifyAutogopayWebhookSignature(rawBody, signature),
     );
     if (!isVerified) {
       return jsonError(

@@ -7,11 +7,7 @@ import {
   getDepositMinsForRole,
   minForCurrency,
 } from "@/lib/deposit-mins";
-import {
-  getDepositMethodsConfig,
-  getMethodPayCurrency,
-  toPublicDepositMethods,
-} from "@/lib/deposit-methods";
+import { getAutoGateways, toPublicGateways } from "@/lib/auto-gateways";
 import {
   getDepositQuickAmounts,
 } from "@/lib/deposit-quick-amounts";
@@ -22,12 +18,11 @@ import {
 } from "@/lib/manual-deposit-methods";
 import { prisma } from "@/lib/prisma";
 import { userCanSelfDeposit } from "@/lib/roles";
-import { DepositMethod } from "@prisma/client";
 import { z } from "zod";
 
 const autoSchema = z.object({
   amount: z.number().positive(),
-  method: z.enum(["BINANCE", "QRIS", "UPI", "ESEWA", "MGCLOUDPAY"]),
+  gatewayId: z.string().trim().min(1).max(40),
 });
 
 const manualSchema = z.object({
@@ -35,10 +30,6 @@ const manualSchema = z.object({
   manualMethodKey: z.string().trim().min(1).max(50),
   proofImage: z.string().trim().min(1).max(500),
 });
-
-async function payCurrencyFor(method: DepositMethod): Promise<string> {
-  return getMethodPayCurrency(method);
-}
 
 function formatLocalMin(amount: number, currency: string) {
   if (currency === "USD") {
@@ -54,7 +45,7 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return jsonError("UNAUTHORIZED", "Login required.", 401);
 
-  const [deposits, rates, minDeposits, methodsConfig, manualMethods, quickAmounts] =
+  const [deposits, rates, minDeposits, gateways, manualMethods, quickAmounts] =
     await Promise.all([
       prisma.deposit.findMany({
         where: { userId: user.id },
@@ -63,7 +54,7 @@ export async function GET() {
       }),
       getDepositFxRates(),
       getDepositMinsForRole(user.role),
-      getDepositMethodsConfig(),
+      getAutoGateways(),
       getManualDepositMethods(),
       getDepositQuickAmounts(),
     ]);
@@ -76,7 +67,7 @@ export async function GET() {
     rates,
     minDeposits,
     quickAmounts,
-    methods: toPublicDepositMethods(methodsConfig),
+    gateways: toPublicGateways(gateways),
     manualMethods: toPublicManualMethods(manualMethods),
   });
 }
@@ -165,8 +156,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const method = parsed.data.method as DepositMethod;
-  const payCurrency = await payCurrencyFor(method);
+  const gateway = (await getAutoGateways()).find((g) => g.id === parsed.data.gatewayId);
+  if (!gateway || !gateway.enabled) {
+    return jsonError("METHOD_DISABLED", "This payment method is temporarily unavailable.", 400);
+  }
+  if (gateway.maintenance) {
+    return jsonError(
+      "MAINTENANCE",
+      gateway.maintenanceNote || `${gateway.name} is under maintenance. Please try another method.`,
+      400,
+    );
+  }
+  const payCurrency = gateway.currency;
   const mins = await getDepositMinsForRole(full.role);
   const minLocal = minForCurrency(mins, payCurrency);
 
@@ -184,7 +185,7 @@ export async function POST(request: Request) {
     email: full.email,
     phone: null,
     role: full.role,
-    method,
+    gatewayId: gateway.id,
     localAmount: parsed.data.amount,
   });
 
