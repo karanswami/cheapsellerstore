@@ -109,6 +109,12 @@ const TABS: { href: string; label: string; icon: LucideIcon; exact?: boolean; ba
 /** Pages that are tab roots: the app bar shows the greeting instead of a back button. */
 const ROOTS = new Set(TABS.map((t) => t.href));
 
+/** Time-of-day greeting for the app bar (client clock; hydration warning suppressed at the call site). */
+function greeting() {
+  const h = new Date().getHours();
+  return h < 5 ? "Up late" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+
 const tap = () => feedbackTap({ impact: "selection", silent: true });
 
 export function AppShell({ siteName, user, badges, children }: Props) {
@@ -122,6 +128,14 @@ export function AppShell({ siteName, user, badges, children }: Props) {
   const setSheet = (open: boolean) => setSheetAt(open ? pathname : null);
   const setMenu = (open: boolean) => setMenuAt(open ? pathname : null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 6);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Account dropdown: click outside to close.
   useEffect(() => {
@@ -161,18 +175,23 @@ export function AppShell({ siteName, user, badges, children }: Props) {
       </aside>
 
       <div className="min-w-0">
-        {/* Mobile app bar */}
-        <header className="sticky top-0 z-40 border-b border-white/5 bg-background/75 pt-[env(safe-area-inset-top)] backdrop-blur-xl lg:hidden">
-          <div className="flex h-14 items-center gap-2 px-3">
+        {/* Mobile app bar: transparent at the top of the page, frosted glass once content slides under it */}
+        <header
+          data-scrolled={scrolled || undefined}
+          className="app-chrome group/bar sticky top-0 z-50 pt-[env(safe-area-inset-top)] transition-[background-color,box-shadow] duration-300 data-[scrolled]:bg-background/90 data-[scrolled]:shadow-[0_10px_30px_-18px_rgb(0_0_0/0.9)] data-[scrolled]:backdrop-blur-xl lg:hidden"
+        >
+          <div className="flex h-[3.75rem] items-center gap-2.5 px-4">
             {isRoot ? (
-              <Link href="/app/profile" onClick={tap} className="tap flex min-w-0 items-center gap-2.5">
-                <span className="relative">
-                  <UserAvatar src={user.avatarUrl} seed={user.username} className="size-9 rounded-full ring-2 ring-primary/40" />
+              <Link href="/app/profile" onClick={tap} className="tap flex min-w-0 items-center gap-3">
+                <span className="relative shrink-0 rounded-full bg-[conic-gradient(from_200deg,var(--primary),var(--highlight),var(--primary))] p-[2px]">
+                  <UserAvatar src={user.avatarUrl} seed={user.username} className="size-9 rounded-full border-2 border-background" />
                   <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background bg-success" />
                 </span>
                 <span className="min-w-0 leading-tight">
-                  <span className="block text-[11px] text-muted-foreground">Welcome back</span>
-                  <span className="block truncate font-display text-[15px] font-bold">{firstName}</span>
+                  <span suppressHydrationWarning className="block text-[11px] font-medium text-muted-foreground">
+                    {greeting()} 👋
+                  </span>
+                  <span className="block truncate font-display text-base font-bold tracking-tight">{firstName}</span>
                 </span>
               </Link>
             ) : (
@@ -180,11 +199,11 @@ export function AppShell({ siteName, user, badges, children }: Props) {
                 <button
                   onClick={goBack}
                   aria-label="Back"
-                  className="tap -ml-1 grid size-9 shrink-0 place-items-center rounded-full bg-muted/70 text-foreground"
+                  className="tap -ml-1 grid size-10 shrink-0 place-items-center rounded-2xl border border-white/[0.07] bg-card/80 text-foreground shadow-sm"
                 >
                   <ChevronLeft className="size-5" />
                 </button>
-                <h1 key={pathname} className="anim-title-in truncate font-display text-[17px] font-bold">
+                <h1 key={pathname} className="anim-title-in truncate font-display text-lg font-bold tracking-tight">
                   {current}
                 </h1>
               </>
@@ -192,14 +211,25 @@ export function AppShell({ siteName, user, badges, children }: Props) {
             <Link
               href="/app/deposit"
               onClick={tap}
-              className="tap ml-auto flex shrink-0 items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 py-1 pl-1 pr-3 text-sm font-bold"
+              aria-label={`Wallet balance ${user.balance}, add money`}
+              className="tap relative ml-auto flex shrink-0 items-center gap-2 rounded-2xl bg-[linear-gradient(135deg,color-mix(in_oklab,var(--primary)_55%,transparent),color-mix(in_oklab,var(--highlight)_45%,transparent))] p-px shadow-[0_6px_20px_-10px_var(--primary)]"
             >
-              <span className="bg-brand-gradient grid size-6 place-items-center rounded-full text-primary-foreground">
-                <Wallet className="size-3.5" />
+              <span className="flex items-center gap-2 rounded-[calc(1rem-1px)] bg-card/95 py-1.5 pl-1.5 pr-2">
+                <span className="bg-brand-gradient grid size-7 place-items-center rounded-xl text-primary-foreground">
+                  <Wallet className="size-3.5" />
+                </span>
+                <span className="leading-none">
+                  <span className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Wallet</span>
+                  <span className="mt-0.5 block font-display text-sm font-bold">{user.balance}</span>
+                </span>
+                <span className="grid size-5 place-items-center rounded-full bg-primary/15 text-primary">
+                  <Plus className="size-3" strokeWidth={3} />
+                </span>
               </span>
-              {user.balance}
             </Link>
           </div>
+          {/* hairline that fades in with the glass */}
+          <div className="h-px bg-[linear-gradient(90deg,transparent,color-mix(in_oklab,var(--primary)_45%,transparent),color-mix(in_oklab,var(--highlight)_35%,transparent),transparent)] opacity-0 transition-opacity duration-300 group-data-[scrolled]/bar:opacity-100" />
         </header>
 
         {/* Desktop header */}
@@ -247,7 +277,7 @@ export function AppShell({ siteName, user, badges, children }: Props) {
 
         <main
           key={pathname}
-          className="anim-page-in mx-auto w-full max-w-6xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:pb-8 lg:pt-8"
+          className="anim-page-in mx-auto w-full max-w-6xl px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:pb-8 lg:pt-8"
         >
           {children}
         </main>
@@ -281,39 +311,72 @@ function BottomBar({
   onMore: () => void;
 }) {
   const [home, keys, deposit, spin] = TABS;
+  const depositActive = isActive(deposit);
+  // Slot of the sliding highlight (0..4); the raised Deposit slot has its own state, so no pill there.
+  const slot = moreActive ? 4 : isActive(home) ? 0 : isActive(keys) ? 1 : isActive(spin) ? 3 : -1;
   return (
-    <nav
-      aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-background/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
-    >
-      <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-stretch px-1">
-        <TabLink tab={home} active={isActive(home)} />
-        <TabLink tab={keys} active={isActive(keys)} />
-        <Link
-          href={deposit.href}
-          onClick={tap}
-          aria-current={isActive(deposit) ? "page" : undefined}
-          aria-label={deposit.label}
-          className="tap group relative flex flex-col items-center justify-end pb-1.5"
-        >
-          <span
-            className={cn(
-              "bg-brand-gradient glow-primary absolute -top-5 grid size-14 place-items-center rounded-2xl border-4 border-background text-primary-foreground shadow-lg transition-transform duration-200",
-              isActive(deposit) ? "rotate-45" : "group-active:scale-90",
-            )}
-          >
-            <Plus className={cn("size-6 transition-transform duration-200", isActive(deposit) && "-rotate-45")} strokeWidth={2.75} />
-          </span>
-          {badges?.pendingDeposits ? <Dot className="absolute right-[calc(50%-2rem)] -top-5" /> : null}
-          <span className={cn("text-[10.5px] font-semibold", isActive(deposit) ? "text-primary" : "text-muted-foreground")}>
-            {deposit.label}
-          </span>
-        </Link>
-        <TabLink tab={spin} active={isActive(spin)} count={badges?.spins} />
-        <button onClick={onMore} aria-label="More" className="tap relative flex flex-col items-center justify-center gap-1">
-          <TabIcon icon={LayoutGrid} active={moreActive} />
-          <span className={cn("text-[10.5px] font-semibold", moreActive ? "text-foreground" : "text-muted-foreground")}>More</span>
-        </button>
+    <nav aria-label="Main" className="app-chrome fixed inset-x-0 bottom-0 z-50 lg:hidden">
+      {/* Solid fade under the dock so fast-scrolling content never shows around or through it */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[calc(5.5rem+env(safe-area-inset-bottom))] bg-[linear-gradient(to_top,var(--background)_55%,transparent)]"
+      />
+      <div className="relative mx-auto max-w-md px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+        <div className="relative rounded-[1.75rem] bg-[linear-gradient(160deg,rgb(255_255_255/0.14),rgb(255_255_255/0.03)_40%,color-mix(in_oklab,var(--primary)_30%,transparent))] p-px shadow-[0_18px_40px_-14px_rgb(0_0_0/0.85),0_0_0_1px_rgb(0_0_0/0.25)]">
+          <div className="relative grid h-16 grid-cols-5 items-stretch rounded-[calc(1.75rem-1px)] bg-card">
+            {/* top sheen */}
+            <span aria-hidden className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.22),transparent)]" />
+            {/* sliding active pill */}
+            <span
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 left-0 w-1/5 p-1.5 transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.34,1.4,0.64,1)]",
+                slot < 0 && "opacity-0",
+              )}
+              style={{ transform: `translateX(${Math.max(slot, 0) * 100}%)` }}
+            >
+              <span className="block h-full rounded-[1.25rem] bg-[linear-gradient(180deg,color-mix(in_oklab,var(--primary)_22%,transparent),color-mix(in_oklab,var(--primary)_6%,transparent))] ring-1 ring-inset ring-primary/20">
+                <span className="mx-auto block h-[3px] w-5 rounded-b-full bg-primary shadow-[0_0_10px_var(--primary)]" />
+              </span>
+            </span>
+
+            <TabLink tab={home} active={isActive(home)} />
+            <TabLink tab={keys} active={isActive(keys)} />
+            <Link
+              href={deposit.href}
+              onClick={tap}
+              aria-current={depositActive ? "page" : undefined}
+              aria-label={deposit.label}
+              className="tap group relative flex flex-col items-center justify-end pb-2"
+            >
+              <span className="absolute -top-6 grid size-[3.75rem] place-items-center rounded-full bg-background p-1.5">
+                <span
+                  className={cn(
+                    "bg-brand-gradient glow-primary relative grid size-full place-items-center overflow-hidden rounded-full text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_8px_20px_-6px_var(--primary)] transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+                    depositActive ? "scale-105" : "group-active:scale-90",
+                  )}
+                >
+                  <span aria-hidden className="absolute inset-x-0 top-0 h-1/2 bg-white/15" />
+                  <Plus
+                    className={cn("relative size-6 transition-transform duration-300", depositActive && "rotate-90")}
+                    strokeWidth={2.75}
+                  />
+                </span>
+              </span>
+              {badges?.pendingDeposits ? <Dot className="absolute right-[calc(50%-1.9rem)] -top-5" /> : null}
+              <span className={cn("text-[10.5px] font-semibold", depositActive ? "text-primary" : "text-muted-foreground")}>
+                {deposit.label}
+              </span>
+            </Link>
+            <TabLink tab={spin} active={isActive(spin)} count={badges?.spins} />
+            <button onClick={onMore} aria-label="More" className="tap relative flex flex-col items-center justify-center gap-1">
+              <TabIcon icon={LayoutGrid} active={moreActive} />
+              <span className={cn("text-[10.5px] font-semibold transition-colors", moreActive ? "text-foreground" : "text-muted-foreground")}>
+                More
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
     </nav>
   );
@@ -330,7 +393,7 @@ function TabLink({ tab, active, count }: { tab: (typeof TABS)[number]; active: b
       <span className="relative">
         <TabIcon icon={tab.icon} active={active} />
         {count ? (
-          <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-highlight px-1 text-[10px] font-bold text-highlight-foreground ring-2 ring-background">
+          <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-highlight px-1 text-[10px] font-bold text-highlight-foreground shadow-[0_0_10px_-2px_var(--highlight)] ring-2 ring-card">
             {count > 9 ? "9+" : count}
           </span>
         ) : null}
@@ -346,11 +409,11 @@ function TabIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) 
   return (
     <span
       className={cn(
-        "grid h-7 w-12 place-items-center rounded-full transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
-        active ? "scale-100 bg-primary/15 text-primary" : "scale-90 text-muted-foreground",
+        "grid size-6 place-items-center transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+        active ? "-translate-y-px scale-110 text-primary drop-shadow-[0_0_8px_color-mix(in_oklab,var(--primary)_60%,transparent)]" : "text-muted-foreground",
       )}
     >
-      <Icon className="size-[1.2rem]" strokeWidth={active ? 2.5 : 2} />
+      <Icon className="size-[1.2rem]" strokeWidth={active ? 2.4 : 1.9} />
     </span>
   );
 }

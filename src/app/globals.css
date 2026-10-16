@@ -415,6 +415,13 @@
   /* backwards, not both: a filled-forwards transform animation keeps trapping position:fixed children. */
   .anim-page-in { animation: page-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
   .anim-title-in { animation: title-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  /* Fixed app bar + tab dock: own compositor layer so fast-scrolling content (content-visibility cards,
+     backdrop blur) can't paint over them mid-scroll on Android Chrome / WebView. */
+  .app-chrome {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    isolation: isolate;
+  }
   .tap {
     transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.14s;
     -webkit-tap-highlight-color: transparent;

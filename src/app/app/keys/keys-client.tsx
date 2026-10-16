@@ -359,7 +359,7 @@ export function KeysClient({ initial }: { initial: UserKeysPage }) {
 
       {/* Selection bar */}
       {selecting ? (
-        <div className="anim-sheet-up fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-2 rounded-3xl border border-white/10 bg-card/95 p-2 pl-4 shadow-[0_20px_50px_-12px_rgb(0_0_0/0.7)] backdrop-blur-xl lg:bottom-6 lg:left-auto lg:right-6 lg:w-[30rem]">
+        <div className="anim-sheet-up fixed inset-x-3 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-[51] flex items-center gap-2 rounded-3xl border border-white/10 bg-card/95 p-2 pl-4 shadow-[0_20px_50px_-12px_rgb(0_0_0/0.7)] backdrop-blur-xl lg:bottom-6 lg:left-auto lg:right-6 lg:w-[30rem]">
           <span className="min-w-0 flex-1 text-sm font-semibold">
             {selected.length ? `${selected.length} selected` : "Tap keys to select"}
           </span>

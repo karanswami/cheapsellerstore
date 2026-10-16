@@ -125,7 +125,13 @@ export function BottomSheet({
 
   if (!mounted) return null;
   return createPortal(
-    <div className={cn("fixed inset-0 z-[55]", open ? "" : "pointer-events-none")} aria-hidden={!open} inert={!open}>
+    // Closed sheets park off-screen; hide them once the slide-out ends, or their top edge + shadow peek above
+    // the tab bar when the mobile browser toolbar resizes the viewport mid-scroll.
+    <div
+      className={cn("fixed inset-0 z-[55] transition-[visibility] duration-0", open ? "visible" : "pointer-events-none invisible delay-300")}
+      aria-hidden={!open}
+      inert={!open}
+    >
       <div
         onClick={onClose}
         className={cn("absolute inset-0 bg-black/65 backdrop-blur-sm transition-opacity duration-300", open ? "opacity-100" : "opacity-0")}
