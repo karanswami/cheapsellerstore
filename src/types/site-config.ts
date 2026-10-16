@@ -31,12 +31,12 @@ export const SITE_CONFIG_DEFAULTS: SiteConfig = {
   logoUrl: "",
   faviconUrl: "",
   ogImageUrl: "",
-  primaryColor: "#7c6cff",
-  primaryDarkColor: "#8b7dff",
-  accentColor: "#22d3ee",
-  accentDarkColor: "#2dd4ee",
-  successColor: "#16c47f",
-  successDarkColor: "#00e676",
+  primaryColor: "#5b6bff",
+  primaryDarkColor: "#5b6bff",
+  accentColor: "#ffd23f",
+  accentDarkColor: "#ffd23f",
+  successColor: "#2fd48f",
+  successDarkColor: "#2fd48f",
   socialLinks: [],
 };
 
