@@ -9,7 +9,6 @@ export async function GET(req: NextRequest) {
       username: ctx.user.username,
       role: ctx.user.role,
       priceTier: isWholesaleRole(ctx.user.role) ? "wholesale" : "retail",
-      feePercent: ctx.purchaseFeePercent,
       rateLimitRpm: ctx.rateLimitRpm,
       sandbox: ctx.isSandbox,
       money: {

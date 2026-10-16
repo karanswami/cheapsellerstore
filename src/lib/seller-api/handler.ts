@@ -28,7 +28,6 @@ export async function withSellerApi(
   handler: (ctx: AuthenticatedApiKey) => Promise<{
     data?: unknown;
     error?: { code: string; message: string; status: number };
-    feeMicrocents?: number;
   }>,
 ) {
   const started = Date.now();
@@ -59,7 +58,6 @@ export async function withSellerApi(
         method,
         path,
         statusCode: result.error.status,
-        feeMicrocents: 0,
         durationMs,
         ip,
         errorCode: result.error.code,
@@ -80,7 +78,6 @@ export async function withSellerApi(
       method,
       path,
       statusCode: 200,
-      feeMicrocents: result.feeMicrocents ?? 0,
       durationMs,
       ip,
     }).catch(() => undefined);

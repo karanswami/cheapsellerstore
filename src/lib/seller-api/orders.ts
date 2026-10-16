@@ -5,10 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getSpecialPricesForUser, resolveUnitPrice } from "@/lib/pricing";
 import { creditReferralReward } from "@/lib/referral-rewards";
 import { resolveDurationForApi } from "@/lib/seller-api/catalog";
-import { calcApiPurchaseFee, getApiPurchaseFeePercent } from "@/lib/seller-api/settings";
 import { dispatchOrderFulfilledWebhooks } from "@/lib/seller-api/webhooks";
 import {
-  debitWalletForApiFee,
   debitWalletForPurchase,
 } from "@/lib/wallet";
 import { OrderStatus, type UserRole } from "@prisma/client";
@@ -26,7 +24,6 @@ function buildOrderDetail(input: {
   sku: string;
   quantity: number;
   price: number;
-  fee: number;
   total: number;
   currency: string;
   createdAt?: string;
@@ -45,8 +42,6 @@ function buildOrderDetail(input: {
     quantity: input.quantity,
     price: input.price,
     priceUsd: microcentsToUsdString(input.price),
-    fee: input.fee,
-    feeUsd: microcentsToUsdString(input.fee),
     total: input.total,
     totalUsd: microcentsToUsdString(input.total),
     currency: input.currency,
@@ -62,7 +57,6 @@ function buildOrderDetail(input: {
     // Soft-compat aliases for older clients
     durationApiCode: input.sku,
     subtotalMicrocents: input.price,
-    apiFeeMicrocents: input.fee,
     totalMicrocents: input.total,
   };
 }
@@ -119,9 +113,8 @@ export async function createAndFulfillApiOrder(input: {
     };
   }
 
-  const [specialPrices, rawFeePercent] = await Promise.all([
-    getSpecialPricesForUser(input.userId, [duration.id]),
-    getApiPurchaseFeePercent(),
+  const specialPrices = await getSpecialPricesForUser(input.userId, [
+    duration.id,
   ]);
   // Price always from server + role — never trust client.
   const unitPrice = resolveUnitPrice({
@@ -130,9 +123,6 @@ export async function createAndFulfillApiOrder(input: {
     specialPrice: specialPrices.get(duration.id),
   });
   const subtotal = Math.round(unitPrice * qty);
-  const feePercent = rawFeePercent;
-  const apiFee = input.sandbox ? 0 : calcApiPurchaseFee(subtotal, feePercent);
-  const totalDebit = subtotal + apiFee;
   const labelPart = duration.version?.trim()
     ? `${duration.version.trim()} · ${duration.label}`
     : duration.label;
@@ -156,7 +146,6 @@ export async function createAndFulfillApiOrder(input: {
         sku: duration.apiCode,
         quantity: qty,
         price: subtotal,
-        fee: 0,
         total: subtotal,
         currency: "USD",
         items: sandboxItems,
@@ -171,11 +160,11 @@ export async function createAndFulfillApiOrder(input: {
   if (user.banned) {
     return { ok: false as const, code: "BANNED", message: "Account is banned." };
   }
-  if (user.walletBalance < totalDebit) {
+  if (user.walletBalance < subtotal) {
     return {
       ok: false as const,
       code: "INSUFFICIENT_BALANCE",
-      message: "Insufficient wallet balance for keys + API fee.",
+      message: "Insufficient wallet balance.",
     };
   }
 
@@ -231,13 +220,6 @@ export async function createAndFulfillApiOrder(input: {
       orderId: order.id,
       note: "Platform API purchase",
     });
-    if (apiFee > 0) {
-      await debitWalletForApiFee({
-        userId: input.userId,
-        amount: apiFee,
-        orderId: order.id,
-      });
-    }
 
     await prisma.order.update({
       where: { id: order.id },
@@ -262,8 +244,7 @@ export async function createAndFulfillApiOrder(input: {
       sku: duration.apiCode,
       quantity: qty,
       price: subtotal,
-      fee: apiFee,
-      total: totalDebit,
+      total: subtotal,
       currency: "USD",
       accessToken,
       items: items.map((it) => ({
@@ -288,8 +269,7 @@ export async function createAndFulfillApiOrder(input: {
         `Qty: ${qty}`,
         `Unit: ${formatMoney(unitPrice)}`,
         `Subtotal: ${formatMoney(subtotal)}`,
-        `Fee: ${formatMoney(apiFee)}`,
-        `Total: ${formatMoney(totalDebit)}`,
+        `Total: ${formatMoney(subtotal)}`,
       ].join("\n"),
     );
 
@@ -337,17 +317,6 @@ export async function getApiOrderForUser(userId: string, orderId: string) {
   });
   if (!order) return null;
 
-  const feeTx = await prisma.transaction.findFirst({
-    where: {
-      userId,
-      type: "API_FEE",
-      reference: `api-fee:${order.id}`,
-      status: "COMPLETED",
-    },
-    select: { amount: true },
-  });
-
-  const fee = feeTx ? Math.abs(feeTx.amount) : 0;
   const sku =
     order.items[0]?.duration.apiCode ??
     order.items[0]?.durationLabel ??
@@ -359,8 +328,7 @@ export async function getApiOrderForUser(userId: string, orderId: string) {
     sku,
     quantity: order.items.length,
     price: order.total,
-    fee,
-    total: order.total + fee,
+    total: order.total,
     currency: order.currency,
     createdAt: order.createdAt.toISOString(),
     items: order.items.map((it) => ({
@@ -397,27 +365,7 @@ export async function listApiOrdersForUser(
     }),
   ]);
 
-  const orderIds = orders.map((o) => o.id);
-  const feeTxs =
-    orderIds.length === 0
-      ? []
-      : await prisma.transaction.findMany({
-          where: {
-            userId,
-            type: "API_FEE",
-            status: "COMPLETED",
-            reference: { in: orderIds.map((id) => `api-fee:${id}`) },
-          },
-          select: { reference: true, amount: true },
-        });
-  const feeByOrder = new Map<string, number>();
-  for (const tx of feeTxs) {
-    const id = tx.reference?.replace(/^api-fee:/, "") ?? "";
-    if (id) feeByOrder.set(id, Math.abs(tx.amount));
-  }
-
   const items = orders.map((order) => {
-    const fee = feeByOrder.get(order.id) ?? 0;
     const sku =
       order.items[0]?.duration.apiCode ??
       order.items[0]?.durationLabel ??
@@ -425,7 +373,7 @@ export async function listApiOrdersForUser(
     const name = order.items[0]
       ? `${order.items[0].productTitle} — ${order.items[0].durationLabel}`
       : "Order";
-    const total = order.total + fee;
+    const total = order.total;
     return {
       id: order.id,
       status: order.status,

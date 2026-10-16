@@ -6,7 +6,6 @@ import {
 import {
   getApiDefaultRateLimitRpm,
   getApiPublicRateLimitRpm,
-  getApiPurchaseFeePercent,
 } from "@/lib/seller-api/settings";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -37,8 +36,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const [purchaseFeePercent, publicRpm, privateRpm] = await Promise.all([
-    getApiPurchaseFeePercent(),
+  const [publicRpm, privateRpm] = await Promise.all([
     getApiPublicRateLimitRpm(),
     getApiDefaultRateLimitRpm(),
   ]);
@@ -48,7 +46,6 @@ export async function GET(req: NextRequest) {
     baseUrl: appBaseUrl(req),
     publicRpm,
     privateRpm,
-    purchaseFeePercent,
     apiKey: apiKey || undefined,
   });
 

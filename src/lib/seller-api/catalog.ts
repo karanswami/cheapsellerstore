@@ -2,7 +2,6 @@ import {
   looksLikeObjectId,
   normalizeApiCode,
 } from "@/lib/seller-api/codes";
-import { calcApiPurchaseFee } from "@/lib/seller-api/settings";
 import { getEffectiveStockByDuration } from "@/lib/supplier/stock";
 import { MICROCENTS_PER_USD, microcentsToUsdString } from "@/lib/currencies";
 import { prisma } from "@/lib/prisma";
@@ -401,7 +400,6 @@ export async function getApiProduct(
 
 export async function getApiPricing(
   codeOrId: string,
-  feePercent: number,
   role?: UserRole,
   userId?: string,
 ) {
@@ -429,8 +427,6 @@ export async function getApiPricing(
   const specialPrices = await getSpecialPricesForUser(userId, [d.id]);
   const special = specialPrices.get(d.id) ?? null;
   const price = unitPriceForViewer(priceRow, role, special);
-  // Fee only meaningful with auth; public still shows platform fee estimate on retail.
-  const fee = calcApiPurchaseFee(price, feePercent);
   const stockMap = await getEffectiveStockByDuration([d.id]);
   const rawStock = stockMap.get(d.id) ?? 0;
   const isMaintenance = Boolean(d.product.isMaintenance);
@@ -450,11 +446,6 @@ export async function getApiPricing(
       label: d.label,
       price,
       priceUsd: microcentsToUsdString(price),
-      feePercent,
-      fee,
-      feeUsd: microcentsToUsdString(fee),
-      total: price + fee,
-      totalUsd: microcentsToUsdString(price + fee),
       currency: "USD" as const,
       stock,
       inStock: stock > 0 && !isMaintenance,

@@ -78,10 +78,8 @@ const ORDER_DETAIL_DEMO = {
   quantity: 1,
   price: 100_000_000,
   priceUsd: "1.00",
-  fee: 1_000_000,
-  feeUsd: "0.01",
-  total: 101_000_000,
-  totalUsd: "1.01",
+  total: 100_000_000,
+  totalUsd: "1.00",
   currency: "USD",
   keys: ["XXXX-YYYY-ZZZZ"],
   items: [
@@ -95,8 +93,7 @@ const ORDER_DETAIL_DEMO = {
   createdAt: "2026-07-29T12:00:00.000Z",
   durationApiCode: "SANDBOX-DEMO-30D",
   subtotalMicrocents: 100_000_000,
-  apiFeeMicrocents: 1_000_000,
-  totalMicrocents: 101_000_000,
+  totalMicrocents: 100_000_000,
 };
 
 const SKU_ITEM_DEMO = {
@@ -254,7 +251,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     scope: "none (public)",
     group: "products",
     summary:
-      "Price + estimated fee for one SKU. Optional Bearer uses your tier. Alias query: duration=",
+      "Price for one SKU. Optional Bearer uses your tier. Alias query: duration=",
     params: [
       {
         name: "sku",
@@ -273,11 +270,6 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
         name: "Sandbox Demo Product — 30 Days",
         price: 100_000_000,
         priceUsd: "1.00",
-        feePercent: 1,
-        fee: 1_000_000,
-        feeUsd: "0.01",
-        total: 101_000_000,
-        totalUsd: "1.01",
         currency: "USD",
         stock: 999,
         inStock: true,
@@ -349,7 +341,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     auth: "private",
     scope: "any active key",
     group: "wallet",
-    summary: "Account role, priceTier, fee %, RPM, and key metadata.",
+    summary: "Account role, priceTier, RPM, and key metadata.",
     headers: [AUTH_BEARER_HEADER],
     exampleRequest: {
       headers: {
@@ -362,7 +354,6 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
         username: "demo_seller",
         role: "SELLER",
         priceTier: "wholesale",
-        feePercent: 1,
         rateLimitRpm: 300,
         sandbox: false,
         money: { unit: "USD_MICROCENTS", perUsd: 100_000_000 },
@@ -428,7 +419,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     scope: "orders:write",
     group: "orders",
     summary:
-      "Buy keys for one SKU. Debits wallet (role price + fee). Returns keys[].",
+      "Buy keys for one SKU. Debits wallet (role price). Returns keys[].",
     warnings: [
       "Idempotency-Key header is required.",
       "Never send price in the body — the API ignores client prices.",
@@ -631,7 +622,7 @@ export const DOC_ERRORS: DocStatus[] = [
   {
     http: 402,
     code: "INSUFFICIENT_BALANCE",
-    when: "Account wallet balance cannot cover the required purchase price + developer fee",
+    when: "Account wallet balance cannot cover the required purchase price",
   },
   {
     http: 403,
@@ -967,7 +958,6 @@ function buildApiRulesBlock(input: {
   baseUrl: string;
   publicRpm: number;
   privateRpm: number;
-  purchaseFeePercent: number;
   apiKey?: string;
 }): string {
   const keyLine = input.apiKey?.trim()
@@ -995,7 +985,7 @@ function buildApiRulesBlock(input: {
     "Money: USD microcents. 1 USD = 100_000_000. Prefer priceUsd / balanceUsd for UI.",
     "Pricing: public = retail only. Bearer = USER/ADMIN retail, SELLER/RESELLER wholesale (special overrides).",
     "Never send price in POST body — server ignores it.",
-    `Developer fee on purchases: ${input.purchaseFeePercent}%.`,
+    "No API fees: you pay only the SKU price.",
     "",
     "SKU rules: buy with items[].apiCode as sku (alias duration). Product apiCode alone fails.",
     "Security: Idempotency-Key required on POST /orders. Order list has keysCount only; full keys on create + GET by id.",
@@ -1015,7 +1005,6 @@ export function buildAiPromptPack(
     baseUrl: string;
     publicRpm: number;
     privateRpm: number;
-    purchaseFeePercent: number;
     apiKey?: string;
   },
 ): string {

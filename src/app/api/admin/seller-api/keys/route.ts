@@ -15,28 +15,19 @@ export async function GET(req: Request) {
   const q = url.searchParams.get("q")?.trim() ?? "";
   const skip = (page - 1) * limit;
 
-  const where = q
-    ? {
-        OR: [
-          { name: { contains: q, mode: "insensitive" as const } },
-          { keyPrefix: { contains: q, mode: "insensitive" as const } },
-          { user: { username: { contains: q, mode: "insensitive" as const } } },
-          { user: { email: { contains: q, mode: "insensitive" as const } } },
-        ],
-      }
-    : {};
-
-  // Mongo Prisma may not support mode insensitive — fallback without mode
-  const whereSafe = q
-    ? {
-        OR: [
-          { name: { contains: q } },
-          { keyPrefix: { contains: q } },
-          { user: { username: { contains: q } } },
-          { user: { email: { contains: q } } },
-        ],
-      }
-    : {};
+  const status = url.searchParams.get("status");
+  const mode = url.searchParams.get("mode");
+  const whereSafe: Record<string, unknown> = {};
+  if (status === "ACTIVE" || status === "REVOKED") whereSafe.status = status;
+  if (mode === "LIVE" || mode === "SANDBOX") whereSafe.mode = mode;
+  if (q) {
+    whereSafe.OR = [
+      { name: { contains: q } },
+      { keyPrefix: { contains: q } },
+      { user: { username: { contains: q } } },
+      { user: { email: { contains: q } } },
+    ];
+  }
 
   const [total, rows] = await Promise.all([
     prisma.sellerApiKey.count({ where: whereSafe }),
@@ -52,8 +43,6 @@ export async function GET(req: Request) {
       },
     }),
   ]);
-
-  void where;
 
   return jsonOk({
     page,

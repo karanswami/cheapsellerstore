@@ -4,6 +4,7 @@ import Link from "next/link";
 import { memo, useCallback, useMemo, useState } from "react";
 import { Flame, Gamepad2, Heart, ShoppingBag, Sparkles, Wrench } from "lucide-react";
 import { DurationSelect } from "@/components/duration-select";
+import { FlashStrip } from "@/components/flash-strip";
 import { LikeButton, useLike } from "@/components/like-button";
 import { QuickBuy } from "@/components/quick-buy";
 import { formatMoney } from "@/lib/currencies";
@@ -38,6 +39,7 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
   const price = selected?.price ?? p.startingPrice;
   const list = selected?.listPrice ?? null;
   const onSale = price != null && list != null && list > price;
+  const saleInfo = selected?.flashSale ?? p.flashSale;
 
   const tags = [
     p.isBestSeller ? { label: "Best seller", icon: Flame } : null,
@@ -149,6 +151,10 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
           />
         ) : null}
       </div>
+
+      {onSale && saleInfo && !p.isMaintenance ? (
+        <FlashStrip title={saleInfo.title} percent={saleInfo.discountPercent} endsAt={saleInfo.expiresAt} />
+      ) : null}
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>

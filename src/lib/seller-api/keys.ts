@@ -115,7 +115,6 @@ export async function getPlatformApiHubSnapshot(user: {
   const webhooks = gate.ok ? await listUserWebhooks(user.id) : [];
   const stats = gate.ok ? await getUserApiStats(user.id) : null;
   const effectiveRpm = settings.defaultRateLimitRpm;
-  const effectiveFeePercent = settings.purchaseFeePercent;
 
   return {
     overview: {
@@ -123,7 +122,6 @@ export async function getPlatformApiHubSnapshot(user: {
       gateCode: gate.ok ? null : gate.code,
       gateMessage: gate.ok ? null : gate.message,
       platformEnabled: settings.platformEnabled,
-      purchaseFeePercent: effectiveFeePercent,
       defaultRateLimitRpm: effectiveRpm,
       maxKeysPerUser,
       sandboxEnabled: settings.sandboxEnabled,
@@ -397,7 +395,6 @@ export async function listUserApiUsage(input: {
       method: r.method,
       path: r.path,
       statusCode: r.statusCode,
-      feeMicrocents: r.feeMicrocents,
       durationMs: r.durationMs,
       errorCode: r.errorCode,
       keyPrefix: r.apiKey.keyPrefix,
@@ -417,8 +414,6 @@ export async function getUserApiStats(userId: string) {
     requests7d,
     errors24h,
     rateLimited24h,
-    feeAgg24h,
-    feeAggAll,
     purchases24h,
     purchasesAll,
     spendAggAll,
@@ -443,23 +438,6 @@ export async function getUserApiStats(userId: string) {
         createdAt: { gte: since24h },
         statusCode: 429,
       },
-    }),
-    prisma.transaction.aggregate({
-      where: {
-        userId,
-        type: "API_FEE",
-        status: "COMPLETED",
-        createdAt: { gte: since24h },
-      },
-      _sum: { amount: true },
-    }),
-    prisma.transaction.aggregate({
-      where: {
-        userId,
-        type: "API_FEE",
-        status: "COMPLETED",
-      },
-      _sum: { amount: true },
     }),
     prisma.transaction.count({
       where: {
@@ -506,8 +484,6 @@ export async function getUserApiStats(userId: string) {
     rateLimited24h,
     successRate24h,
     avgDurationMs24h: Math.round(avgDuration._avg.durationMs ?? 0),
-    fees24hMicrocents: Math.abs(feeAgg24h._sum.amount ?? 0),
-    feesAllMicrocents: Math.abs(feeAggAll._sum.amount ?? 0),
     purchases24h,
     purchasesAll,
     spendAllMicrocents: Math.abs(spendAggAll._sum.amount ?? 0),
@@ -525,33 +501,19 @@ export async function listUserApiPurchases(input: {
   const limit = Math.min(50, Math.max(1, Math.floor(input.limit ?? 20) || 20));
   const skip = (page - 1) * limit;
 
-  const [noteTxs, feeTxs] = await Promise.all([
-    prisma.transaction.findMany({
-      where: {
-        userId: input.userId,
-        type: "PURCHASE",
-        status: "COMPLETED",
-        note: API_PURCHASE_NOTE,
-      },
-      select: { reference: true },
-    }),
-    prisma.transaction.findMany({
-      where: {
-        userId: input.userId,
-        type: "API_FEE",
-        status: "COMPLETED",
-      },
-      select: { reference: true },
-    }),
-  ]);
+  const noteTxs = await prisma.transaction.findMany({
+    where: {
+      userId: input.userId,
+      type: "PURCHASE",
+      status: "COMPLETED",
+      note: API_PURCHASE_NOTE,
+    },
+    select: { reference: true },
+  });
 
   const orderIdSet = new Set<string>();
   for (const t of noteTxs) {
     if (t.reference) orderIdSet.add(t.reference);
-  }
-  for (const t of feeTxs) {
-    const ref = t.reference?.replace(/^api-fee:/, "");
-    if (ref) orderIdSet.add(ref);
   }
 
   const orderIds = [...orderIdSet];
@@ -580,35 +542,18 @@ export async function listUserApiPurchases(input: {
   });
 
   const pageOrderIds = orders.map((o) => o.id);
-  const [purchaseTxs, pageFeeTxs] = await Promise.all([
-    prisma.transaction.findMany({
-      where: {
-        userId: input.userId,
-        type: "PURCHASE",
-        status: "COMPLETED",
-        reference: { in: pageOrderIds },
-      },
-      select: { reference: true, amount: true },
-    }),
-    prisma.transaction.findMany({
-      where: {
-        userId: input.userId,
-        type: "API_FEE",
-        status: "COMPLETED",
-        reference: { in: pageOrderIds.map((id) => `api-fee:${id}`) },
-      },
-      select: { reference: true, amount: true },
-    }),
-  ]);
+  const purchaseTxs = await prisma.transaction.findMany({
+    where: {
+      userId: input.userId,
+      type: "PURCHASE",
+      status: "COMPLETED",
+      reference: { in: pageOrderIds },
+    },
+    select: { reference: true, amount: true },
+  });
 
   const subtotalByOrder = new Map(
     purchaseTxs.map((t) => [t.reference!, Math.abs(t.amount)]),
-  );
-  const feeByOrder = new Map(
-    pageFeeTxs.map((f) => [
-      f.reference!.replace(/^api-fee:/, ""),
-      Math.abs(f.amount),
-    ]),
   );
 
   return {
@@ -621,7 +566,6 @@ export async function listUserApiPurchases(input: {
       const first = products[0];
       const qty = products.length;
       const subtotal = subtotalByOrder.get(order.id) ?? order.total;
-      const apiFee = feeByOrder.get(order.id) ?? 0;
       return {
         id: order.id,
         orderId: order.id,
@@ -632,8 +576,7 @@ export async function listUserApiPurchases(input: {
         quantity: qty,
         uniqueProducts: new Set(products.map((p) => p.productTitle)).size,
         subtotalMicrocents: subtotal,
-        apiFeeMicrocents: apiFee,
-        totalMicrocents: subtotal + apiFee,
+        totalMicrocents: subtotal,
         createdAt: order.createdAt.toISOString(),
         items: products.map((p) => ({
           productTitle: p.productTitle,

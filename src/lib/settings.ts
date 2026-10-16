@@ -169,7 +169,6 @@ export const SETTING_KEYS = {
   /** JSON { user, seller, reseller, admin: boolean } */
   apiAllowedRoles: "api_allowed_roles",
   /** Developer margin % of API order subtotal (default 1). */
-  apiPurchaseFeePercent: "api_purchase_fee_percent",
   apiDefaultRateLimitRpm: "api_default_rate_limit_rpm",
   /** Public (no-key) catalog/pricing/stock — requests per minute per IP */
   apiPublicRateLimitRpm: "api_public_rate_limit_rpm",

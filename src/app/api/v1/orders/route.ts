@@ -66,7 +66,6 @@ export async function POST(req: NextRequest) {
       }
       return {
         data: (cached.body as { data: unknown }).data,
-        feeMicrocents: 0,
       };
     }
 
@@ -152,7 +151,6 @@ export async function POST(req: NextRequest) {
 
     return {
       data: result.order,
-      feeMicrocents: result.order.fee ?? result.order.apiFeeMicrocents ?? 0,
     };
   });
 }

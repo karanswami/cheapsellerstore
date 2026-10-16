@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BadgeDollarSign,
+  Code2,
   Boxes,
   ChevronsUpDown,
   FileText,
@@ -73,6 +74,7 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/admin/users", label: "Users", icon: Users },
       { href: "/admin/sellers", label: "Sellers", icon: Store, badge: (b) => b.pendingSellers },
+      { href: "/admin/developer-api", label: "Developer API", icon: Code2 },
     ],
   },
   {

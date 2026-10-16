@@ -167,7 +167,7 @@ def main() -> int:
     bal = data.get("walletBalanceMicrocents")
     print(
         f"→ role={user.get('role')} sandbox={data.get('sandbox')} "
-        f"fee%={data.get('purchaseFeePercent')} balance={usd(bal)}"
+        f"balance={usd(bal)}"
     )
 
     # 2) balance

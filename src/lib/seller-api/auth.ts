@@ -5,7 +5,6 @@ import {
   getApiBurstLimit,
   getApiDefaultRateLimitRpm,
   getApiPlatformEnabled,
-  getApiPurchaseFeePercent,
   getApiAllowedRoles,
   roleAllowed,
 } from "@/lib/seller-api/settings";
@@ -43,7 +42,6 @@ export type AuthenticatedApiKey = {
   mode: SellerApiKeyMode;
   isSandbox: boolean;
   rateLimitRpm: number;
-  purchaseFeePercent: number;
   rateLimit: {
     limit: number;
     remaining: number;
@@ -203,13 +201,10 @@ export async function authenticateApiRequest(
     };
   }
 
-  const [defaultRpm, burst, rawPurchaseFeePercent] = await Promise.all([
+  const [effectiveBaseRpm, burst] = await Promise.all([
     getApiDefaultRateLimitRpm(),
     getApiBurstLimit(),
-    getApiPurchaseFeePercent(),
   ]);
-  const effectiveBaseRpm = defaultRpm;
-  const purchaseFeePercent = rawPurchaseFeePercent;
   const rpm = key.rateLimitRpm && key.rateLimitRpm > 0
     ? Math.min(key.rateLimitRpm, effectiveBaseRpm, 300)
     : effectiveBaseRpm;
@@ -252,7 +247,6 @@ export async function authenticateApiRequest(
       mode: key.mode,
       isSandbox: key.mode === "SANDBOX",
       rateLimitRpm: rpm,
-      purchaseFeePercent,
       rateLimit: {
         limit: rl.limit,
         remaining: rl.remaining,
@@ -284,7 +278,6 @@ export async function logApiUsage(input: {
   method: string;
   path: string;
   statusCode: number;
-  feeMicrocents?: number;
   durationMs: number;
   ip?: string | null;
   errorCode?: string | null;
@@ -297,7 +290,6 @@ export async function logApiUsage(input: {
       method: input.method,
       path: input.path,
       statusCode: input.statusCode,
-      feeMicrocents: input.feeMicrocents ?? 0,
       durationMs: input.durationMs,
       ip: input.ip ?? null,
       errorCode: input.errorCode ?? null,

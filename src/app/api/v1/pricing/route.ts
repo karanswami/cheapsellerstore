@@ -1,10 +1,5 @@
 import { getApiPricing, sandboxSkus } from "@/lib/seller-api/catalog";
 import { withPublicApi } from "@/lib/seller-api/handler";
-import {
-  calcApiPurchaseFee,
-  getApiPurchaseFeePercent,
-} from "@/lib/seller-api/settings";
-import { microcentsToUsdString } from "@/lib/currencies";
 import type { UserRole } from "@prisma/client";
 import type { NextRequest } from "next/server";
 
@@ -25,8 +20,6 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    const feePercent =
-      ctx.auth?.purchaseFeePercent ?? (await getApiPurchaseFeePercent());
     const role = ctx.auth?.user.role as UserRole | undefined;
 
     if (ctx.auth?.isSandbox) {
@@ -34,7 +27,6 @@ export async function GET(req: NextRequest) {
       const matched =
         items.find((i) => i.apiCode.toLowerCase() === sku.toLowerCase()) ||
         items[0]!;
-      const fee = calcApiPurchaseFee(matched.price, feePercent);
       return {
         data: {
           apiCode: matched.apiCode,
@@ -44,11 +36,6 @@ export async function GET(req: NextRequest) {
           label: matched.label,
           price: matched.price,
           priceUsd: matched.priceUsd,
-          feePercent,
-          fee,
-          feeUsd: microcentsToUsdString(fee),
-          total: matched.price + fee,
-          totalUsd: microcentsToUsdString(matched.price + fee),
           currency: "USD",
           stock: matched.stock,
           inStock: matched.inStock,
@@ -61,7 +48,6 @@ export async function GET(req: NextRequest) {
 
     const pricing = await getApiPricing(
       sku,
-      feePercent,
       role,
       ctx.auth?.user.id,
     );

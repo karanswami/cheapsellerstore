@@ -4,7 +4,7 @@ import { AdminSellersClient } from "./sellers-client";
 export default function AdminSellersPage() {
   return (
     <>
-      <PageHeader title="Sellers" subtitle="Applications, bulk actions and the Platform API." />
+      <PageHeader title="Sellers" subtitle="Applications and bulk actions." />
       <AdminSellersClient />
     </>
   );

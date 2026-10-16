@@ -62,11 +62,6 @@ export function roleAllowed(
   }
 }
 
-export async function getApiPurchaseFeePercent(): Promise<number> {
-  const n = await getSettingInt(SETTING_KEYS.apiPurchaseFeePercent, 1);
-  return Math.min(100, Math.max(0, n));
-}
-
 export async function getApiDefaultRateLimitRpm(): Promise<number> {
   const n = await getSettingInt(SETTING_KEYS.apiDefaultRateLimitRpm, 300);
   return Math.min(300, Math.max(1, n));
@@ -102,7 +97,6 @@ export async function getPlatformApiSettings() {
   const [
     platformEnabled,
     allowedRoles,
-    purchaseFeePercent,
     defaultRateLimitRpm,
     publicRateLimitRpm,
     burstLimit,
@@ -111,7 +105,6 @@ export async function getPlatformApiSettings() {
   ] = await Promise.all([
     getApiPlatformEnabled(),
     getApiAllowedRoles(),
-    getApiPurchaseFeePercent(),
     getApiDefaultRateLimitRpm(),
     getApiPublicRateLimitRpm(),
     getApiBurstLimit(),
@@ -121,7 +114,6 @@ export async function getPlatformApiSettings() {
   return {
     platformEnabled,
     allowedRoles,
-    purchaseFeePercent,
     defaultRateLimitRpm,
     publicRateLimitRpm,
     burstLimit,
@@ -133,7 +125,6 @@ export async function getPlatformApiSettings() {
 export async function savePlatformApiSettings(input: {
   platformEnabled?: boolean;
   allowedRoles?: ApiAllowedRoles;
-  purchaseFeePercent?: number;
   defaultRateLimitRpm?: number;
   burstLimit?: number;
   maxKeysPerUser?: number;
@@ -149,12 +140,6 @@ export async function savePlatformApiSettings(input: {
     await upsertSetting({
       key: SETTING_KEYS.apiAllowedRoles,
       textValue: JSON.stringify(input.allowedRoles),
-    });
-  }
-  if (input.purchaseFeePercent !== undefined) {
-    await upsertSetting({
-      key: SETTING_KEYS.apiPurchaseFeePercent,
-      intValue: Math.min(100, Math.max(0, Math.round(input.purchaseFeePercent))),
     });
   }
   if (input.defaultRateLimitRpm !== undefined) {
@@ -185,13 +170,4 @@ export async function savePlatformApiSettings(input: {
     });
   }
   return getPlatformApiSettings();
-}
-
-/** Microcents fee from subtotal + percent. */
-export function calcApiPurchaseFee(
-  subtotalMicrocents: number,
-  percent: number,
-): number {
-  if (subtotalMicrocents <= 0 || percent <= 0) return 0;
-  return Math.ceil((subtotalMicrocents * percent) / 100);
 }

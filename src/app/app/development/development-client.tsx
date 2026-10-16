@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 type Overview = {
   allowed: boolean;
   gateMessage: string | null;
-  purchaseFeePercent: number;
   defaultRateLimitRpm: number;
   maxKeysPerUser: number;
   sandboxEnabled: boolean;
@@ -28,8 +27,6 @@ type Overview = {
     rateLimited24h: number;
     successRate24h: number;
     avgDurationMs24h: number;
-    fees24hMicrocents: number;
-    feesAllMicrocents: number;
     purchases24h: number;
     purchasesAll: number;
     spendAllMicrocents: number;
@@ -37,7 +34,7 @@ type Overview = {
 };
 
 type Hook = { id: string; url: string; secretPrefix: string; events: string[]; status: string; failCount: number; lastDeliveryAt: string | null; createdAt: string };
-type UsageRow = { id: string; method: string; path: string; statusCode: number; feeMicrocents: number; durationMs: number; keyName: string; createdAt: string };
+type UsageRow = { id: string; method: string; path: string; statusCode: number; durationMs: number; keyName: string; createdAt: string };
 
 const TABS = ["Overview", "Keys", "Webhooks", "Usage"] as const;
 type Tab = (typeof TABS)[number];
@@ -89,7 +86,7 @@ function OverviewTab({ overview, baseUrl }: { overview: Overview; baseUrl: strin
         { label: "Avg latency", value: `${s.avgDurationMs24h} ms` },
         { label: "Purchases · all time", value: String(s.purchasesAll) },
         { label: "API spend", value: formatMoney(s.spendAllMicrocents) },
-        { label: "Fees paid", value: formatMoney(s.feesAllMicrocents) },
+        { label: "Purchases · 24h", value: String(s.purchases24h) },
       ]
     : [];
   const snippet = `curl ${baseUrl}/balance \\\n  -H "Authorization: Bearer YOUR_API_KEY"`;
@@ -120,7 +117,7 @@ function OverviewTab({ overview, baseUrl }: { overview: Overview; baseUrl: strin
         </Panel>
         <Panel title="Your limits" icon={Activity}>
           <dl className="space-y-2.5 text-sm">
-            <Row k="Purchase fee" v={`${overview.purchaseFeePercent}%`} />
+            <Row k="API fees" v="None" />
             <Row k="Default rate limit" v={`${overview.defaultRateLimitRpm} req / min`} />
             <Row k="Keys (active / max)" v={`${overview.activeKeys} / ${overview.maxKeysPerUser}`} />
             <Row k="Sandbox mode" v={overview.sandboxEnabled ? "Available" : "Off"} />

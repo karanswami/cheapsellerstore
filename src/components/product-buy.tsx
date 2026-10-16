@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Check, Loader2, Minus, Plus, ShoppingBag, Tag, Wallet } from "lucide-react";
+import { FlashStrip } from "@/components/flash-strip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatMoney, type Currency } from "@/lib/currencies";
@@ -84,8 +85,18 @@ export function ProductBuy({ product, loggedIn, balance }: Props) {
   const list = selected?.listPrice ?? null;
   const onSale = selected?.price != null && list != null && list > selected.price;
 
+  const saleInfo = selected?.flashSale ?? null;
+
   return (
-    <div className="space-y-5 rounded-3xl border bg-card p-5 shadow-xl shadow-black/5 sm:p-6">
+    <div className="space-y-5 overflow-hidden rounded-3xl border bg-card p-5 shadow-xl shadow-black/5 sm:p-6">
+      {onSale && saleInfo ? (
+        <FlashStrip
+          title={saleInfo.title}
+          percent={saleInfo.discountPercent}
+          endsAt={saleInfo.expiresAt}
+          className="-mx-5 -mt-5 sm:-mx-6 sm:-mt-6"
+        />
+      ) : null}
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Price</p>

@@ -42,7 +42,7 @@ export async function GET(req: Request) {
   }
 
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [total, rows, last24, rateLimited, feeAgg] = await Promise.all([
+  const [total, rows, last24, rateLimited, errors24, activeKeys] = await Promise.all([
     prisma.sellerApiUsage.count({ where }),
     prisma.sellerApiUsage.findMany({
       where,
@@ -58,17 +58,11 @@ export async function GET(req: Request) {
     prisma.sellerApiUsage.count({
       where: { createdAt: { gte: since24h }, statusCode: 429 },
     }),
-    prisma.transaction.aggregate({
-      where: {
-        type: "API_FEE",
-        status: "COMPLETED",
-        createdAt: { gte: since24h },
-      },
-      _sum: { amount: true },
+    prisma.sellerApiUsage.count({
+      where: { createdAt: { gte: since24h }, statusCode: { gte: 400 } },
     }),
+    prisma.sellerApiKey.count({ where: { status: "ACTIVE" } }),
   ]);
-
-  const fee24 = Math.abs(feeAgg._sum.amount ?? 0);
 
   return jsonOk({
     page,
@@ -80,14 +74,14 @@ export async function GET(req: Request) {
     kpis: {
       requests24h: last24,
       rateLimited24h: rateLimited,
-      developerMargin24h: fee24,
+      errors24h: errors24,
+      activeKeys,
     },
     items: rows.map((r) => ({
       id: r.id,
       method: r.method,
       path: r.path,
       statusCode: r.statusCode,
-      feeMicrocents: r.feeMicrocents,
       durationMs: r.durationMs,
       errorCode: r.errorCode,
       username: r.user.username,

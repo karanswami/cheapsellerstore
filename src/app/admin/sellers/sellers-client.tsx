@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Check, Code2, Eye, Layers, Store, UserPlus, X } from "lucide-react";
+import { Check, Eye, Layers, Store, UserPlus, X } from "lucide-react";
 import { EmptyState, StatusBadge, formatDate } from "@/components/app-ui";
 import { Chips, ConfirmDialog, Field, StatCard, SubmitButton, TableSkeleton, adminFetch, errMsg, useAdminQuery } from "@/components/admin/kit";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { formatMoney } from "@/lib/currencies";
-import { PlatformApiTab } from "./platform-api";
 
 export function AdminSellersClient() {
   return (
@@ -26,18 +25,12 @@ export function AdminSellersClient() {
         <TabsTrigger value="bulk">
           <Layers className="size-4" /> Bulk actions
         </TabsTrigger>
-        <TabsTrigger value="api">
-          <Code2 className="size-4" /> Platform API
-        </TabsTrigger>
       </TabsList>
       <TabsContent value="applications">
         <Applications />
       </TabsContent>
       <TabsContent value="bulk">
         <BulkActions />
-      </TabsContent>
-      <TabsContent value="api">
-        <PlatformApiTab />
       </TabsContent>
     </Tabs>
   );

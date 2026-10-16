@@ -108,7 +108,7 @@ const APP_ROUTES: RouteEntry[] = [
   },
   {
     path: "/app/development",
-    title: "Platform API",
+    title: "Developer API",
     subtitle: "One credential · calls · purchases · webhooks",
     icon: Code2,
   },
@@ -225,8 +225,8 @@ const ADMIN_ROUTES: RouteEntry[] = [
     icon: UserPlus,
   },
   {
-    path: "/admin/seller-api",
-    title: "Platform API",
+    path: "/admin/developer-api",
+    title: "Developer API",
     subtitle: "Developers, keys, usage, and margin",
     icon: Code2,
   },

@@ -25,7 +25,6 @@ export async function PATCH(req: Request) {
   let body: {
     platformEnabled?: boolean;
     allowedRoles?: ApiAllowedRoles;
-    purchaseFeePercent?: number;
     defaultRateLimitRpm?: number;
     burstLimit?: number;
     maxKeysPerUser?: number;
