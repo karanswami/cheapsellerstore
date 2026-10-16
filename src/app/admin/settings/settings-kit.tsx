@@ -17,6 +17,7 @@ export type AdminSettings = {
   manualDepositMethods: ManualMethod[];
   feedbackSounds: { hapticsEnabled: boolean; soundsEnabled: boolean; sounds: Record<string, string> };
   telegramNotifications: { enabled: boolean; botToken: string; channels: Record<string, { enabled: boolean; chatId: string; inviteLink: string; label: string }> };
+  referralCommissionEnabled: boolean;
   referralPercent: number;
   sellerPurchasePercent: number;
   resellerPurchasePercent: number;

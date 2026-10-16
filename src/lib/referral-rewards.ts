@@ -1,6 +1,6 @@
 import { Currency, formatMoney } from "@/lib/currencies";
 import { prisma } from "@/lib/prisma";
-import { getReferralPercentForBuyerRole } from "@/lib/settings";
+import { getReferralPercentForBuyerRole, isReferralCommissionEnabled } from "@/lib/settings";
 import { adjustWallet } from "@/lib/wallet";
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { TransactionType, UserRole } from "@prisma/client";
@@ -26,6 +26,7 @@ export async function creditReferralReward(input: {
   try {
     const total = Math.abs(Math.round(input.orderTotal));
     if (total <= 0) return;
+    if (!(await isReferralCommissionEnabled())) return;
 
     const buyer = await prisma.user.findUnique({
       where: { id: input.buyerId },

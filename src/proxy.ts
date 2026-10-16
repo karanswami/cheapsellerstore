@@ -226,6 +226,6 @@ export const config = {
      * Gate auth redirects + stamp x-drip-pathname for maintenance.
      * Skip static assets, Next internals, uploads, and the service worker.
      */
-    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|offline\\.html|uploads/|downloads/|pwa/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt|xml|woff2?|apk)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|offline\\.html|uploads/|downloads/|pwa/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt|xml|woff2?|apk)$).*)",
   ],
 };

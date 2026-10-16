@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/app-ui";
 import { getCurrentUser } from "@/lib/auth/customer";
 import { getUserKeysPage } from "@/lib/orders";
 import { KeysClient } from "./keys-client";
@@ -14,10 +13,6 @@ export default async function KeysPage() {
     total: 0,
     hasMore: false,
   }));
-  return (
-    <>
-      <PageHeader title="Key vault" subtitle="Every license you have bought — reveal, copy or download." />
-      <KeysClient initial={first} />
-    </>
-  );
+  // The vault card carries the page title.
+  return <KeysClient initial={first} />;
 }

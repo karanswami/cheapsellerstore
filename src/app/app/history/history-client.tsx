@@ -303,7 +303,7 @@ export function HistoryClient({ initial }: { initial: Page }) {
               </dl>
               {open.kind === "order" ? (
                 <Button asChild variant="secondary" className="w-full">
-                  <Link href={`/order/${open.id.replace(/^order-/, "")}`}>
+                  <Link href={`/app/order/${open.id.replace(/^order-/, "")}`}>
                     <ExternalLink /> View order
                   </Link>
                 </Button>

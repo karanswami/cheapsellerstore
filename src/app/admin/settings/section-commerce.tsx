@@ -25,12 +25,21 @@ function Pct({ label, hint, value, onChange }: { label: string; hint?: string; v
 
 function Rewards({ s }: { s: AdminSettings }) {
   const { save, busy } = useSettingsSave();
+  const [on, setOn] = useState(s.referralCommissionEnabled);
   const [referral, setReferral] = useState(String(s.referralPercent));
   return (
-    <SettingsCard title="Referral" description="Reward paid to the referrer on each deposit by a referred user." busy={busy} onSave={() => save({ referralPercent: Number(referral) })}>
-      <div className="max-w-xs">
-        <Pct label="Referral reward (%)" value={referral} onChange={setReferral} />
-      </div>
+    <SettingsCard
+      title="Referral commission"
+      description="Optional % of every purchase a referred friend makes, paid to the referrer's wallet. Referral spins work either way."
+      busy={busy}
+      onSave={() => save({ referralCommissionEnabled: on, referralPercent: Number(referral) })}
+    >
+      <ToggleRow label="Pay referral commission" hint="Off = referrers only earn wheel spins." checked={on} onChange={setOn} />
+      {on ? (
+        <div className="max-w-xs">
+          <Pct label="User purchases (%)" hint="Seller / reseller rates are in Seller program." value={referral} onChange={setReferral} />
+        </div>
+      ) : null}
     </SettingsCard>
   );
 }

@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { Check, Loader2, Minus, Plus, ShoppingBag, Tag, Wallet } from "lucide-react";
+import { Check, Loader2, Minus, Plus, ShoppingBag, Wallet } from "lucide-react";
 import { FlashStrip } from "@/components/flash-strip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PromoField, TotalBreakdown, usePromo } from "@/components/promo-field";
 import { formatMoney, type Currency } from "@/lib/currencies";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -27,13 +28,14 @@ export function ProductBuy({ product, loggedIn, balance }: Props) {
   const [selectedId, setSelectedId] = useState(firstAvailable?.id ?? "");
   const [qty, setQty] = useState(1);
   const [androidId, setAndroidId] = useState("");
-  const [promo, setPromo] = useState("");
-  const [showPromo, setShowPromo] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const selected = product.durations.find((d) => d.id === selectedId) ?? firstAvailable;
   const unit = selected?.price ?? 0;
-  const total = unit * qty;
+  const subtotal = unit * qty;
+  const promo = usePromo({ productId: product.id, durationId: selected?.id ?? "", unitPrice: unit, quantity: qty });
+  const discount = Math.min(subtotal, promo.applied?.discount ?? 0);
+  const total = Math.max(0, subtotal - discount);
   const maxQty = Math.max(1, Math.min(20, selected?.stock ?? 1));
   const canBuy = !product.isMaintenance && selected && selected.price != null && selected.stock > 0;
   const short = balance != null && canBuy && balance < total;
@@ -58,7 +60,7 @@ export function ProductBuy({ product, loggedIn, balance }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          promoCode: promo.trim() || undefined,
+          promoCode: promo.applied?.code,
           items: [
             {
               durationId: selected.id,
@@ -74,7 +76,7 @@ export function ProductBuy({ product, loggedIn, balance }: Props) {
         return;
       }
       toast.success("Order placed!");
-      router.push(`/order/${json.data.orderId}?token=${encodeURIComponent(json.data.accessToken)}`);
+      router.push(`/order/${json.data.orderId}?token=${encodeURIComponent(json.data.accessToken)}&fresh=1`);
     } catch {
       toast.error("Network error. Please try again.");
     } finally {
@@ -195,21 +197,13 @@ export function ProductBuy({ product, loggedIn, balance }: Props) {
             <Plus className="size-4" />
           </button>
         </div>
-        {showPromo ? (
-          <Input autoFocus value={promo} onChange={(e) => setPromo(e.target.value)} placeholder="Promo code" maxLength={64} className="h-11 flex-1 uppercase" />
-        ) : (
-          <button onClick={() => setShowPromo(true)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
-            <Tag className="size-4" /> Have a promo code?
-          </button>
-        )}
       </div>
 
-      <div className="flex items-end justify-between border-t pt-4">
-        <span className="text-sm text-muted-foreground">Total{qty > 1 ? ` · ${qty} keys` : ""}</span>
-        <span className="font-display text-2xl font-bold leading-none tabular-nums">
-          {canBuy ? formatMoney(total, product.currency) : "—"}
-        </span>
-      </div>
+      <PromoField promo={promo} currency={product.currency} disabled={busy} />
+
+      {canBuy ? (
+        <TotalBreakdown subtotal={subtotal} discount={discount} total={total} code={promo.applied?.code} currency={product.currency} qty={qty} />
+      ) : null}
 
       {product.isMaintenance ? (
         <Button size="lg" className="w-full" disabled>Under maintenance</Button>

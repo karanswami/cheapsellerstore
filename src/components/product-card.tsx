@@ -77,7 +77,7 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
       )}
     >
       <div
-        className="relative aspect-[16/11] select-none overflow-hidden rounded-t-2xl bg-muted"
+        className="relative aspect-[4/3] select-none sm:aspect-[16/11] overflow-hidden rounded-t-2xl bg-muted"
         onDoubleClick={p.isMaintenance ? undefined : doubleTapLike}
       >
         <Link href={`/product/${p.id}`} aria-label={p.title} className="absolute inset-0">
@@ -110,12 +110,12 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
           </div>
         ) : null}
 
-        <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+        <div className="pointer-events-none absolute inset-x-2 top-2 sm:inset-x-3 sm:top-3 flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-wrap gap-1.5">
             {tags.map((t) => (
               <span
                 key={t.label}
-                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white [&_svg]:size-3"
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-black/70 px-2 py-0.5 text-[10px] sm:px-2.5 sm:py-1 sm:text-[11px] font-semibold text-white [&_svg]:size-3"
               >
                 <t.icon /> {t.label}
               </span>
@@ -156,7 +156,7 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
         <FlashStrip title={saleInfo.title} percent={saleInfo.discountPercent} endsAt={saleInfo.expiresAt} />
       ) : null}
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className="flex flex-1 flex-col gap-2.5 p-3 sm:gap-3 sm:p-4">
         <div>
           <div className="flex items-center justify-between gap-2">
             <p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -164,7 +164,7 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
             </p>
             <LikeButton liked={like.liked} count={like.count} pop={like.pop} onToggle={() => void like.toggle()} className="-mr-2 -my-1" />
           </div>
-          <h3 className="mt-0.5 line-clamp-2 min-h-[2.75rem] font-display text-lg font-bold leading-snug">
+          <h3 className="mt-0.5 line-clamp-2 min-h-[2.5rem] font-display text-sm sm:min-h-[2.75rem] sm:text-lg font-bold leading-snug">
             <Link href={`/product/${p.id}`} className="hover:text-primary">{p.title}</Link>
           </h3>
         </div>
@@ -178,9 +178,9 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
             onOpenChange={setMenuOpen}
           />
 
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className={cn("min-w-0", p.isMaintenance && "opacity-60")}>
-              <p className="font-display text-2xl font-bold leading-none tabular-nums">
+              <p className="font-display text-xl font-bold leading-none tabular-nums sm:text-2xl">
                 {price != null ? formatMoney(price, p.currency) : "—"}
               </p>
               {onSale ? (
@@ -192,7 +192,7 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
               <button
                 disabled
                 aria-disabled
-                className="inline-flex h-11 shrink-0 cursor-not-allowed items-center gap-2 whitespace-nowrap rounded-xl bg-muted px-4 text-sm font-semibold text-muted-foreground"
+                className="inline-flex h-10 w-full shrink-0 justify-center sm:h-11 sm:w-auto cursor-not-allowed items-center gap-2 whitespace-nowrap rounded-xl bg-muted px-3 text-sm sm:px-4 font-semibold text-muted-foreground"
               >
                 {p.isMaintenance ? <Wrench className="size-4" /> : null}
                 {p.isMaintenance ? "Unavailable" : "Out of stock"}
@@ -200,14 +200,14 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
             ) : !loggedIn ? (
               <Link
                 href="/login?next=%2F"
-                className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-transform active:scale-95"
+                className="inline-flex h-10 w-full shrink-0 justify-center sm:h-11 sm:w-auto items-center gap-2 whitespace-nowrap rounded-xl bg-primary px-3 text-sm sm:px-4 font-semibold text-primary-foreground transition-transform active:scale-95"
               >
                 Sign in to buy
               </Link>
             ) : (
               <button
                 onClick={() => setBuying(true)}
-                className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-transform hover:brightness-110 active:scale-95"
+                className="inline-flex h-10 w-full shrink-0 justify-center sm:h-11 sm:w-auto items-center gap-2 whitespace-nowrap rounded-xl bg-primary px-3 text-sm sm:px-4 font-semibold text-primary-foreground transition-transform hover:brightness-110 active:scale-95"
               >
                 <ShoppingBag className="size-4" /> Buy now
               </button>
@@ -218,6 +218,7 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
 
       {buying && selected && canBuy ? (
         <QuickBuy
+          productId={p.id}
           title={p.title}
           imageUrl={p.imageUrl}
           currency={p.currency}

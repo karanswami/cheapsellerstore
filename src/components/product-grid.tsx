@@ -49,11 +49,23 @@ export function ProductGrid({
     );
   }, [products, category, query]);
 
+  // Most liked first, then pinned, then "new"; ties keep the server order.
+  const sorted = useMemo(
+    () =>
+      [...visible].sort(
+        (a, b) =>
+          (b.likeCount ?? 0) - (a.likeCount ?? 0) ||
+          Number(b.isPinned) - Number(a.isPinned) ||
+          Number(b.isNew) - Number(a.isNew),
+      ),
+    [visible],
+  );
+
   return (
     <section aria-label="Products">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-3xl font-bold tracking-tight">Products</h2>
+          <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Products</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {products.length} {products.length === 1 ? "product" : "products"} available
           </p>
@@ -93,8 +105,8 @@ export function ProductGrid({
           {products.length === 0 ? "No products available right now." : "Nothing matches your search."}
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-5">
-          {[...visible].sort((a, b) => Number(b.isPinned) - Number(a.isPinned)).map((p) => (
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+          {sorted.map((p) => (
             <ProductCard key={p.id} product={p} loggedIn={loggedIn} balance={balance} onPaid={handlePaid} />
           ))}
         </div>

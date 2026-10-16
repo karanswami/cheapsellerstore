@@ -1,11 +1,14 @@
 import { PageHeader } from "@/components/app-ui";
 import { AdminSettingsClient } from "./settings-client";
 
-export default function AdminSettingsPage() {
+const TABS = ["general", "commerce", "integrations", "notifications", "supplier"];
+
+export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
   return (
     <>
       <PageHeader title="Settings" subtitle="Store, commerce rules, integrations and notifications." />
-      <AdminSettingsClient />
+      <AdminSettingsClient defaultTab={tab && TABS.includes(tab) ? tab : "general"} />
     </>
   );
 }

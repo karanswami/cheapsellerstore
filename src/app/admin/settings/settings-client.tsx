@@ -10,11 +10,11 @@ import { IntegrationsSection, NotificationsSection } from "./section-integration
 import { SupplierSection } from "./section-supplier";
 import type { AdminSettings } from "./settings-kit";
 
-export function AdminSettingsClient() {
+export function AdminSettingsClient({ defaultTab = "general" }: { defaultTab?: string }) {
   const { data, error } = useAdminQuery<AdminSettings>("/api/admin/settings");
 
   return (
-    <Tabs defaultValue="general" className="space-y-4">
+    <Tabs defaultValue={defaultTab} className="space-y-4">
       <TabsList>
         <TabsTrigger value="general">
           <Building2 className="size-4" /> Store

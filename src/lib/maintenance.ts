@@ -38,6 +38,7 @@ const MAINTENANCE_EXEMPT_PREFIXES = [
   "/pwa",
   "/offline.html",
   "/sw.js",
+  "/manifest.webmanifest",
 ] as const;
 
 /** Full-screen status routes — no site chrome / splash / install banner. */

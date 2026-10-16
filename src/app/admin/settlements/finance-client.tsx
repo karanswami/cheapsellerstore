@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { BadgeDollarSign, Clock, Gem, Play } from "lucide-react";
+import { BadgeDollarSign, Gem } from "lucide-react";
 import { EmptyState, StatusBadge, formatDate } from "@/components/app-ui";
-import { Chips, ConfirmDialog, Field, Pager, SearchBox, StatCard, SubmitButton, TableSkeleton, adminFetch, errMsg, useAdminList, useAdminQuery, useDebounced } from "@/components/admin/kit";
+import { Chips, ConfirmDialog, Field, Pager, SearchBox, StatCard, SubmitButton, TableSkeleton, adminFetch, errMsg, useAdminQuery, useDebounced } from "@/components/admin/kit";
 import { useCatalog } from "@/components/admin/pickers";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import type { CronOverview, CronRunsPage } from "@/lib/admin-cron";
 import { formatMoney } from "@/lib/currencies";
 import type { DeveloperSettlementsPayload } from "@/lib/developer-settlements";
 import type { SpecialInventoryListPayload, SpecialStockSettlementsPayload } from "@/lib/special-inventory";
@@ -30,18 +28,12 @@ export function AdminFinanceClient() {
         <TabsTrigger value="special">
           <Gem className="size-4" /> Special stock
         </TabsTrigger>
-        <TabsTrigger value="cron">
-          <Clock className="size-4" /> Cron jobs
-        </TabsTrigger>
       </TabsList>
       <TabsContent value="developer">
         <SettlementPanel kind="developer" />
       </TabsContent>
       <TabsContent value="special">
         <SpecialStock />
-      </TabsContent>
-      <TabsContent value="cron">
-        <CronPanel />
       </TabsContent>
     </Tabs>
   );
@@ -322,98 +314,5 @@ function ImportSpecial({ onDone }: { onDone: () => void }) {
         </SubmitButton>
       </DialogFooter>
     </>
-  );
-}
-
-/* ───────────────────────── Cron jobs ───────────────────────── */
-
-function CronPanel() {
-  const overview = useAdminQuery<CronOverview>("/api/admin/cron");
-  const [page, setPage] = useState(1);
-  const runs = useAdminList<CronRunsPage["runs"][number]>("/api/admin/cron/runs", "runs", { page, limit: 15 });
-  const [running, setRunning] = useState(false);
-  const job = overview.data?.jobs[0];
-
-  async function runNow() {
-    setRunning(true);
-    try {
-      await adminFetch("/api/admin/cron/run", { method: "POST", json: { job: "deposits" } });
-      toast.success("Deposit poll finished.");
-      overview.reload();
-      runs.reload();
-    } catch (e) {
-      toast.error(errMsg(e));
-    } finally {
-      setRunning(false);
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      {job ? (
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h3 className="font-display text-lg font-semibold">{job.name}</h3>
-              <p className="text-sm text-muted-foreground">{job.description}</p>
-              <p className="mt-2 font-mono text-xs text-muted-foreground">
-                {job.endpoint} · {job.scheduleHint}
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Badge variant={job.secretConfigured ? "success" : "warning"}>{job.secretConfigured ? "Secret set" : "No secret"}</Badge>
-                <Badge variant="muted">Grace {job.providerGraceMinutes} min</Badge>
-              </div>
-            </div>
-            <SubmitButton busy={running} onClick={runNow}>
-              <Play /> Run now
-            </SubmitButton>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="Runs 24h" value={job.stats24h.total} hint={`${job.stats24h.failed} failed`} tone={job.stats24h.failed ? "destructive" : "default"} />
-            <StatCard label="Avg duration" value={`${job.stats24h.avgDurationMs}ms`} />
-            <StatCard label="Expired 24h" value={job.stats24h.expiredTotal} />
-            <StatCard label="Last run" value={job.lastRun ? formatDate(job.lastRun.startedAt, true) : "Never"} />
-          </div>
-        </div>
-      ) : (
-        <TableSkeleton rows={3} />
-      )}
-      <div className="rounded-xl border bg-card">
-        {runs.loading && runs.items.length === 0 ? (
-          <TableSkeleton />
-        ) : runs.items.length === 0 ? (
-          <div className="p-6">
-            <EmptyState icon={Clock} title="No runs yet" />
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Started</TableHead>
-                <TableHead>Result</TableHead>
-                <TableHead className="text-right">Duration</TableHead>
-                <TableHead className="text-right">Expired</TableHead>
-                <TableHead>Providers</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {runs.items.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(r.startedAt, true)}</TableCell>
-                  <TableCell>
-                    <Badge variant={r.ok ? "success" : "destructive"}>{r.ok ? "OK" : "Failed"}</Badge>
-                    {r.errorMessage ? <span className="ml-1 text-xs text-muted-foreground">{r.errorMessage}</span> : null}
-                  </TableCell>
-                  <TableCell className="text-right text-sm">{r.durationMs}ms</TableCell>
-                  <TableCell className="text-right text-sm">{r.expired}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{r.providers.map((p) => `${p.method} ${p.completed}/${p.checked}`).join(" · ") || "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
-      <Pager page={page} pageSize={15} total={runs.total} onPage={setPage} loading={runs.loading} />
-    </div>
   );
 }

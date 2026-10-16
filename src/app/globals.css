@@ -153,6 +153,17 @@
   }
   html {
     color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Installed app / Android shell: no rubber-band page bounce, no long-press callouts on chrome */
+  .standalone body,
+  .native-app body {
+    overscroll-behavior-y: none;
+  }
+  .standalone nav a,
+  .native-app nav a {
+    -webkit-touch-callout: none;
+    user-select: none;
   }
   body {
     background: var(--background);
@@ -272,6 +283,18 @@
   0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
   100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(0.6); }
 }
+@keyframes ring-out {
+  0% { transform: scale(0.7); opacity: 0.7; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+@keyframes glow-in {
+  0% { opacity: 0; transform: scale(0.4); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
 @keyframes ping-dot {
   0% { transform: scale(1); opacity: 0.7; }
   80%, 100% { transform: scale(2.6); opacity: 0; }
@@ -281,23 +304,145 @@
   to { transform: translateX(100%); }
 }
 
+/* Spin wheel: stage, win and lose effects */
+@keyframes sw-rays { to { transform: rotate(360deg); } }
+@keyframes sw-letter {
+  0% { opacity: 0; transform: translateY(18px) scale(0.4) rotate(-12deg); }
+  60% { opacity: 1; transform: translateY(-6px) scale(1.18) rotate(4deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+@keyframes sw-float-letter {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes sw-wheel-shake {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(-3deg) translateX(-4px); }
+  30% { transform: rotate(2.5deg) translateX(4px); }
+  45% { transform: rotate(-2deg) translateX(-3px); }
+  60% { transform: rotate(1.5deg) translateX(2px); }
+  75% { transform: rotate(-0.8deg); }
+}
+@keyframes sw-rain {
+  0% { transform: translateY(-6px); opacity: 0; }
+  15% { opacity: 0.9; }
+  100% { transform: translateY(70px); opacity: 0; }
+}
+@keyframes sw-wobble {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-9deg); }
+  75% { transform: rotate(9deg); }
+}
+@keyframes sw-drop-in {
+  0% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+  55% { opacity: 1; transform: translateY(6px) scale(1); }
+  75% { transform: translateY(-3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes sw-halo { to { transform: rotate(360deg); } }
+@keyframes sw-hub-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+@keyframes sw-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(251 191 36 / 0.55), 0 10px 30px -8px rgb(251 191 36 / 0.6); }
+  50% { box-shadow: 0 0 0 10px rgb(251 191 36 / 0), 0 10px 40px -6px rgb(251 191 36 / 0.85); }
+}
+@keyframes sw-flash {
+  0% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+@layer utilities {
+  .sw-rays { animation: sw-rays 14s linear infinite; }
+  .sw-letter { display: inline-block; animation: sw-letter 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both, sw-float-letter 2.4s ease-in-out infinite; animation-delay: var(--d, 0ms), calc(var(--d, 0ms) + 0.6s); }
+  .sw-wheel-shake { animation: sw-wheel-shake 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+  .sw-rain { animation: sw-rain 0.9s linear infinite; animation-delay: var(--d, 0ms); }
+  .sw-wobble { animation: sw-wobble 1.6s ease-in-out infinite; }
+  .sw-drop-in { animation: sw-drop-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .sw-halo { animation: sw-halo 6s linear infinite; }
+  .sw-hub-breathe { animation: sw-hub-breathe 1.8s ease-in-out infinite; }
+  .sw-glow-pulse { animation: sw-glow-pulse 1.8s ease-in-out infinite; }
+  .sw-flash { animation: sw-flash 0.7s ease-out forwards; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw-rays, .sw-letter, .sw-wheel-shake, .sw-rain, .sw-wobble, .sw-halo, .sw-hub-breathe, .sw-glow-pulse { animation: none; }
+}
+
 @layer utilities {
   .anim-heart-pop { animation: heart-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
   .anim-heart-burst { animation: heart-burst 0.8s ease-out forwards; }
   .anim-sheet-up { animation: sheet-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
   .anim-pop-in { animation: pop-in 0.16s ease-out both; }
   .anim-success-pop { animation: success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .anim-ring-out { animation: ring-out 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) 0.35s both; }
+  .anim-glow { animation: glow-in 0.9s ease-out both; }
+  .anim-twinkle { animation: twinkle 1.6s ease-in-out infinite; }
+  .anim-sheen-loop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+    transform: translateX(-120%) skewX(-20deg);
+    pointer-events: none;
+    animation: sheen 2.6s ease-in-out 1.6s infinite;
+  }
   .anim-ping { animation: ping-dot 1.8s ease-out infinite; }
   .anim-pay-sweep { animation: pay-sweep 1s linear infinite; }
   .draw-ring { stroke-dasharray: 190; stroke-dashoffset: 190; animation: draw 0.55s ease-out 0.05s forwards; }
   .draw-check { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw 0.35s ease-out 0.5s forwards; }
-  .confetti-bit { animation: confetti 1s cubic-bezier(0.15, 0.7, 0.3, 1) 0.45s both; }
+  .confetti-bit { animation: confetti 1s cubic-bezier(0.15, 0.7, 0.3, 1) var(--cd, 0.45s) both; }
   /* Skip rendering offscreen cards entirely -> smooth scrolling on long catalogs */
   .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 440px; }
 }
 
+/* App feel: page enter, title swap, press feedback, skeleton shimmer */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  /* none, not translateY(0): a lingering transform would trap position:fixed children (sheets, bars) inside <main>. */
+  to { opacity: 1; transform: none; }
+}
+@keyframes title-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+@layer utilities {
+  /* backwards, not both: a filled-forwards transform animation keeps trapping position:fixed children. */
+  .anim-page-in { animation: page-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+  .anim-title-in { animation: title-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .tap {
+    transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.14s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tap:active { transform: scale(0.95); }
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--muted) 0%,
+      color-mix(in oklab, var(--muted) 55%, var(--accent)) 40%,
+      var(--muted) 80%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.3s linear infinite;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .anim-heart-pop, .anim-heart-burst, .anim-sheet-up, .anim-pop-in, .anim-success-pop, .anim-ping, .anim-pay-sweep, .confetti-bit { animation: none !important; }
+  .anim-page-in, .anim-title-in, .skeleton { animation: none !important; }
+  .tap:active { transform: none; }
+}
+
+/* Revisited order pages: static receipt, no entrance motion */
+.calm *, .calm *::after { animation: none !important; }
+.calm .draw-ring, .calm .draw-check { stroke-dashoffset: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-heart-pop, .anim-heart-burst, .anim-sheet-up, .anim-pop-in, .anim-success-pop, .anim-ping, .anim-pay-sweep, .confetti-bit, .anim-ring-out, .anim-glow, .anim-twinkle, .anim-sheen-loop::after { animation: none !important; }
   .draw-ring, .draw-check { animation: none !important; stroke-dashoffset: 0; }
   .anim-fade-up, .anim-blob, .anim-float, .anim-grid, .anim-shake { animation: none !important; }
 }

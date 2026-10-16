@@ -73,6 +73,7 @@ import {
   getDefaultProductDemoUrl,
   getDeveloperProfitSharePercent,
   getReferralPercent,
+  isReferralCommissionEnabled,
   getResellerApplyMinBalanceUsd,
   getResellerCreateMinFundingUsd,
   getResellerPurchasePercent,
@@ -231,6 +232,7 @@ export async function GET() {
     feedbackSounds: await getFeedbackSoundConfig(),
     telegramNotifications: await getTelegramNotifyConfig(),
     pagesEnabled: await getPagesEnabled(),
+    referralCommissionEnabled: await isReferralCommissionEnabled(),
     referralPercent: await getReferralPercent(),
     sellerPurchasePercent: await getSellerPurchasePercent(),
     resellerPurchasePercent: await getResellerPurchasePercent(),
@@ -287,6 +289,7 @@ const schema = z.object({
   feedbackSounds: feedbackSoundsSchema.optional(),
   telegramNotifications: telegramNotificationsSchema.optional(),
   pagesEnabled: pagesEnabledSchema.optional(),
+  referralCommissionEnabled: z.boolean().optional(),
   referralPercent: z.number().min(0).max(100).optional(),
   sellerPurchasePercent: z.number().min(0).max(100).optional(),
   resellerPurchasePercent: z.number().min(0).max(100).optional(),
@@ -467,6 +470,12 @@ export async function PATCH(request: Request) {
     await savePagesEnabled(
       normalizePagesEnabled(d.pagesEnabled as PagesEnabledConfig),
     );
+  }
+  if (d.referralCommissionEnabled !== undefined) {
+    await upsertSetting({
+      key: SETTING_KEYS.referralCommissionEnabled,
+      intValue: d.referralCommissionEnabled ? 1 : 0,
+    });
   }
   if (d.referralPercent !== undefined) {
     await upsertSetting({

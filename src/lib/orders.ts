@@ -696,6 +696,18 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
   }
 }
 
+/** Order page lookup: the share link (token) or the signed-in owner (no token needed). */
+export async function getOrderForViewer(orderId: string, token: string | undefined, userId: string | undefined) {
+  if (!token && !userId) return null;
+  return prisma.order.findFirst({
+    where: token ? { id: orderId, accessToken: token } : { id: orderId, userId },
+    include: {
+      items: { include: { key: true } },
+      promoCode: { select: { code: true } },
+    },
+  });
+}
+
 export async function getOrderByAccessToken(orderId: string, token: string) {
   const order = await prisma.order.findFirst({
     where: { id: orderId, accessToken: token },
@@ -703,6 +715,7 @@ export async function getOrderByAccessToken(orderId: string, token: string) {
       items: {
         include: { key: true },
       },
+      promoCode: { select: { code: true } },
     },
   });
   return order;
@@ -729,6 +742,8 @@ export type UserKeyRow = {
   currency: Currency;
   createdAt: string;
   androidId?: string | null;
+  orderId: string;
+  productImage: string | null;
 };
 
 export type UserKeysPage = {
@@ -773,6 +788,7 @@ export async function getUserKeysPage(
       include: {
         key: { select: { code: true } },
         order: { select: { currency: true, createdAt: true } },
+        duration: { select: { product: { select: { imageUrl: true } } } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
@@ -790,6 +806,8 @@ export async function getUserKeysPage(
       currency: item.order.currency as Currency,
       createdAt: item.order.createdAt.toISOString(),
       androidId: item.androidId,
+      orderId: item.orderId,
+      productImage: item.duration?.product?.imageUrl ?? null,
     })),
     page,
     limit,

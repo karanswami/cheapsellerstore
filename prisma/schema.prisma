@@ -1142,3 +1142,56 @@ model ProductLike {
   @@unique([userId, productId])
   @@index([productId])
 }
+
+/// One wheel slot (admin-configured, 1-8 slots). kind: KEY | WALLET | COUPON | SPIN | NONE.
+model SpinPrize {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// 0..7 — position on the wheel, clockwise from the top.
+  slot           Int      @unique
+  kind           String   @default("NONE")
+  label          String   @default("Better luck next time")
+  durationId     String?  @db.ObjectId
+  /// Keys granted when kind = KEY; extra spins granted when kind = SPIN.
+  quantity       Int      @default(1)
+  /// Wallet credit in USD microcents when kind = WALLET.
+  walletAmount   Float    @default(0)
+  /// COUPON: percent off (0-100). Used when > 0, else couponAmount.
+  couponPercent  Float    @default(0)
+  /// COUPON: flat discount in USD microcents.
+  couponAmount   Float    @default(0)
+  /// COUPON: days the generated one-time code stays valid.
+  couponDays     Int      @default(7)
+  /// Relative probability inside its group (win / lose).
+  weight         Int      @default(10)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+/// A spin a user can use. REFERRAL: one per referred friend (on their first deposit). BONUS: won on the wheel.
+model ReferralSpin {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String    @db.ObjectId
+  /// REFERRAL | BONUS
+  source         String    @default("REFERRAL")
+  referredUserId String?   @db.ObjectId
+  orderId        String?
+  depositId      String?
+  /// AVAILABLE | USED
+  status         String    @default("AVAILABLE")
+  usedAt         DateTime?
+  prizeSlot      Int?
+  prizeKind      String?
+  prizeLabel     String?
+  /// Order id holding the delivered keys (KEY prizes).
+  prizeOrderId   String?
+  walletAmount   Float?
+  quantity       Int?
+  /// One-time promo code generated for COUPON prizes.
+  couponCode     String?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, status])
+  @@index([status, usedAt])
+  @@index([referredUserId])
+}

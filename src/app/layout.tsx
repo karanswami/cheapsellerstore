@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Chakra_Petch, Inter } from "next/font/google";
+import { AppBoot } from "@/components/app-boot";
 import { Toaster } from "@/components/ui/sonner";
 import { getSiteConfig } from "@/lib/site-config";
 import "./globals.css";
@@ -16,8 +17,20 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${config.siteName} — ${config.siteTagline}`,
     description: config.siteSeoDescription,
+    applicationName: config.siteName,
+    appleWebApp: { capable: true, title: config.siteName, statusBarStyle: "black-translucent" },
+    icons: { apple: "/pwa/apple-touch-icon.png" },
+    formatDetection: { telephone: false },
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: "#070d17",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <Toaster />
+        <AppBoot />
       </body>
     </html>
   );

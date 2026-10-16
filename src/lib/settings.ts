@@ -107,6 +107,8 @@ export const SETTING_KEYS = {
   autoGateways: "auto_gateways",
   /** JSON array of admin-defined manual deposit methods */
   manualDepositMethods: "manual_deposit_methods",
+  /** 1 = pay referrers a % of referred users' purchases (off by default; spins replace it) */
+  referralCommissionEnabled: "referral_commission_enabled",
   /** % credited when a referred USER/ADMIN purchases */
   referralPercent: "referral_percent",
   /** % credited when a referred SELLER purchases */
@@ -251,6 +253,10 @@ export async function getDefaultProductDemoUrl(): Promise<string> {
     await getSettingText(SETTING_KEYS.defaultProductDemoUrl, "")
   ).trim();
   return saved || BUILTIN_DEFAULT_PRODUCT_DEMO_URL;
+}
+
+export async function isReferralCommissionEnabled(): Promise<boolean> {
+  return (await getSettingInt(SETTING_KEYS.referralCommissionEnabled, 0)) === 1;
 }
 
 export async function getReferralPercent(): Promise<number> {

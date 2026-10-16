@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { Dialog as D } from "radix-ui";
-import { ArrowRight, KeyRound, Loader2, Minus, Plus, Tag, Wallet, X } from "lucide-react";
+import { ArrowRight, Check, KeyRound, Loader2, Minus, Plus, Sparkles, Tag, Wallet, X } from "lucide-react";
+import { PromoField, usePromo } from "@/components/promo-field";
 import { formatMoney, type Currency } from "@/lib/currencies";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { formatDurationLabel, type DurationOption } from "@/types/product";
 
 type Props = {
+  productId: string;
   title: string;
   imageUrl: string | null;
   currency: Currency;
@@ -20,30 +22,48 @@ type Props = {
   onPaid: (info: { qty: number; spent: number }) => void;
 };
 
-type Done = { orderId: string; token: string; qty: number; paid: number };
+const STEPS = ["Preparing your order", "Securing your wallet", "Verifying payment", "Finalizing & delivering key"];
+const STEP_MS = 750;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const CONFETTI = Array.from({ length: 14 }, (_, i) => {
-  const a = (i / 14) * Math.PI * 2;
-  const d = 70 + (i % 3) * 22;
+type Done = { orderId: string; token: string; qty: number; paid: number; saved: number };
+
+const COLORS = ["bg-primary", "bg-warning", "bg-success", "bg-rose-500", "bg-sky-400", "bg-violet-500"];
+// Deterministic pseudo-random burst so server/client markup never diverges.
+const CONFETTI = Array.from({ length: 36 }, (_, i) => {
+  const a = (i / 36) * Math.PI * 2 + (i % 3) * 0.12;
+  const d = 85 + ((i * 37) % 70);
   return {
     x: Math.round(Math.cos(a) * d),
-    y: Math.round(Math.sin(a) * d),
-    r: (i % 2 ? 1 : -1) * (120 + i * 20),
-    c: ["bg-primary", "bg-warning", "bg-success", "bg-rose-500", "bg-sky-400"][i % 5],
+    y: Math.round(Math.sin(a) * d) - 12,
+    r: (i % 2 ? 1 : -1) * (160 + i * 23),
+    c: COLORS[i % COLORS.length],
+    w: 4 + (i % 3) * 2,
+    h: 7 + (i % 4) * 2,
+    round: i % 4 === 0,
+    delay: 0.35 + (i % 6) * 0.04,
   };
 });
+const SPARKS = [
+  { x: -78, y: -62, s: 14, d: 0.7 },
+  { x: 82, y: -48, s: 10, d: 0.95 },
+  { x: -92, y: 28, s: 9, d: 1.15 },
+  { x: 74, y: 58, s: 13, d: 0.85 },
+];
 
-export function QuickBuy({ title, imageUrl, currency, duration: d, balance, onClose, onPaid }: Props) {
+export function QuickBuy({ productId, title, imageUrl, currency, duration: d, balance, onClose, onPaid }: Props) {
   const [qty, setQty] = useState(1);
   const [androidId, setAndroidId] = useState("");
-  const [promo, setPromo] = useState("");
-  const [showPromo, setShowPromo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
+  const [step, setStep] = useState(0);
   const lock = useRef(false);
 
   const unit = d.price ?? 0;
-  const total = unit * qty;
+  const subtotal = unit * qty;
+  const promo = usePromo({ productId, durationId: d.id, unitPrice: unit, quantity: qty });
+  const discount = Math.min(subtotal, promo.applied?.discount ?? 0);
+  const total = Math.max(0, subtotal - discount);
   const maxQty = Math.max(1, Math.min(20, d.stock));
   const short = balance < total;
   const after = balance - total;
@@ -55,24 +75,33 @@ export function QuickBuy({ title, imageUrl, currency, duration: d, balance, onCl
       return;
     }
     lock.current = true;
+    setStep(0);
     setBusy(true);
     try {
-      const res = await fetch("/api/checkout", {
+      const request = fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          promoCode: promo.trim() || undefined,
+          promoCode: promo.applied?.code,
           items: [
             { durationId: d.id, quantity: qty, androidId: d.requiresAndroidId ? androidId.trim() : undefined },
           ],
         }),
-      });
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.data) {
+      }).then(async (r) => ({ ok: r.ok, json: await r.json().catch(() => null) }));
+      // Show the progress steps while the (instant) charge runs, so the payment feels deliberate.
+      let result: Awaited<typeof request> | null = null;
+      void request.then((r) => (result = r), () => {});
+      for (let i = 0; i < STEPS.length; i++) {
+        setStep(i);
+        await sleep(STEP_MS);
+        if (result && !(result as { ok: boolean }).ok) break;
+      }
+      const { ok, json } = await request;
+      if (!ok || !json?.data) {
         toast.error(json?.error?.message ?? "Payment failed. Please try again.");
         return;
       }
-      setDone({ orderId: json.data.orderId, token: json.data.accessToken, qty, paid: total });
+      setDone({ orderId: json.data.orderId, token: json.data.accessToken, qty, paid: total, saved: discount });
       onPaid({ qty, spent: total });
     } catch {
       toast.error("Network error. Please try again.");
@@ -91,44 +120,87 @@ export function QuickBuy({ title, imageUrl, currency, duration: d, balance, onCl
           onEscapeKeyDown={(e) => busy && e.preventDefault()}
           className="anim-sheet-up fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-3xl border bg-popover p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl outline-none sm:inset-x-4 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:rounded-3xl"
         >
-          {done ? (
-            <div className="relative px-1 pb-1 pt-4 text-center">
+          {busy && !done ? (
+            <div className="px-1 py-6 text-center">
+              <D.Title className="sr-only">Processing payment</D.Title>
+              <D.Description className="sr-only">Please wait while we complete your payment.</D.Description>
+              <div className="relative mx-auto grid size-20 place-items-center">
+                <span className="anim-ring-out absolute size-20 rounded-full border-2 border-primary/50" />
+                <span className="absolute size-20 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+                <Wallet className="size-7 text-primary" />
+              </div>
+              <p className="mt-5 font-display text-xl font-bold">{formatMoney(total, currency)}</p>
+              <p className="text-sm text-muted-foreground">Please don’t close this window</p>
+              <ol className="mx-auto mt-6 max-w-xs space-y-3 text-left">
+                {STEPS.map((label, i) => (
+                  <li key={label} className={cn("flex items-center gap-3 text-sm transition-opacity duration-300", i > step ? "opacity-35" : "opacity-100")}>
+                    <span className={cn("grid size-6 shrink-0 place-items-center rounded-full border", i < step ? "border-success bg-success text-white" : i === step ? "border-primary text-primary" : "border-border")}>
+                      {i < step ? <Check className="size-3.5" /> : i === step ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                    </span>
+                    <span className={cn(i === step && "font-semibold")}>{label}{i === step ? "…" : ""}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : done ? (
+            <div className="relative overflow-hidden px-1 pb-1 pt-6 text-center">
               <D.Title className="sr-only">Order placed</D.Title>
-              <div className="relative mx-auto grid size-24 place-items-center">
+              <div className="anim-glow pointer-events-none absolute left-1/2 top-0 -ml-40 size-80 rounded-full bg-success/25 blur-3xl" />
+              <div className="relative mx-auto grid size-28 place-items-center">
+                <span className="anim-ring-out absolute size-24 rounded-full border-2 border-success/60" />
+                <span className="anim-ring-out absolute size-24 rounded-full border-2 border-success/40 [animation-delay:0.25s]" />
+                {SPARKS.map((k, i) => (
+                  <Sparkles
+                    key={i}
+                    className="anim-twinkle absolute left-1/2 top-1/2 text-warning"
+                    style={{ marginLeft: k.x, marginTop: k.y, width: k.s, height: k.s, animationDelay: `${k.d}s` }}
+                  />
+                ))}
                 {CONFETTI.map((c, i) => (
                   <span
                     key={i}
-                    className={cn("confetti-bit absolute left-1/2 top-1/2 h-2 w-1.5 rounded-sm", c.c)}
-                    style={{ "--x": `${c.x}px`, "--y": `${c.y}px`, "--r": `${c.r}deg` } as React.CSSProperties}
+                    className={cn("confetti-bit absolute left-1/2 top-1/2", c.round ? "rounded-full" : "rounded-[2px]", c.c)}
+                    style={{ width: c.w, height: c.round ? c.w : c.h, "--x": `${c.x}px`, "--y": `${c.y}px`, "--r": `${c.r}deg`, "--cd": `${c.delay}s` } as React.CSSProperties}
                   />
                 ))}
-                <svg viewBox="0 0 72 72" className="anim-success-pop size-24" fill="none" aria-hidden>
+                <svg viewBox="0 0 72 72" className="anim-success-pop relative size-24 drop-shadow-[0_6px_18px_rgb(34_197_94/0.45)]" fill="none" aria-hidden>
                   <circle cx="36" cy="36" r="30" className="fill-success/15" />
                   <circle cx="36" cy="36" r="30" strokeWidth="4" strokeLinecap="round" className="draw-ring stroke-success" />
                   <path d="M23 37l9 9 17-19" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" className="draw-check stroke-success" />
                 </svg>
               </div>
-              <h3 className="mt-4 font-display text-2xl font-bold">Payment successful</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="anim-fade-up mt-5 text-[11px] font-bold uppercase tracking-[0.25em] text-success [--d:500ms]">Order confirmed</p>
+              <h3 className="anim-fade-up mt-1 font-display text-3xl font-bold [--d:580ms]">Payment successful</h3>
+              <p className="anim-fade-up mt-1 text-sm text-muted-foreground [--d:660ms]">
                 {done.qty} × {title} · {formatDurationLabel(d)}
               </p>
-              <div className="mx-auto mt-5 grid max-w-xs grid-cols-2 gap-px overflow-hidden rounded-2xl border bg-border text-left">
-                <div className="bg-card p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Paid</p>
-                  <p className="font-display text-lg font-bold tabular-nums">{formatMoney(done.paid, currency)}</p>
+
+              <div className="anim-fade-up relative mx-auto mt-6 max-w-xs rounded-2xl border bg-card text-left shadow-lg shadow-black/5 [--d:740ms]">
+                <span className="absolute -left-2 top-[58%] size-4 rounded-full border bg-popover [clip-path:inset(0_0_0_50%)]" />
+                <span className="absolute -right-2 top-[58%] size-4 rounded-full border bg-popover [clip-path:inset(0_50%_0_0)]" />
+                <div className="p-4 pb-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Amount paid</p>
+                  <p className="font-display text-4xl font-bold leading-tight tabular-nums">{formatMoney(done.paid, currency)}</p>
+                  {done.saved > 0 ? (
+                    <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-bold text-success">
+                      <Tag className="size-3" /> Saved {formatMoney(done.saved, currency)}
+                    </p>
+                  ) : null}
                 </div>
-                <div className="bg-card p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Wallet left</p>
-                  <p className="font-display text-lg font-bold tabular-nums">{formatMoney(Math.max(0, after), currency)}</p>
+                <div className="border-t border-dashed" />
+                <div className="flex items-center justify-between p-4 text-sm">
+                  <span className="inline-flex items-center gap-1.5 text-muted-foreground"><Wallet className="size-4" /> Wallet left</span>
+                  <span className="font-display text-lg font-bold tabular-nums">{formatMoney(Math.max(0, after), currency)}</span>
                 </div>
               </div>
+
               <Link
-                href={`/order/${done.orderId}?token=${encodeURIComponent(done.token)}`}
-                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground transition-transform active:scale-[0.98]"
+                href={`/order/${done.orderId}?token=${encodeURIComponent(done.token)}&fresh=1`}
+                className="anim-fade-up anim-sheen-loop relative mt-6 flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-transform active:scale-[0.98] [--d:840ms]"
               >
                 <KeyRound className="size-4" /> View your {done.qty > 1 ? "keys" : "key"} <ArrowRight className="size-4" />
               </Link>
-              <button onClick={onClose} className="mt-2 h-10 w-full rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground">
+              <button onClick={onClose} className="anim-fade-up mt-2 h-10 w-full rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground [--d:920ms]">
                 Keep shopping
               </button>
             </div>
@@ -178,30 +250,32 @@ export function QuickBuy({ title, imageUrl, currency, duration: d, balance, onCl
                 />
               ) : null}
 
-              {showPromo ? (
-                <input
-                  autoFocus
-                  value={promo}
-                  onChange={(e) => setPromo(e.target.value)}
-                  maxLength={64}
-                  placeholder="Promo code"
-                  className="mt-3 h-11 w-full rounded-xl border bg-background px-3.5 text-sm uppercase outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              ) : (
-                <button onClick={() => setShowPromo(true)} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
-                  <Tag className="size-3.5" /> Have a promo code?
-                </button>
-              )}
+              <PromoField promo={promo} currency={currency} disabled={busy} className="mt-3" />
 
               <dl className="mt-4 space-y-2 border-t pt-4 text-sm">
                 <div className="flex justify-between">
                   <dt className="inline-flex items-center gap-1.5 text-muted-foreground"><Wallet className="size-4" /> Wallet balance</dt>
                   <dd className="font-semibold tabular-nums">{formatMoney(balance, currency)}</dd>
                 </div>
-                <div className="flex justify-between">
+                {discount > 0 ? (
+                  <>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Subtotal</dt>
+                      <dd className="tabular-nums text-muted-foreground line-through decoration-destructive/70 decoration-2">{formatMoney(subtotal, currency)}</dd>
+                    </div>
+                    <div className="flex justify-between font-semibold text-success">
+                      <dt className="inline-flex items-center gap-1.5"><Tag className="size-3.5" /> Promo {promo.applied?.code}</dt>
+                      <dd className="tabular-nums">−{formatMoney(discount, currency)}</dd>
+                    </div>
+                  </>
+                ) : null}
+                <div className="flex items-end justify-between">
                   <dt className="text-muted-foreground">Total</dt>
-                  <dd className="font-display text-xl font-bold tabular-nums">{formatMoney(total, currency)}</dd>
+                  <dd key={total} className="anim-pop-in font-display text-2xl font-bold leading-none tabular-nums">{formatMoney(total, currency)}</dd>
                 </div>
+                {discount > 0 ? (
+                  <p className="text-right text-xs font-medium text-success">You saved {formatMoney(discount, currency)} 🎉</p>
+                ) : null}
                 {!short ? (
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <dt>Balance after payment</dt>

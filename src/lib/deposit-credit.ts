@@ -12,6 +12,7 @@ import {
 import { logActivity } from "@/lib/activity-log";
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { notifyUser } from "@/lib/notifications";
+import { grantSpinForDeposit } from "@/lib/spin";
 
 /** Sentinel while wallet credit is in flight — prevents double-credit races. */
 export const DEPOSIT_CREDIT_LOCK_ACTION = "CREDIT_LOCKED";
@@ -265,6 +266,11 @@ export async function completeDepositOnce(options: {
       },
     });
     throw error;
+  }
+
+  // Referrer earns a wheel spin on this friend's first credited deposit (no-op afterwards).
+  if (credit > 0) {
+    await grantSpinForDeposit({ userId: deposit.userId, depositId: deposit.id });
   }
 
   const userLabel = await prisma.user.findUnique({
