@@ -18,7 +18,6 @@ export const SITE_ICON_KEYS = [
   "resellers",
   "support",
   "banners",
-  "reviews",
   "support-routes",
   "faqs",
   "static-pages",
@@ -179,13 +178,6 @@ export const SITE_ICON_META: SiteIconMeta[] = [
     description: "Home carousel",
     group: "admin",
     defaultUrl: "/icons/banners.png",
-  },
-  {
-    key: "reviews",
-    label: "Reviews",
-    description: "Product reviews",
-    group: "admin",
-    defaultUrl: "/icons/reviews.png",
   },
   {
     key: "support-routes",

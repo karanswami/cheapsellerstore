@@ -53,8 +53,6 @@ export type ProductCardData = {
   id: string;
   title: string;
   description: string;
-  rating: number;
-  reviewCount: number;
   imageUrl: string | null;
   /** Resolved demo URL (product override or site default). */
   demoUrl: string;
@@ -76,6 +74,8 @@ export type ProductCardData = {
   currency: Currency;
   /** Best active flash that applies to this product (for card ticker). */
   flashSale: ProductFlashSale | null;
+  likeCount?: number;
+  liked?: boolean;
 };
 
 export function getStartingPrice(durations: { price: number | null }[]): number | null {

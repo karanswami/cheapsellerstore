@@ -10,7 +10,6 @@ export type PublicProfilePayload = {
   user: SafeUser;
   orderCount: number;
   totalSpent: number;
-  averageRating: number | null;
   featuredProducts: ProductCardData[];
   isOwner: boolean;
   isPrivate: boolean;
@@ -162,10 +161,6 @@ export async function getPublicProfileByUsername(
         where: { status: { in: ["PAID", "FULFILLED"] } },
         select: { total: true },
       },
-      reviews: {
-        where: { status: "APPROVED" },
-        select: { rating: true },
-      },
     },
   });
 
@@ -189,7 +184,6 @@ export async function getPublicProfileByUsername(
       user: toPublicSafeUser(user, false, true),
       orderCount: 0,
       totalSpent: 0,
-      averageRating: null,
       featuredProducts: [],
       isOwner: false,
       isPrivate: true,
@@ -202,11 +196,6 @@ export async function getPublicProfileByUsername(
     (sum, order) => sum + (order.total || 0),
     0,
   );
-  const averageRating =
-    user.reviews.length > 0
-      ? user.reviews.reduce((sum, review) => sum + review.rating, 0) /
-        user.reviews.length
-      : null;
 
   const featuredProducts =
     user.featuredProducts?.length
@@ -217,7 +206,6 @@ export async function getPublicProfileByUsername(
     user: toPublicSafeUser(user, isOwner, false),
     orderCount,
     totalSpent: isOwner ? totalSpent : 0,
-    averageRating,
     featuredProducts,
     isOwner,
     isPrivate,

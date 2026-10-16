@@ -31,13 +31,14 @@ export async function getLeaderboard(
       },
     });
 
-    type Agg = { totalSpent: number; keyCount: number };
+    type Agg = { totalSpent: number; keyCount: number; orderCount: number };
     const byUser = new Map<string, Agg>();
     for (const o of orders) {
       if (!o.userId) continue;
-      const prev = byUser.get(o.userId) ?? { totalSpent: 0, keyCount: 0 };
+      const prev = byUser.get(o.userId) ?? { totalSpent: 0, keyCount: 0, orderCount: 0 };
       prev.totalSpent += o.total ?? 0;
       prev.keyCount += o._count.items;
+      prev.orderCount += 1;
       byUser.set(o.userId, prev);
     }
 
@@ -79,6 +80,7 @@ export async function getLeaderboard(
         avatarUrl: user.avatarUrl,
         totalSpent: agg.totalSpent,
         keyCount: agg.keyCount,
+        orderCount: agg.orderCount,
         emailVerified: user.emailVerified ?? false,
         emojiStatus: user.emojiStatus?.trim() || null,
       });

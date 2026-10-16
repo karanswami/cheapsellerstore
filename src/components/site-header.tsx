@@ -17,7 +17,7 @@ export type HeaderUser = {
 export function SiteHeader({
   config,
   user,
-  maxWidth = "max-w-6xl",
+  maxWidth = "max-w-7xl",
 }: {
   config: Pick<SiteConfig, "siteName" | "siteTagline" | "logoUrl">;
   user?: HeaderUser | null;

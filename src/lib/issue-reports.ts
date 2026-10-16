@@ -9,9 +9,13 @@ import type {
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { notifyUser } from "@/lib/notifications";
 
+/** Any deposit that did not complete successfully can be reported (once). */
 const ELIGIBLE_DEPOSIT_STATUSES: DepositStatus[] = [
+  DepositStatus.PENDING,
+  DepositStatus.PROCESSING,
   DepositStatus.FAILED,
   DepositStatus.EXPIRED,
+  DepositStatus.CANCELLED,
 ];
 
 export type IssueReportUser = {
@@ -19,6 +23,8 @@ export type IssueReportUser = {
   name: string;
   email: string;
   username: string;
+  walletBalance?: number;
+  role?: string;
 };
 
 export type IssueReportDeposit = {
@@ -32,6 +38,8 @@ export type IssueReportDeposit = {
   manualMethodKey?: string | null;
   failReason?: string | null;
   proofImage?: string | null;
+  providerReference?: string | null;
+  paidAmount?: number | null;
   createdAt: string;
 };
 
@@ -43,6 +51,14 @@ export type IssueReportKeyDetails = {
   durationLabel: string;
   orderId: string | null;
   purchasedAt: string | null;
+  keyStatus?: string | null;
+  orderTotal?: number | null;
+  orderStatus?: string | null;
+  unitPrice?: number | null;
+  androidId?: string | null;
+  buyerEmail?: string | null;
+  buyerDiscord?: string | null;
+  isSpecialInventory?: boolean;
 };
 
 export type IssueReportRow = {
@@ -100,7 +116,9 @@ function serialize(row: {
     name: string;
     email: string;
     username: string;
-    };
+    walletBalance?: number;
+    role?: string;
+  };
   deposit?: IssueReportDeposit | null;
   keyDetails?: IssueReportKeyDetails | null;
 }): IssueReportRow {
@@ -126,6 +144,8 @@ function serialize(row: {
           name: row.user.name,
           email: row.user.email,
           username: row.user.username,
+          walletBalance: row.user.walletBalance,
+          role: row.user.role,
         }
       : undefined,
     deposit: row.deposit ?? null,
@@ -150,6 +170,8 @@ async function fetchDepositDetailsMap(depositIds: string[]) {
       manualMethodKey: true,
       failReason: true,
       proofImage: true,
+      providerReference: true,
+      paidAmount: true,
       createdAt: true,
     },
   });
@@ -166,6 +188,8 @@ async function fetchDepositDetailsMap(depositIds: string[]) {
       manualMethodKey: d.manualMethodKey ?? null,
       failReason: d.failReason ?? null,
       proofImage: d.proofImage ?? null,
+      providerReference: d.providerReference ?? null,
+      paidAmount: d.paidAmount ?? null,
       createdAt: d.createdAt.toISOString(),
     });
   }
@@ -184,14 +208,19 @@ async function fetchKeyDetailsMap(keyIds: string[]) {
       orderId: true,
       productTitle: true,
       durationLabel: true,
+      unitPrice: true,
+      androidId: true,
       createdAt: true,
       key: {
         select: {
           code: true,
+          status: true,
           soldAt: true,
           createdAt: true,
+          isSpecialInventory: true,
         },
       },
+      order: { select: { total: true, status: true, buyerEmail: true, buyerDiscord: true } },
     },
   });
 
@@ -206,6 +235,14 @@ async function fetchKeyDetailsMap(keyIds: string[]) {
         durationLabel: oi.durationLabel,
         orderId: oi.orderId,
         purchasedAt: (oi.key?.soldAt ?? oi.createdAt)?.toISOString() ?? null,
+        keyStatus: oi.key?.status ?? null,
+        orderTotal: oi.order?.total ?? null,
+        orderStatus: oi.order?.status ?? null,
+        unitPrice: oi.unitPrice,
+        androidId: oi.androidId ?? null,
+        buyerEmail: oi.order?.buyerEmail ?? null,
+        buyerDiscord: oi.order?.buyerDiscord ?? null,
+        isSpecialInventory: oi.key?.isSpecialInventory ?? false,
       });
     }
   }
@@ -217,9 +254,12 @@ async function fetchKeyDetailsMap(keyIds: string[]) {
       select: {
         id: true,
         code: true,
+        status: true,
         soldAt: true,
         createdAt: true,
         orderId: true,
+        isSpecialInventory: true,
+        order: { select: { total: true, status: true, buyerEmail: true, buyerDiscord: true } },
         duration: {
           select: {
             label: true,
@@ -242,6 +282,12 @@ async function fetchKeyDetailsMap(keyIds: string[]) {
         durationLabel: k.duration?.label ?? "",
         orderId: k.orderId ?? null,
         purchasedAt: (k.soldAt ?? k.createdAt)?.toISOString() ?? null,
+        keyStatus: k.status,
+        orderTotal: k.order?.total ?? null,
+        orderStatus: k.order?.status ?? null,
+        buyerEmail: k.order?.buyerEmail ?? null,
+        buyerDiscord: k.order?.buyerDiscord ?? null,
+        isSpecialInventory: k.isSpecialInventory,
       });
     }
   }
@@ -254,13 +300,23 @@ const includeUser = {
   name: true,
   email: true,
   username: true,
+  walletBalance: true,
+  role: true,
 } as const;
 
 export async function listEligibleDepositsForReport(userId: string) {
+  const reported = await prisma.issueReport.findMany({
+    where: { userId, kind: "DEPOSIT", depositId: { not: null } },
+    select: { depositId: true },
+  });
+  const reportedIds = reported
+    .map((r) => r.depositId)
+    .filter((id): id is string => Boolean(id));
   const deposits = await prisma.deposit.findMany({
     where: {
       userId,
       status: { in: ELIGIBLE_DEPOSIT_STATUSES },
+      ...(reportedIds.length ? { id: { notIn: reportedIds } } : {}),
     },
     orderBy: { createdAt: "desc" },
     take: 40,
@@ -349,14 +405,14 @@ export async function createIssueReport(input: {
       return {
         ok: false as const,
         code: "VALIDATION",
-        message: "A screenshot is required for deposit reports.",
+        message: "Attach a screenshot of the paid amount.",
       };
     }
     if (!input.depositId) {
       return {
         ok: false as const,
         code: "VALIDATION",
-        message: "Select a failed or expired deposit.",
+        message: "Select the deposit you want to report.",
       };
     }
     const deposit = await prisma.deposit.findFirst({
@@ -374,19 +430,15 @@ export async function createIssueReport(input: {
       };
     }
 
-    const openExisting = await prisma.issueReport.findFirst({
-      where: {
-        userId: input.userId,
-        depositId: deposit.id,
-        status: { in: ["OPEN", "IN_PROGRESS"] },
-      },
+    const existing = await prisma.issueReport.findFirst({
+      where: { depositId: deposit.id },
       select: { id: true },
     });
-    if (openExisting) {
+    if (existing) {
       return {
         ok: false as const,
         code: "CONFLICT",
-        message: "You already have an open report for this deposit.",
+        message: "This deposit has already been reported. Only one report is allowed per deposit.",
       };
     }
 
@@ -454,6 +506,46 @@ export async function createIssueReport(input: {
     return {
       ok: true as const,
       report: serialize({ ...row, deposit: depositSnap, keyDetails: null }),
+    };
+  }
+
+  if (input.kind === "GENERAL") {
+    const subject = input.subject?.trim().slice(0, 120) ?? "";
+    if (subject.length < 3) {
+      return {
+        ok: false as const,
+        code: "VALIDATION",
+        message: "Please enter a subject.",
+      };
+    }
+    const row = await prisma.issueReport.create({
+      data: {
+        userId: input.userId,
+        kind: "GENERAL",
+        subject,
+        explanation,
+        screenshotUrl,
+        status: "OPEN",
+      },
+      include: { user: { select: includeUser } },
+    });
+
+    void notifyTelegram(
+      "report",
+      [
+        "🚨 Support question (GENERAL)",
+        `User: @${row.user.username} (${row.user.email})`,
+        `Subject: ${row.subject}`,
+        `Question: ${explanation}`,
+        ...(screenshotUrl ? [`Screenshot: ${screenshotUrl}`] : []),
+        `Report ID: ${row.id}`,
+        `Reported At: ${formatDateTimeUtc(row.createdAt)}`,
+      ].join("\n"),
+    );
+
+    return {
+      ok: true as const,
+      report: serialize({ ...row, deposit: null, keyDetails: null }),
     };
   }
 
@@ -664,7 +756,7 @@ export async function listAdminIssueReports(opts?: {
     ];
   }
 
-  const [rows, total] = await Promise.all([
+  const [rows, total, grouped] = await Promise.all([
     prisma.issueReport.findMany({
       where,
       include: { user: { select: includeUser } },
@@ -673,7 +765,10 @@ export async function listAdminIssueReports(opts?: {
       take: limit,
     }),
     prisma.issueReport.count({ where }),
+    prisma.issueReport.groupBy({ by: ["status"], _count: { _all: true } }),
   ]);
+  const counts = { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, CLOSED: 0 };
+  for (const g of grouped) counts[g.status] = g._count._all;
 
   const depositIds = rows
     .map((r) => r.depositId)
@@ -699,6 +794,7 @@ export async function listAdminIssueReports(opts?: {
     limit,
     total,
     hasMore: skip + rows.length < total,
+    counts,
   };
 }
 

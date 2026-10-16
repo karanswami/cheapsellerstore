@@ -28,7 +28,7 @@ export async function GET(request: Request) {
       : "open";
 
   const kind =
-    kindParam === "KEY" || kindParam === "DEPOSIT" || kindParam === "ALL"
+    kindParam === "KEY" || kindParam === "DEPOSIT" || kindParam === "GENERAL" || kindParam === "ALL"
       ? (kindParam as IssueReportKind | "ALL")
       : "ALL";
 

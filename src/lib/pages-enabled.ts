@@ -35,6 +35,3 @@ export async function savePagesEnabled(
   return normalized;
 }
 
-export async function isGiftCodesEnabled(): Promise<boolean> {
-  return (await getPagesEnabled()).giftCodes;
-}

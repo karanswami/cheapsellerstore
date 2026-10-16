@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   if (!Number.isFinite(page) || page < 1) {
     return jsonError("VALIDATION_ERROR", "Invalid page.", 400);
   }
-  if (!Number.isFinite(limit) || limit < 1 || limit > 50) {
+  if (!Number.isFinite(limit) || limit < 1 || limit > 100) {
     return jsonError("VALIDATION_ERROR", "Invalid limit.", 400);
   }
 

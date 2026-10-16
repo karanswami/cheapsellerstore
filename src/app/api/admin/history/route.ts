@@ -11,7 +11,6 @@ const KINDS = new Set<AdminHistoryKind | "all">([
   "deposit",
   "transaction",
   "key",
-  "review",
   "reseller",
 ]);
 

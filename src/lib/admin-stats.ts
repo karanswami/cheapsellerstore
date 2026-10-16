@@ -32,7 +32,6 @@ export type AdminHistoryKind =
   | "deposit"
   | "transaction"
   | "key"
-  | "review"
   | "reseller";
 
 export type AdminHistoryEvent = {
@@ -503,7 +502,6 @@ export async function getAnalyticsStats() {
     depositsByMethod,
     depositsByStatus,
     keysByStatus,
-    reviewsByStatus,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.order.count({ where: { status: OrderStatus.FULFILLED } }),
@@ -525,10 +523,6 @@ export async function getAnalyticsStats() {
       _count: { _all: true },
     }),
     prisma.key.groupBy({
-      by: ["status"],
-      _count: { _all: true },
-    }),
-    prisma.productReview.groupBy({
       by: ["status"],
       _count: { _all: true },
     }),
@@ -557,10 +551,6 @@ export async function getAnalyticsStats() {
       count: r._count._all,
     })),
     keysByStatus: keysByStatus.map((r) => ({
-      name: r.status,
-      count: r._count._all,
-    })),
-    reviewsByStatus: reviewsByStatus.map((r) => ({
       name: r.status,
       count: r._count._all,
     })),
@@ -645,15 +635,6 @@ export async function getHistoryEvents(opts: {
         }
       : {}),
   };
-  const reviewWhere = q
-    ? {
-        OR: [
-          { user: { email: { contains: q } } },
-          { product: { title: { contains: q } } },
-          { body: { contains: q } },
-        ],
-      }
-    : undefined;
   const resellerWhere = q
     ? {
         OR: [
@@ -668,13 +649,11 @@ export async function getHistoryEvents(opts: {
     deposits,
     transactions,
     soldKeys,
-    reviews,
     resellerReqs,
     orderCount,
     depositCount,
     txCount,
     keyCount,
-    reviewCount,
     resellerCount,
   ] = await Promise.all([
     want("order")
@@ -720,17 +699,6 @@ export async function getHistoryEvents(opts: {
           },
         })
       : Promise.resolve([]),
-    want("review")
-      ? prisma.productReview.findMany({
-          where: reviewWhere,
-          take: windowTake,
-          orderBy: { createdAt: "desc" },
-          include: {
-            user: { select: { email: true } },
-            product: { select: { title: true } },
-          },
-        })
-      : Promise.resolve([]),
     want("reseller")
       ? prisma.resellerRequest.findMany({
           where: resellerWhere,
@@ -749,9 +717,6 @@ export async function getHistoryEvents(opts: {
       ? prisma.transaction.count({ where: txWhere })
       : Promise.resolve(0),
     want("key") ? prisma.key.count({ where: keyWhere }) : Promise.resolve(0),
-    want("review")
-      ? prisma.productReview.count({ where: reviewWhere })
-      : Promise.resolve(0),
     want("reseller")
       ? prisma.resellerRequest.count({ where: resellerWhere })
       : Promise.resolve(0),
@@ -815,20 +780,6 @@ export async function getHistoryEvents(opts: {
     });
   }
 
-  for (const r of reviews) {
-    events.push({
-      id: `rev-${r.id}`,
-      kind: "review",
-      at: r.createdAt.toISOString(),
-      title: `Review · ${r.rating}★ · ${humanLabel(r.status)}`,
-      subtitle: r.user ? r.user.email : (r.customAuthorName || "Guest Author"),
-      meta: r.product.title,
-      amount: null,
-      status: r.status,
-      href: "/admin/reviews",
-    });
-  }
-
   for (const r of resellerReqs) {
     events.push({
       id: `rr-${r.id}`,
@@ -852,7 +803,6 @@ export async function getHistoryEvents(opts: {
     depositCount +
     txCount +
     keyCount +
-    reviewCount +
     resellerCount;
 
   const start = (page - 1) * limit;

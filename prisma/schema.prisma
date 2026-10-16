@@ -131,13 +131,6 @@ enum ResellerRequestStatus {
   REJECTED
 }
 
-/** Product reviews go live only after admin APPROVED. */
-enum ReviewStatus {
-  PENDING
-  APPROVED
-  DISABLED
-}
-
 /** Pinned store announcement audience (admin Broadcast desk). */
 enum BroadcastAudience {
   ALL
@@ -150,6 +143,7 @@ enum BroadcastAudience {
 enum IssueReportKind {
   KEY
   DEPOSIT
+  GENERAL
 }
 
 enum IssueReportStatus {
@@ -247,7 +241,6 @@ model User {
   notifications        Notification[]
   promoRedemptions     PromoRedemption[]
   resellerRequests     ResellerRequest[]
-  reviews              ProductReview[]
   supportTickets       SupportTicket[]
   supportInbox         SupportInboxMessage[]
   supportMemory        SupportUserMemory?
@@ -301,7 +294,7 @@ model Product {
   description  String
   /// Stable Platform API SKU (unique). Prefer over Mongo id in /api/v1.
   apiCode      String?         @unique
-  /// Average of approved ProductReview stars when reviews exist; otherwise seed/default.
+  /// Legacy star rating (no longer shown).
   rating       Float           @default(0)
   imageUrl     String?
   /// Optional demo / trailer URL (YouTube etc.). Empty → site default demo URL.
@@ -318,35 +311,10 @@ model Product {
   categoryId   String?         @db.ObjectId
   category     Category?       @relation(fields: [categoryId], references: [id])
   durations    Duration[]
-  reviews      ProductReview[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
   @@index([categoryId])
-}
-
-model ProductReview {
-  id               String       @id @default(auto()) @map("_id") @db.ObjectId
-  productId        String       @db.ObjectId
-  product          Product      @relation(fields: [productId], references: [id])
-  userId           String?      @db.ObjectId
-  user             User?        @relation(fields: [userId], references: [id])
-  customAuthorName String?
-  customAvatarUrl  String?
-  /// 1–5 star rating.
-  rating           Int
-  body             String
-  /// True when the author had a PAID/FULFILLED order for this product at submit time.
-  verifiedBuyer    Boolean      @default(false)
-  /// PENDING until admin approves; DISABLED hides from storefront without delete.
-  status           ReviewStatus @default(PENDING)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-
-  @@index([productId, createdAt])
-  @@index([productId, status])
-  @@index([status, createdAt])
-  @@index([userId])
 }
 
 model Duration {
@@ -1161,3 +1129,14 @@ model PushSubscription {
   @@index([userId])
 }
 
+
+/// Instagram-style product like (one per user per product).
+model ProductLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String   @db.ObjectId
+  userId    String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([productId])
+}

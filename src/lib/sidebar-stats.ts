@@ -9,7 +9,6 @@ export type CustomerSidebarBadges = {
 export type AdminSidebarBadges = {
   pendingDeposits: number;
   openReports: number;
-  pendingReviews: number;
   pendingSellers: number;
   pendingDevSettlements: number;
   pendingSpecialSettlements: number;
@@ -68,7 +67,6 @@ export async function getAdminSidebarStats(): Promise<ConsoleSidebarStats> {
     keys,
     deposits,
     openReports,
-    pendingReviews,
     pendingSellers,
     pendingDevSettlements,
     pendingSpecialSettlements,
@@ -81,9 +79,6 @@ export async function getAdminSidebarStats(): Promise<ConsoleSidebarStats> {
     }),
     prisma.issueReport.count({
       where: { status: { in: ["OPEN", "IN_PROGRESS"] } },
-    }),
-    prisma.productReview.count({
-      where: { status: "PENDING" },
     }),
     prisma.resellerRequest.count({
       where: { status: "PENDING" },
@@ -102,7 +97,6 @@ export async function getAdminSidebarStats(): Promise<ConsoleSidebarStats> {
   const adminBadges: AdminSidebarBadges = {
     pendingDeposits: deposits,
     openReports,
-    pendingReviews,
     pendingSellers,
     pendingDevSettlements,
     pendingSpecialSettlements,

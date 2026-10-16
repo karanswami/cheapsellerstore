@@ -131,6 +131,7 @@ const depositQuickAmountsSchema = z.record(z.string(), quickAmountListSchema);
 const methodEntrySchema = z.object({
   enabled: z.boolean(),
   qrUrl: z.string().max(500).optional(),
+  currency: z.string().trim().max(8).optional(),
 });
 
 const depositMethodsSchema = z.object({
@@ -394,7 +395,14 @@ export async function PATCH(request: Request) {
         return jsonError("VALIDATION", "Invalid deposit methods payload.", 400);
       }
     }
-    await saveDepositMethodsConfig(normalizeDepositMethodsConfig(raw));
+    const normalizedMethods = normalizeDepositMethodsConfig(raw);
+    const registered = new Set((await getDepositCurrencies()).map((c) => c.code));
+    for (const id of DEPOSIT_METHOD_IDS) {
+      if (!registered.has(normalizedMethods[id].currency)) {
+        return jsonError("VALIDATION", `Create the ${normalizedMethods[id].currency} currency before attaching it to ${id}.`, 400);
+      }
+    }
+    await saveDepositMethodsConfig(normalizedMethods);
   }
   if (d.manualDepositMethods !== undefined) {
     const normalized = normalizeManualDepositMethods(

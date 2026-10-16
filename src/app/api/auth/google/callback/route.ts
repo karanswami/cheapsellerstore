@@ -3,12 +3,13 @@ import {
   clearTwoFactorChallengeCookie,
   setTwoFactorChallengeCookie,
 } from "@/lib/auth/challenge";
-import { setCustomerSessionCookie } from "@/lib/auth/customer";
+import { getSessionUserId, setCustomerSessionCookie } from "@/lib/auth/customer";
 import {
   consumeGoogleOAuthState,
   createNativeAuthHandoff,
   exchangeGoogleCode,
   fetchGoogleProfile,
+  linkGoogleToUser,
   isNativeAppUserAgent,
   nativeOAuthBridgeResponse,
   nativeOAuthErrorUrl,
@@ -57,6 +58,22 @@ export async function GET(request: Request) {
   }
 
   const nextPath = state.next;
+
+  if (state.linkUserId) {
+    const profileUrl = (q: string) =>
+      NextResponse.redirect(new URL(`/app/profile?${q}`, getEnv().appUrl.replace(/\/$/, "")));
+    try {
+      if ((await getSessionUserId()) !== state.linkUserId) return profileUrl("google=session");
+      const tokens = await exchangeGoogleCode(code);
+      if (!tokens.access_token) return profileUrl("google=failed");
+      const profile = await fetchGoogleProfile(tokens.access_token);
+      await linkGoogleToUser(state.linkUserId, profile);
+      return profileUrl("google=linked");
+    } catch (err) {
+      const m = err instanceof Error ? err.message : "";
+      return profileUrl(m === "GOOGLE_ACCOUNT_TAKEN" ? "google=taken" : "google=failed");
+    }
+  }
 
   try {
     const tokens = await exchangeGoogleCode(code);

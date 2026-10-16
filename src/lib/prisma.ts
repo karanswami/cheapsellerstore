@@ -15,14 +15,14 @@ function createPrismaClient() {
 
 /**
  * Recreate the client when HMR kept a pre-schema instance
- * (e.g. before ProductReview / SupportRoute existed).
+ * (e.g. before ProductLike / SupportRoute existed).
  */
 function getPrismaClient() {
   const existing = globalForPrisma.prisma;
   const ok =
     existing != null &&
-    typeof (existing as { productReview?: { findMany?: unknown } })
-      .productReview?.findMany === "function" &&
+    typeof (existing as { productLike?: { findMany?: unknown } })
+      .productLike?.findMany === "function" &&
     typeof (existing as { supportRoute?: { findMany?: unknown } }).supportRoute
       ?.findMany === "function" &&
     typeof (existing as { supportTicket?: { findMany?: unknown } })

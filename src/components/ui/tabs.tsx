@@ -22,7 +22,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-muted-foreground outline-none transition-all hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 data-[state=active]:bg-brand-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_0_20px_-4px_color-mix(in_oklab,var(--primary)_70%,transparent)] [&_svg]:size-4",
+        "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-muted-foreground outline-none transition-all hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 data-[state=active]:bg-brand-gradient data-[state=active]:text-white data-[state=active]:shadow-[0_0_20px_-4px_color-mix(in_oklab,var(--primary)_70%,transparent)] [&_svg]:size-4",
         className,
       )}
       {...props}

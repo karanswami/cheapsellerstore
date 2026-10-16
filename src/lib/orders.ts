@@ -797,3 +797,24 @@ export async function getUserKeysPage(
     hasMore: page * limit < total,
   };
 }
+
+/** Store-wide order counts per status plus revenue (PAID + FULFILLED) and today's orders. */
+export async function getAdminOrderStats() {
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const [groups, revenue, today] = await Promise.all([
+    prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.order.aggregate({
+      where: { status: { in: [OrderStatus.PAID, OrderStatus.FULFILLED] } },
+      _sum: { total: true },
+    }),
+    prisma.order.count({ where: { createdAt: { gte: startOfDay } } }),
+  ]);
+  const counts: Record<string, number> = {};
+  let all = 0;
+  for (const g of groups) {
+    counts[g.status] = g._count._all;
+    all += g._count._all;
+  }
+  return { counts, all, revenue: revenue._sum.total ?? 0, today };
+}

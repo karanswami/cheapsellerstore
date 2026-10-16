@@ -9,7 +9,7 @@ import {
 import { z } from "zod";
 
 const createSchema = z.object({
-  kind: z.enum(["KEY", "DEPOSIT"]),
+  kind: z.enum(["KEY", "DEPOSIT", "GENERAL"]),
   explanation: z.string().trim().min(10).max(4000),
   screenshotUrl: z
     .string()

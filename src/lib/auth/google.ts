@@ -37,6 +37,8 @@ export type GoogleOAuthState = {
   native: boolean;
   next: string | null;
   referralCode: string | null;
+  /** Set when a signed-in user is linking Google to their account. */
+  linkUserId: string | null;
 };
 
 export type NativeAuthHandoff = {
@@ -106,6 +108,7 @@ export async function createGoogleOAuthState(opts: {
   native: boolean;
   next?: string | null;
   referralCode?: string | null;
+  linkUserId?: string | null;
 }): Promise<string> {
   const next = safeNextPath(opts.next);
   const referralCode = opts.referralCode?.trim() || null;
@@ -114,6 +117,7 @@ export async function createGoogleOAuthState(opts: {
     native: opts.native,
     ...(next ? { next } : {}),
     ...(referralCode ? { ref: referralCode } : {}),
+    ...(opts.linkUserId ? { link: opts.linkUserId } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -135,6 +139,7 @@ export async function consumeGoogleOAuthState(
       native: payload.native === true,
       next: safeNextPath(payload.next),
       referralCode: ref,
+      linkUserId: typeof payload.link === "string" ? payload.link : null,
     };
   } catch {
     return { ok: false };
@@ -404,4 +409,22 @@ export async function upsertGoogleUser(
   );
 
   return created;
+}
+
+/** Attach a Google account to an existing signed-in user. */
+export async function linkGoogleToUser(userId: string, profile: GoogleProfile) {
+  const taken = await prisma.user.findFirst({
+    where: { googleId: profile.sub, NOT: { id: userId } },
+    select: { id: true },
+  });
+  if (taken) throw new Error("GOOGLE_ACCOUNT_TAKEN");
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || user.banned) throw new Error("BANNED");
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      googleId: profile.sub,
+      ...(profile.picture && !user.avatarUrl ? { avatarUrl: profile.picture } : {}),
+    },
+  });
 }

@@ -5,6 +5,7 @@ import {
   googleAuthUrl,
   isNativeAppUserAgent,
 } from "@/lib/auth/google";
+import { getSessionUserId } from "@/lib/auth/customer";
 import { getEnv } from "@/lib/env";
 import { isMaintenanceMode } from "@/lib/maintenance";
 import { NextResponse } from "next/server";
@@ -36,7 +37,16 @@ export async function GET(request: Request) {
   const safeNext =
     next && next.startsWith("/") && !next.startsWith("//") ? next : null;
 
+  let linkUserId: string | null = null;
+  if (url.searchParams.get("link") === "1") {
+    linkUserId = await getSessionUserId();
+    if (!linkUserId) {
+      return NextResponse.redirect(new URL("/", getEnv().appUrl.replace(/\/$/, "")));
+    }
+  }
+
   const state = await createGoogleOAuthState({
+    linkUserId,
     native: isNativeAppUserAgent(request),
     next: safeNext,
     referralCode: ref || null,

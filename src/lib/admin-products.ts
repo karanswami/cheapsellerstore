@@ -85,7 +85,7 @@ export async function archiveOrDeleteProduct(
     prisma.userSpecialPrice.deleteMany({
       where: { durationId: { in: durationIds } },
     }),
-    prisma.productReview.deleteMany({ where: { productId } }),
+    prisma.productLike.deleteMany({ where: { productId } }),
     prisma.durationPrice.deleteMany({
       where: { durationId: { in: durationIds } },
     }),

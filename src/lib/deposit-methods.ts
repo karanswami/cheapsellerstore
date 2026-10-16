@@ -13,6 +13,8 @@ export type DepositMethodConfigEntry = {
   enabled: boolean;
   /** Manual pay QR (Binance / eSewa only). Empty = use default asset. */
   qrUrl: string;
+  /** Registered pay currency code this rail charges in. */
+  currency: string;
 };
 
 export type DepositMethodsConfig = Record<
@@ -38,13 +40,31 @@ const DEFAULT_QR: Record<"BINANCE" | "ESEWA", string> = {
   ESEWA: "/esewa-nepal-qr.png",
 };
 
+/** Default pay currency per rail. Providers that only settle in one currency are locked. */
+export const DEFAULT_METHOD_CURRENCY: Record<DepositMethodId, string> = {
+  QRIS: "IDR",
+  BINANCE: "USD",
+  UPI: "INR",
+  ESEWA: "NPR",
+};
+
+/** Rails whose provider only accepts one currency — admin cannot change it. */
+export const LOCKED_METHOD_CURRENCY: DepositMethodId[] = ["QRIS", "UPI"];
+
 export function defaultDepositMethodsConfig(): DepositMethodsConfig {
   return {
-    QRIS: { enabled: true, qrUrl: "" },
-    BINANCE: { enabled: true, qrUrl: "" },
-    UPI: { enabled: true, qrUrl: "" },
-    ESEWA: { enabled: true, qrUrl: "" },
+    QRIS: { enabled: true, qrUrl: "", currency: "IDR" },
+    BINANCE: { enabled: true, qrUrl: "", currency: "USD" },
+    UPI: { enabled: true, qrUrl: "", currency: "INR" },
+    ESEWA: { enabled: true, qrUrl: "", currency: "NPR" },
   };
+}
+
+function sanitizeCurrency(raw: unknown, method: DepositMethodId): string {
+  if (LOCKED_METHOD_CURRENCY.includes(method)) return DEFAULT_METHOD_CURRENCY[method];
+  if (typeof raw !== "string") return DEFAULT_METHOD_CURRENCY[method];
+  const code = raw.trim().toUpperCase();
+  return /^[A-Z]{2,8}$/.test(code) ? code : DEFAULT_METHOD_CURRENCY[method];
 }
 
 function sanitizeQrUrl(raw: unknown, method: DepositMethodId): string {
@@ -66,6 +86,7 @@ export function normalizeDepositMethodsConfig(
     base[id] = {
       enabled: entry?.enabled === undefined ? defaultEnabled : entry.enabled === true,
       qrUrl: sanitizeQrUrl(entry?.qrUrl, id),
+      currency: sanitizeCurrency(entry?.currency, id),
     };
   }
   return base;
@@ -135,4 +156,10 @@ export function toPublicDepositMethods(
     UPI: { enabled: config.UPI.enabled },
     ESEWA: { enabled: config.ESEWA.enabled },
   };
+}
+
+/** Pay currency an auto rail charges in (admin-attached, falls back to the rail default). */
+export async function getMethodPayCurrency(method: DepositMethod | DepositMethodId): Promise<string> {
+  const config = await getDepositMethodsConfig();
+  return config[method as DepositMethodId]?.currency ?? (method === "MGCLOUDPAY" ? "IDR" : "USD");
 }

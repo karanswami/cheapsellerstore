@@ -17,7 +17,7 @@ import {
   getDepositProviderAdapter,
   getDepositProviderLabel,
 } from "@/lib/deposit-providers";
-import { isDepositMethodEnabled } from "@/lib/deposit-methods";
+import { getMethodPayCurrency, isDepositMethodEnabled } from "@/lib/deposit-methods";
 import {
   getManualMethodById,
   manualMethodPayCurrency,
@@ -53,13 +53,6 @@ function addMinutes(minutes: number) {
   return new Date(Date.now() + minutes * 60_000);
 }
 
-function methodPayCurrency(method: DepositMethod): string {
-  if (method === DepositMethod.UPI) return "INR";
-  if (method === DepositMethod.QRIS) return "IDR";
-  if (method === DepositMethod.MGCLOUDPAY) return "IDR";
-  if (method === DepositMethod.ESEWA) return "NPR";
-  return "USD";
-}
 
 function normalizeLocalAmount(value: number, method: DepositMethod) {
   if (!Number.isFinite(value) || value <= 0) return NaN;
@@ -94,7 +87,7 @@ export async function createProviderDeposit(input: {
     };
   }
 
-  const payCurrency = methodPayCurrency(method);
+  const payCurrency = await getMethodPayCurrency(method);
   const localAmount = normalizeLocalAmount(input.localAmount, method);
   if (!Number.isFinite(localAmount) || localAmount <= 0) {
     return {

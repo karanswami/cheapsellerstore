@@ -25,7 +25,6 @@ import {
   ScrollText,
   Settings,
   ShoppingBag,
-  Star,
   Store,
   Tag,
   Trophy,
@@ -75,12 +74,6 @@ const APP_ROUTES: RouteEntry[] = [
     title: "Deposit",
     subtitle: "Top up wallet balance for checkout",
     icon: Wallet,
-  },
-  {
-    path: "/app/gift-codes",
-    title: "Gift codes",
-    subtitle: "Claim USD gift codes to your wallet",
-    icon: Gift,
   },
   {
     path: "/app/profile",
@@ -208,21 +201,9 @@ const ADMIN_ROUTES: RouteEntry[] = [
   },
   {
     path: "/admin/deposits",
-    title: "Deposits",
-    subtitle: "Payment tickets and approvals",
+    title: "Pending deposits",
+    subtitle: "Manual payment proofs awaiting review",
     icon: Wallet,
-  },
-  {
-    path: "/admin/qris",
-    title: "QRIS deposits",
-    subtitle: "AutoGoPay IDR deposit analytics",
-    icon: Wallet,
-  },
-  {
-    path: "/admin/gift-codes",
-    title: "Gift codes",
-    subtitle: "Create USD codes and view claim details",
-    icon: Gift,
   },
   {
     path: "/admin/users",
@@ -289,12 +270,6 @@ const ADMIN_ROUTES: RouteEntry[] = [
     title: "Flash sales",
     subtitle: "Timed storefront discounts",
     icon: Zap,
-  },
-  {
-    path: "/admin/reviews",
-    title: "Reviews",
-    subtitle: "Moderate product ratings",
-    icon: Star,
   },
   {
     path: "/admin/faqs",

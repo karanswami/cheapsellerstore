@@ -9,6 +9,7 @@ import {
 } from "@/lib/deposit-mins";
 import {
   getDepositMethodsConfig,
+  getMethodPayCurrency,
   toPublicDepositMethods,
 } from "@/lib/deposit-methods";
 import {
@@ -35,12 +36,8 @@ const manualSchema = z.object({
   proofImage: z.string().trim().min(1).max(500),
 });
 
-function payCurrencyFor(method: DepositMethod): string {
-  if (method === "UPI") return "INR";
-  if (method === "QRIS") return "IDR";
-  if (method === "MGCLOUDPAY") return "IDR";
-  if (method === "ESEWA") return "NPR";
-  return "USD";
+async function payCurrencyFor(method: DepositMethod): Promise<string> {
+  return getMethodPayCurrency(method);
 }
 
 function formatLocalMin(amount: number, currency: string) {
@@ -169,7 +166,7 @@ export async function POST(request: Request) {
   }
 
   const method = parsed.data.method as DepositMethod;
-  const payCurrency = payCurrencyFor(method);
+  const payCurrency = await payCurrencyFor(method);
   const mins = await getDepositMinsForRole(full.role);
   const minLocal = minForCurrency(mins, payCurrency);
 

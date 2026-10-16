@@ -239,6 +239,65 @@
   .btn-sheen:hover::after { animation: sheen 0.9s ease; }
 }
 
+/* Product card / quick-buy motion: transform + opacity only, so it stays on the compositor */
+@keyframes heart-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.4); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+@keyframes heart-burst {
+  0% { opacity: 0; transform: scale(0.3); }
+  25% { opacity: 1; transform: scale(1.15); }
+  60% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.3) translateY(-12px); }
+}
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(28px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes success-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes confetti {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(0.6); }
+}
+@keyframes ping-dot {
+  0% { transform: scale(1); opacity: 0.7; }
+  80%, 100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes pay-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@layer utilities {
+  .anim-heart-pop { animation: heart-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .anim-heart-burst { animation: heart-burst 0.8s ease-out forwards; }
+  .anim-sheet-up { animation: sheet-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-pop-in { animation: pop-in 0.16s ease-out both; }
+  .anim-success-pop { animation: success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .anim-ping { animation: ping-dot 1.8s ease-out infinite; }
+  .anim-pay-sweep { animation: pay-sweep 1s linear infinite; }
+  .draw-ring { stroke-dasharray: 190; stroke-dashoffset: 190; animation: draw 0.55s ease-out 0.05s forwards; }
+  .draw-check { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw 0.35s ease-out 0.5s forwards; }
+  .confetti-bit { animation: confetti 1s cubic-bezier(0.15, 0.7, 0.3, 1) 0.45s both; }
+  /* Skip rendering offscreen cards entirely -> smooth scrolling on long catalogs */
+  .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 440px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .anim-heart-pop, .anim-heart-burst, .anim-sheet-up, .anim-pop-in, .anim-success-pop, .anim-ping, .anim-pay-sweep, .confetti-bit { animation: none !important; }
+  .draw-ring, .draw-check { animation: none !important; stroke-dashoffset: 0; }
   .anim-fade-up, .anim-blob, .anim-float, .anim-grid, .anim-shake { animation: none !important; }
 }

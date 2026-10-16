@@ -43,3 +43,10 @@ export type AdminOrderDetail = AdminOrderListItem & {
     key: { id: string; code: string; status: string } | null;
   }[];
 };
+
+export type AdminOrderStats = {
+  counts: Record<string, number>;
+  all: number;
+  revenue: number;
+  today: number;
+};

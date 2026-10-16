@@ -76,7 +76,6 @@ async function main() {
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
   await prisma.deposit.deleteMany();
-  await prisma.productReview.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.promoRedemption.deleteMany();
   await prisma.user.deleteMany();

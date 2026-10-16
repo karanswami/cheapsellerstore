@@ -193,15 +193,6 @@ export const checkoutSchema = z.object({
     .min(1),
 });
 
-export const productReviewSchema = z.object({
-  rating: z.number().int().min(1).max(5),
-  body: z
-    .string()
-    .trim()
-    .min(8, "Write at least 8 characters")
-    .max(1000, "Keep reviews under 1000 characters"),
-});
-
 export const supportChatSchema = z
   .object({
     message: z.string().trim().max(1000, "Message is too long").optional(),

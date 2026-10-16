@@ -103,7 +103,6 @@ export type AnalyticsPayload = {
   depositsByMethod: import("@/lib/admin-stats").NamedCount[];
   depositsByStatus: import("@/lib/admin-stats").NamedCount[];
   keysByStatus: import("@/lib/admin-stats").NamedCount[];
-  reviewsByStatus: import("@/lib/admin-stats").NamedCount[];
 };
 
 export function shortDateLabel(isoDate: string): string {
@@ -150,6 +149,5 @@ export const HISTORY_KIND_LABEL: Record<AdminHistoryKind | "all", string> = {
   deposit: "Deposits",
   transaction: "Wallet",
   key: "Keys",
-  review: "Reviews",
   reseller: "Resellers",
 };

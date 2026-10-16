@@ -20,12 +20,6 @@ import { type Prisma, type UserRole } from "@prisma/client";
 function productInclude(currency: Currency) {
   return {
     category: true,
-    _count: {
-      select: {
-        // String literals avoid Turbopack stripping Prisma runtime enums.
-        reviews: { where: { status: "APPROVED" } },
-      },
-    },
     durations: {
       include: {
         _count: {
@@ -167,8 +161,6 @@ function mapProductCard(
     id: product.id,
     title: product.title,
     description: product.description,
-    rating: product.rating,
-    reviewCount: product._count.reviews,
     imageUrl: product.imageUrl,
     demoUrl: productDemo || defaultDemoUrl,
     features: Array.isArray(product.features) ? product.features : [],
