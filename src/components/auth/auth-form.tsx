@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ComponentType } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, AtSign, Eye, EyeOff, Loader2, Lock, Mail, User, UserRound } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -19,16 +19,31 @@ type Field = {
 };
 
 const LOGIN_FIELDS: Field[] = [
-  { name: "identifier", label: "Username or email", autoComplete: "username", required: true, icon: UserRound },
-  { name: "password", label: "Password", type: "password", autoComplete: "current-password", required: true, icon: Lock },
+  { name: "identifier", label: "Username or email", autoComplete: "username", placeholder: "Enter username or email", required: true, icon: UserRound },
+  { name: "password", label: "Password", type: "password", autoComplete: "current-password", placeholder: "Enter your password", required: true, icon: Lock },
 ];
 
 const REGISTER_FIELDS: Field[] = [
-  { name: "name", label: "Name", autoComplete: "name", required: true, icon: User },
-  { name: "username", label: "Username", autoComplete: "username", required: true, icon: AtSign },
-  { name: "email", label: "Email", type: "email", autoComplete: "email", required: true, icon: Mail },
-  { name: "password", label: "Password", type: "password", autoComplete: "new-password", required: true, icon: Lock },
+  { name: "name", label: "Name", autoComplete: "name", placeholder: "Your full name", required: true, icon: User },
+  { name: "username", label: "Username", autoComplete: "username", placeholder: "Choose a username", required: true, icon: AtSign },
+  { name: "email", label: "Email", type: "email", autoComplete: "email", placeholder: "you@example.com", required: true, icon: Mail },
+  { name: "password", label: "Password", type: "password", autoComplete: "new-password", placeholder: "Create a password (min 6 characters)", required: true, icon: Lock },
 ];
+
+function validate(mode: "login" | "register", body: Record<string, FormDataEntryValue>) {
+  const v = (k: string) => String(body[k] ?? "").trim();
+  if (mode === "login") {
+    if (!v("identifier")) return "Enter your username or email.";
+    if (!body.password) return "Enter your password.";
+    return null;
+  }
+  if (!v("name")) return "Name is required.";
+  if (v("username").length < 3) return "Username must be at least 3 characters.";
+  if (!/^[a-zA-Z0-9_]+$/.test(v("username"))) return "Username: letters, numbers, underscore only.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v("email"))) return "Enter a valid email address.";
+  if (String(body.password ?? "").length < 6) return "Password must be at least 6 characters.";
+  return null;
+}
 
 function safeNext(next: string | undefined) {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : null;
@@ -49,16 +64,21 @@ export function AuthForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needs2fa, setNeeds2fa] = useState(false);
-  const [errKey, setErrKey] = useState(0);
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const fields = mode === "login" ? LOGIN_FIELDS : REGISTER_FIELDS;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
     const body = Object.fromEntries(new FormData(e.currentTarget).entries());
+    const invalid = validate(mode, body);
+    if (invalid) {
+      setError(invalid);
+      toast.error(invalid);
+      return;
+    }
+    setLoading(true);
     try {
       const res = await fetch(`/api/auth/${mode}`, {
         method: "POST",
@@ -67,8 +87,9 @@ export function AuthForm({
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json?.error?.message ?? "Something went wrong.");
-        setErrKey((k) => k + 1);
+        const message = json?.error?.message ?? "Something went wrong.";
+        setError(message);
+        toast.error(message);
         return;
       }
       if (json.data?.requires2fa) {
@@ -76,11 +97,12 @@ export function AuthForm({
         toast.info(json.data.message);
         return;
       }
+      toast.success(mode === "login" ? "Signed in successfully. Welcome back!" : "Account created. Welcome!");
       router.replace(safeNext(next) ?? json.data?.redirectTo ?? "/app");
       router.refresh();
     } catch {
       setError("Network error. Try again.");
-      setErrKey((k) => k + 1);
+      toast.error("Network error. Try again.");
     } finally {
       setLoading(false);
     }
@@ -114,7 +136,7 @@ export function AuthForm({
         </>
       ) : null}
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} noValidate className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
         {fields.map((f, i) => {
           const Icon = f.icon;
@@ -166,12 +188,6 @@ export function AuthForm({
         })}
         </div>
         {mode === "register" && referralCode ? <input type="hidden" name="referralCode" value={referralCode} /> : null}
-
-        {error ? (
-          <p key={errKey} role="alert" className="anim-shake rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
-            {error}
-          </p>
-        ) : null}
 
         <div style={delay(fields.length + 2)} className="anim-fade-up">
           <Button
