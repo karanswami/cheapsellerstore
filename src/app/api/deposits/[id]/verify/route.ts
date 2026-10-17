@@ -5,6 +5,7 @@ import { recheckDepositNow } from "@/lib/deposit-recheck";
 import { prisma } from "@/lib/prisma";
 import { DepositMethod, DepositStatus } from "@prisma/client";
 import { z } from "zod";
+import { rateLimitAll } from "@/lib/rate-limit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -15,6 +16,16 @@ const verifySchema = z.object({
 export async function POST(request: Request, { params }: Params) {
   const user = await getCurrentUser();
   if (!user) return jsonError("UNAUTHORIZED", "Login required.", 401);
+
+  const limited = await rateLimitAll([
+    { key: `dep-verify:${user.id}`, limit: 20, windowMs: 5 * 60_000 },
+    { key: `dep-verify-one:${user.id}`, limit: 8, windowMs: 60_000 },
+  ]);
+  if (limited) {
+    return jsonError("RATE_LIMITED", "Too many verification attempts. Wait a moment.", 429, {
+      headers: { "Retry-After": String(limited.retryAfterSec) },
+    });
+  }
 
   const { id } = await params;
 

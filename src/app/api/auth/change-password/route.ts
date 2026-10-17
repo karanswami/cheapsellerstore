@@ -4,9 +4,12 @@ import { notifyUser } from "@/lib/notifications";
 import {
   getSessionUserId,
   hashPassword,
+  revokeUserSessions,
+  setCustomerSessionCookie,
   verifyPassword,
 } from "@/lib/auth/customer";
 import { prisma } from "@/lib/prisma";
+import { rateLimitAll } from "@/lib/rate-limit";
 import { changePasswordSchema } from "@/lib/validations";
 
 export async function POST(request: Request) {
@@ -36,6 +39,15 @@ export async function POST(request: Request) {
     return jsonError("UNAUTHORIZED", "Sign in to change your password.", 401);
   }
 
+  const limited = await rateLimitAll([
+    { key: `chgpw:${user.id}`, limit: 8, windowMs: 15 * 60_000 },
+  ]);
+  if (limited) {
+    return jsonError("RATE_LIMITED", "Too many attempts. Try again later.", 429, {
+      headers: { "Retry-After": String(limited.retryAfterSec) },
+    });
+  }
+
   const { currentPassword, newPassword } = parsed.data;
 
   if (user.passwordHash) {
@@ -56,6 +68,9 @@ export async function POST(request: Request) {
     where: { id: user.id },
     data: { passwordHash },
   });
+  // Sign out every other device/session, keep this one alive.
+  await revokeUserSessions(user.id);
+  await setCustomerSessionCookie(user.id, user.role);
 
   logActivity({
     request,

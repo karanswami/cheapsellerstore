@@ -1,5 +1,6 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { getOrderByAccessToken } from "@/lib/orders";
+import { clientIpFromHeaders, rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import type { NextRequest } from "next/server";
 
 export async function GET(
@@ -7,7 +8,13 @@ export async function GET(
   context: RouteContext<"/api/orders/[orderId]">,
 ) {
   const { orderId } = await context.params;
-  const token = request.nextUrl.searchParams.get("token");
+  // Prefer the header (never lands in access logs / Referer); query kept for old share links.
+  const token =
+    request.headers.get("x-order-token")?.trim() || request.nextUrl.searchParams.get("token");
+  const limited = await rateLimitAll([
+    { key: `order-token:${clientIpFromHeaders(request.headers)}`, limit: 60, windowMs: 60_000 },
+  ]);
+  if (limited) return tooManyRequests(limited);
   if (!token) {
     return jsonError("UNAUTHORIZED", "Missing token.", 401);
   }

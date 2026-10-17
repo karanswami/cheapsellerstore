@@ -6,10 +6,19 @@ import {
 } from "node:crypto";
 import { getEnv } from "@/lib/env";
 
+function deriveKey(material: string) {
+  return createHash("sha256").update(`drip-secret:${material}`).digest();
+}
+
+/** Legacy key (derived from the session secret) — still accepted for decrypting old values. */
+function legacyKey() {
+  return deriveKey(getEnv().customerSessionSecret);
+}
+
+/** Current key: dedicated DATA_ENCRYPTION_KEY when set, otherwise the legacy key. */
 function encryptionKey() {
-  return createHash("sha256")
-    .update(`drip-secret:${getEnv().customerSessionSecret}`)
-    .digest();
+  const dedicated = process.env.DATA_ENCRYPTION_KEY?.trim();
+  return dedicated ? deriveKey(dedicated) : legacyKey();
 }
 
 /** Encrypt a UTF-8 string → base64(iv|tag|ciphertext). */
@@ -33,10 +42,16 @@ export function decryptSecret(payload: string): string {
   const iv = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
   const encrypted = buf.subarray(28);
-  const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), iv);
-  decipher.setAuthTag(tag);
-  return Buffer.concat([
-    decipher.update(encrypted),
-    decipher.final(),
-  ]).toString("utf8");
+  const attempt = (key: Buffer) => {
+    const decipher = createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+  };
+  try {
+    return attempt(encryptionKey());
+  } catch (e) {
+    // Written before DATA_ENCRYPTION_KEY existed? Try the legacy key.
+    if (process.env.DATA_ENCRYPTION_KEY?.trim()) return attempt(legacyKey());
+    throw e;
+  }
 }

@@ -1,6 +1,7 @@
 import { logActivity } from "@/lib/activity-log";
 import { getSessionUserId, setCustomerSessionCookie } from "@/lib/auth/customer";
 import {
+  OAUTH_NONCE_COOKIE,
   consumeGoogleOAuthState,
   createNativeAuthHandoff,
   exchangeGoogleCode,
@@ -16,6 +17,7 @@ import { getEnv } from "@/lib/env";
 import { isMaintenanceMode } from "@/lib/maintenance";
 import { homePathForRole } from "@/lib/roles";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 function redirectWebError(code: string) {
   const base = getEnv().appUrl.replace(/\/$/, "");
@@ -49,6 +51,13 @@ export async function GET(request: Request) {
   }
 
   const code = url.searchParams.get("code");
+  if (state.ok && !state.native) {
+    const jar = await cookies();
+    const cookieNonce = jar.get(OAUTH_NONCE_COOKIE)?.value;
+    if (!state.nonce || !cookieNonce || cookieNonce !== state.nonce) {
+      return redirectError("invalid_state", false);
+    }
+  }
   if (!code || !state.ok) {
     return redirectError("invalid_state", handoff);
   }

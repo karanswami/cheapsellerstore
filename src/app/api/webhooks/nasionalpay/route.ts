@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { jsonOk } from "@/lib/api";
+import { clientIpFromHeaders, rateLimitAll } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { recheckDepositNow } from "@/lib/deposit-recheck";
 import { DepositMethod } from "@prisma/client";
@@ -12,12 +13,20 @@ import { DepositMethod } from "@prisma/client";
  */
 export async function POST(req: Request) {
   try {
+    // Unsigned trigger that calls the gateway API: cap it so it can't be used to hammer us/them.
+    const limited = await rateLimitAll([
+      { key: `np-hook:${clientIpFromHeaders(req.headers)}`, limit: 60, windowMs: 60_000 },
+    ]);
+    if (limited) return jsonOk({ success: true, processed: false, reason: "rate_limited" });
     const body = (await req.json().catch(() => ({}))) as {
       success?: boolean;
       data?: { transaction_id?: string; status?: string };
     };
     const transactionId = String(body.data?.transaction_id ?? "").trim();
     if (!transactionId) return jsonOk({ success: true, processed: false, reason: "missing_transaction_id" });
+
+    const perTx = await rateLimitAll([{ key: `np-hook-tx:${transactionId}`, limit: 10, windowMs: 60_000 }]);
+    if (perTx) return jsonOk({ success: true, processed: false, reason: "rate_limited" });
 
     const deposit = await prisma.deposit.findFirst({
       where: { method: DepositMethod.NASIONALPAY, providerDepositId: transactionId },

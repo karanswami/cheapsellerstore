@@ -1,5 +1,6 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth/customer";
+import { rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import { SpinError, getSpinState, performSpin } from "@/lib/spin";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ export async function GET() {
 export async function POST() {
   const user = await getCurrentUser();
   if (!user) return jsonError("UNAUTHORIZED", "Login required.", 401);
+  const limited = await rateLimitAll([{ key: `spin:${user.id}`, limit: 20, windowMs: 60_000 }]);
+  if (limited) return tooManyRequests(limited);
   try {
     return jsonOk(await performSpin(user.id));
   } catch (e) {

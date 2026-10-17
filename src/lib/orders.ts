@@ -9,6 +9,7 @@ import {
   pickFlashSale,
 } from "@/lib/flash-sales";
 import {
+  claimPromoRedemption,
   calcDiscount,
   lineMatchesPromoScope,
   lookupPromoDetailed,
@@ -16,7 +17,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { formatMoney, type Currency } from "@/lib/currencies";
 import { creditReferralReward } from "@/lib/referral-rewards";
-import { debitWalletForPurchase } from "@/lib/wallet";
+import { debitWalletForPurchase, refundWalletForPurchase } from "@/lib/wallet";
 import { getSpecialPricesForUser, resolveUnitPrice } from "@/lib/pricing";
 import { logActivity } from "@/lib/activity-log";
 import {
@@ -36,6 +37,7 @@ import type {
   AdminOrderStatusFilter,
 } from "@/types/admin-orders";
 import { randomBytes } from "crypto";
+import { acquireLock } from "@/lib/idempotency";
 
 export type {
   AdminOrderAudience,
@@ -274,7 +276,27 @@ function makeAccessToken() {
   return randomBytes(24).toString("hex");
 }
 
+/**
+ * One checkout per user at a time: parallel requests can't race the balance check, the stock
+ * claim or the promo limits. Wallet debits are additionally atomic (see wallet.ts).
+ */
 export async function createAndFulfillOrder(input: CreateOrderInput) {
+  const release = await acquireLock("checkout", input.userId, 45_000);
+  if (!release) {
+    return {
+      ok: false as const,
+      code: "CHECKOUT_BUSY",
+      message: "Another purchase is already being processed. Please wait a moment.",
+    };
+  }
+  try {
+    return await createAndFulfillOrderLocked(input);
+  } finally {
+    await release();
+  }
+}
+
+async function createAndFulfillOrderLocked(input: CreateOrderInput) {
   const accessToken = makeAccessToken();
   const role = input.role ?? "USER";
 
@@ -498,6 +520,8 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
     },
   });
 
+  let debited = false;
+  let finalized = false;
   try {
     for (const line of planned) {
       const key = await claimKey(line.durationId, order.id);
@@ -517,22 +541,23 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
       });
     }
 
+    // Claim the promo slot BEFORE charging, atomically (insert, then re-count).
+    if (promoCodeId) {
+      const claimed = await claimPromoRedemption({
+        promoCodeId,
+        userId: input.userId,
+        orderId: order.id,
+        discount: promoDiscount,
+      });
+      if (!claimed.ok) throw new Error(claimed.code);
+    }
+
     await debitWalletForPurchase({
       userId: input.userId,
       amount: total,
       orderId: order.id,
     });
-
-    if (promoCodeId) {
-      await prisma.promoRedemption.create({
-        data: {
-          promoCodeId,
-          userId: input.userId,
-          orderId: order.id,
-          discount: promoDiscount,
-        },
-      });
-    }
+    debited = true;
 
     const fulfilled = await prisma.order.update({
       where: { id: order.id },
@@ -543,6 +568,8 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
         },
       },
     });
+
+    finalized = true;
 
     await creditReferralReward({
       buyerId: input.userId,
@@ -649,19 +676,69 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
       order: fulfilled,
     };
   } catch (err) {
-    const code =
-      err instanceof Error && err.message === "INSUFFICIENT_BALANCE"
-        ? "INSUFFICIENT_BALANCE"
-        : "STOCK_UNAVAILABLE";
-    // Return claimed keys to AVAILABLE — matches Platform API rollback.
+    if (finalized) {
+      // Paid, keys delivered, order FULFILLED — only a trailing side effect failed. Never roll back.
+      console.error("[checkout] post-fulfilment side effect failed", order.id, err);
+      const done = await prisma.order.findUniqueOrThrow({
+        where: { id: order.id },
+        include: { items: { include: { key: true } } },
+      });
+      return { ok: true as const, orderId: done.id, accessToken: done.accessToken, order: done };
+    }
+    const msg = err instanceof Error ? err.message : "";
+    // Money first: if the wallet was already charged, give it back before anything else.
+    let refunded = !debited;
+    if (debited) {
+      try {
+        refunded = await refundWalletForPurchase({
+          userId: input.userId,
+          amount: total,
+          orderId: order.id,
+          note: "Refund: checkout failed after payment",
+        });
+        refunded = true;
+      } catch (refundErr) {
+        console.error("[checkout] REFUND FAILED — manual review needed", order.id, refundErr);
+        try {
+          const { reportDatabaseError } = await import("@/lib/system-alert");
+          void reportDatabaseError("checkout_refund_failed", refundErr, {
+            metadata: { orderId: order.id, userId: input.userId, total },
+          }).catch(() => undefined);
+        } catch {
+          // ignore alert delivery failures
+        }
+      }
+    }
     await releaseKeysForOrder(order.id).catch(() => undefined);
     await prisma.orderItem.deleteMany({ where: { orderId: order.id } }).catch(
+      () => undefined,
+    );
+    await prisma.promoRedemption.deleteMany({ where: { orderId: order.id } }).catch(
       () => undefined,
     );
     await prisma.order.update({
       where: { id: order.id },
       data: { status: OrderStatus.FAILED },
-    });
+    }).catch(() => undefined);
+
+    const promoFail: Record<string, string> = {
+      MAXED: "This promo has reached its usage limit.",
+      USER_LIMIT: "You have already used this promo.",
+    };
+    if (promoFail[msg]) {
+      return { ok: false as const, code: msg, message: promoFail[msg] };
+    }
+    const code = msg === "INSUFFICIENT_BALANCE" ? "INSUFFICIENT_BALANCE" : "STOCK_UNAVAILABLE";
+    if (code === "STOCK_UNAVAILABLE" && msg !== "STOCK_UNAVAILABLE") {
+      console.error("[checkout] unexpected failure", order.id, err);
+      return {
+        ok: false as const,
+        code: "CHECKOUT_FAILED",
+        message: refunded
+          ? "Something went wrong. You were not charged — please try again."
+          : "Something went wrong. Contact support with your order id: " + order.id,
+      };
+    }
     return {
       ok: false as const,
       code,

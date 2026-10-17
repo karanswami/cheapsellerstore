@@ -36,6 +36,19 @@ const SOUND_ALLOWED = new Map([
   ["audio/mp4", "m4a"],
   ["audio/aac", "aac"],
 ]);
+/** Verify the bytes really are the declared image type (client `file.type` is attacker-controlled). */
+function matchesImageSignature(ext: string, b: Buffer) {
+  if (ext === "jpg") return b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+  if (ext === "png") {
+    return b.length > 8 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+  if (ext === "webp") {
+    return b.length > 12 && b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WEBP";
+  }
+  if (ext === "ico") return b.length > 4 && b[0] === 0 && b[1] === 0 && b[2] === 1 && b[3] === 0;
+  return false;
+}
+
 const EXT_MIME: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
@@ -149,6 +162,9 @@ async function saveImageUpload(file: File, dir: string, urlPrefix: string) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  if (!matchesImageSignature(ext, buffer)) {
+    throw new Error("That file is not a valid image.");
+  }
   await writeFile(resolved, buffer);
 
   return {

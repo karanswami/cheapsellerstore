@@ -1,5 +1,6 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { requireCustomer } from "@/lib/auth/customer";
+import { rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import {
   saveSupportUpload,
   supportUploadLimits,
@@ -20,11 +21,16 @@ function isUploadFile(value: FormDataEntryValue | null): value is File {
 }
 
 export async function POST(request: Request) {
+  let uploader;
   try {
-    await requireCustomer();
+    uploader = await requireCustomer();
   } catch {
     return jsonError("UNAUTHORIZED", "Sign in required.", 401);
   }
+  const limited = await rateLimitAll([
+    { key: `upload:${uploader.id}`, limit: 20, windowMs: 10 * 60_000 },
+  ]);
+  if (limited) return tooManyRequests(limited, "Too many uploads. Try again shortly.");
 
   let form: FormData;
   try {

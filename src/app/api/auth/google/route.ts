@@ -6,7 +6,9 @@ import {
   isNativeAppUserAgent,
 } from "@/lib/auth/google";
 import { getSessionUserId } from "@/lib/auth/customer";
-import { getEnv } from "@/lib/env";
+import { getEnv, sessionCookieSecure } from "@/lib/env";
+import { randomBytes } from "node:crypto";
+import { OAUTH_NONCE_COOKIE } from "@/lib/auth/google";
 import { isMaintenanceMode } from "@/lib/maintenance";
 import { NextResponse } from "next/server";
 
@@ -45,12 +47,28 @@ export async function GET(request: Request) {
     }
   }
 
+  // Web flow: bind the OAuth round-trip to THIS browser (blocks login-CSRF / forced-login links).
+  // The native app uses Custom Tabs (separate cookie jar) so it relies on the signed state alone.
+  const native = isNativeAppUserAgent(request);
+  const nonce = native ? null : randomBytes(16).toString("hex");
+
   const state = await createGoogleOAuthState({
     linkUserId,
-    native: isNativeAppUserAgent(request),
+    nonce,
+    native,
     next: safeNext,
     referralCode: ref || null,
   });
 
-  return NextResponse.redirect(await googleAuthUrl(state));
+  const res = NextResponse.redirect(await googleAuthUrl(state));
+  if (nonce) {
+    res.cookies.set(OAUTH_NONCE_COOKIE, nonce, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: sessionCookieSecure(),
+      path: "/api/auth/google",
+      maxAge: 15 * 60,
+    });
+  }
+  return res;
 }

@@ -4,10 +4,10 @@ const fs = require('fs');
 const finalData = JSON.parse(fs.readFileSync('/tmp/analysis_final.json', 'utf8'));
 
 async function main() {
-    process.env.DATABASE_URL = "mongodb+srv://guru_gaming:OLSvzzl00TYZoLJX@gurugaming.5kqpl3y.mongodb.net/drip-client-reseller?retryWrites=true&w=majority";
+    process.env.DATABASE_URL = process.env.DRIP_DB_URL;
     const dripPrisma = new DripPrisma();
 
-    process.env.DATABASE_URL = "mongodb+srv://guru_gaming:OLSvzzl00TYZoLJX@gurugaming.5kqpl3y.mongodb.net/gurugaminghub_store?retryWrites=true&w=majority";
+    process.env.DATABASE_URL = process.env.GURU_DB_URL;
     const guruPrisma = new DripPrisma();
 
     console.log("Drip keys count:", await dripPrisma.key.count());

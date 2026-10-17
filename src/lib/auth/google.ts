@@ -14,6 +14,7 @@ import {
 import type { User, UserRole } from "@prisma/client";
 import { SignJWT, jwtVerify } from "jose";
 import { createHash, randomBytes } from "node:crypto";
+import { claimOnce } from "@/lib/idempotency";
 import { notifyTelegram } from "@/lib/telegram-notify";
 
 /** Capacitor `appendUserAgent` marker — present in the APK WebView only. */
@@ -32,6 +33,8 @@ export type GoogleProfile = {
   picture: string | null;
 };
 
+export const OAUTH_NONCE_COOKIE = "drip_g_nonce";
+
 export type GoogleOAuthState = {
   ok: true;
   native: boolean;
@@ -39,6 +42,8 @@ export type GoogleOAuthState = {
   referralCode: string | null;
   /** Set when a signed-in user is linking Google to their account. */
   linkUserId: string | null;
+  /** Browser-binding nonce (web flow). Must equal the nonce cookie. */
+  nonce: string | null;
 };
 
 export type NativeAuthHandoff = {
@@ -108,6 +113,7 @@ export async function createGoogleOAuthState(opts: {
   next?: string | null;
   referralCode?: string | null;
   linkUserId?: string | null;
+  nonce?: string | null;
 }): Promise<string> {
   const next = safeNextPath(opts.next);
   const referralCode = opts.referralCode?.trim() || null;
@@ -117,6 +123,7 @@ export async function createGoogleOAuthState(opts: {
     ...(next ? { next } : {}),
     ...(referralCode ? { ref: referralCode } : {}),
     ...(opts.linkUserId ? { link: opts.linkUserId } : {}),
+    ...(opts.nonce ? { n: opts.nonce } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -132,6 +139,10 @@ export async function consumeGoogleOAuthState(
   try {
     const { payload } = await jwtVerify(incoming, secretKey());
     if (payload.purpose !== "google_oauth") return { ok: false };
+    // Each state is single-use: a replayed callback URL is rejected.
+    if (typeof payload.jti !== "string" || !(await claimOnce("google-state", payload.jti, 15 * 60_000))) {
+      return { ok: false };
+    }
     const ref = typeof payload.ref === "string" ? payload.ref : null;
     return {
       ok: true,
@@ -139,6 +150,7 @@ export async function consumeGoogleOAuthState(
       next: safeNextPath(payload.next),
       referralCode: ref,
       linkUserId: typeof payload.link === "string" ? payload.link : null,
+      nonce: typeof payload.n === "string" ? payload.n : null,
     };
   } catch {
     return { ok: false };
@@ -172,6 +184,10 @@ export async function consumeNativeAuthHandoff(
   try {
     const { payload } = await jwtVerify(token, secretKey());
     if (payload.purpose !== "native_auth_handoff") return null;
+    // Truly one-shot: the token id can be redeemed exactly once.
+    if (typeof payload.jti !== "string" || !(await claimOnce("native-handoff", payload.jti, 10 * 60_000))) {
+      return null;
+    }
     const userId = typeof payload.sub === "string" ? payload.sub : null;
     const role = normalizeRoleClaim(payload.role);
     if (!userId || !role) return null;

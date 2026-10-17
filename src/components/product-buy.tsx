@@ -1,5 +1,6 @@
 "use client";
 
+import { newIdempotencyKey } from "@/lib/idempotency-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -49,7 +50,7 @@ export function ProductBuy({ product, loggedIn, balance }: Props) {
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey() },
         body: JSON.stringify({
           promoCode: promo.applied?.code,
           items: [

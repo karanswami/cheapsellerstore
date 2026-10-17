@@ -177,6 +177,8 @@ model User {
   /// Integer microcents (USD). 1 USD = 100_000_000.
   walletBalance        Float             @default(0)
   banned               Boolean           @default(false)
+  /// Session JWTs issued before this instant are rejected (password change/reset = sign out everywhere).
+  sessionsValidAfter   DateTime?
   /// Admin-only note when banned (cleared on unban). Not exposed on public APIs.
   banReason            String?
   resellerDiscount     Float             @default(0)
@@ -1171,4 +1173,31 @@ model ReferralSpin {
   @@index([userId, status])
   @@index([status, usedAt])
   @@index([referredUserId])
+}
+
+/// Atomic one-shot claims: idempotency keys, replay guards, per-user mutation locks.
+/// The unique (scope, key) index is what makes a claim race-safe.
+model IdempotencyClaim {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  scope        String
+  key          String
+  /// PENDING while the first request runs, DONE once a response is stored.
+  state        String   @default("PENDING")
+  statusCode   Int?
+  responseJson String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@unique([scope, key])
+  @@index([expiresAt])
+}
+
+/// Fixed-window counters for rate limiting (shared across processes).
+model RateLimitBucket {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  key     String   @unique
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
 }

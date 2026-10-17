@@ -103,9 +103,8 @@ export const TELEGRAM_NOTIFY_DEFAULTS: Record<
   },
 };
 
-/** Prefill when DB/env empty (server-only normalize). Prefer rotating after first setup. */
-export const TELEGRAM_BOT_TOKEN_DEFAULT =
-  "8923340837:AAEm3DuC1OL-XOm_jB4vaTa-siD0BDLQ1gY";
+/** No token is ever shipped in source. Set it in Admin → Settings or the TELEGRAM_BOT_TOKEN env var. */
+export const TELEGRAM_BOT_TOKEN_DEFAULT = "";
 
 export function defaultTelegramNotifyConfig(): TelegramNotifyConfig {
   const channels = {} as Record<TelegramNotifyEvent, TelegramNotifyChannel>;

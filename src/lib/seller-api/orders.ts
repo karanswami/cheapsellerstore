@@ -6,7 +6,9 @@ import { resolveDurationForApi } from "@/lib/seller-api/catalog";
 import { dispatchOrderFulfilledWebhooks } from "@/lib/seller-api/webhooks";
 import {
   debitWalletForPurchase,
+  refundWalletForPurchase,
 } from "@/lib/wallet";
+import { acquireLock } from "@/lib/idempotency";
 import { OrderStatus, type UserRole } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { formatMoney, microcentsToUsdString } from "@/lib/currencies";
@@ -59,7 +61,24 @@ function buildOrderDetail(input: {
   };
 }
 
-export async function createAndFulfillApiOrder(input: {
+export async function createAndFulfillApiOrder(input: Parameters<typeof createAndFulfillApiOrderLocked>[0]) {
+  if (input.sandbox) return createAndFulfillApiOrderLocked(input);
+  const release = await acquireLock("checkout", input.userId, 45_000);
+  if (!release) {
+    return {
+      ok: false as const,
+      code: "BUSY",
+      message: "Busy — another order for this account is processing. Retry shortly.",
+    };
+  }
+  try {
+    return await createAndFulfillApiOrderLocked(input);
+  } finally {
+    await release();
+  }
+}
+
+async function createAndFulfillApiOrderLocked(input: {
   userId: string;
   buyerEmail: string;
   role: UserRole;
@@ -186,6 +205,8 @@ export async function createAndFulfillApiOrder(input: {
   });
 
   const claimedKeyIds: string[] = [];
+  let debited = false;
+  let finalized = false;
 
   try {
     for (let i = 0; i < qty; i++) {
@@ -210,11 +231,13 @@ export async function createAndFulfillApiOrder(input: {
       orderId: order.id,
       note: "Platform API purchase",
     });
+    debited = true;
 
     await prisma.order.update({
       where: { id: order.id },
       data: { status: OrderStatus.FULFILLED },
     });
+    finalized = true;
 
     await creditReferralReward({
       buyerId: input.userId,
@@ -265,6 +288,44 @@ export async function createAndFulfillApiOrder(input: {
 
     return { ok: true as const, sandbox: false as const, order: payload };
   } catch (e) {
+    if (finalized) {
+      // Paid + delivered; a trailing step failed. Return the real order instead of rolling back.
+      console.error("[api-order] post-fulfilment failure", order.id, e);
+      const items = await prisma.orderItem.findMany({
+        where: { orderId: order.id },
+        include: { key: { select: { code: true } } },
+        orderBy: { createdAt: "asc" },
+      });
+      return {
+        ok: true as const,
+        sandbox: false as const,
+        order: buildOrderDetail({
+          id: order.id,
+          status: "FULFILLED",
+          sku: duration.number,
+          quantity: qty,
+          price: subtotal,
+          total: subtotal,
+          currency: "USD",
+          accessToken,
+          items: items.map((it) => ({
+            name: `${it.productTitle} — ${it.durationLabel}`,
+            key: it.key?.code ?? "",
+            price: it.unitPrice,
+          })),
+        }),
+      };
+    }
+    if (debited) {
+      await refundWalletForPurchase({
+        userId: input.userId,
+        amount: subtotal,
+        orderId: order.id,
+        note: "Refund: Platform API order failed after payment",
+      }).catch((refundErr) =>
+        console.error("[api-order] REFUND FAILED — manual review", order.id, refundErr),
+      );
+    }
     for (const keyId of claimedKeyIds) {
       await releaseKey(keyId).catch(() => undefined);
     }

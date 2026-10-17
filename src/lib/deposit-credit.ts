@@ -57,6 +57,7 @@ function mergeAdminNote(existing: string | null | undefined, next: string) {
  * matches nothing useful on unset docs, so cron never expired tickets.
  */
 export async function expireOldDeposits() {
+  await releaseStaleCreditLocks().catch(() => undefined);
   return prisma.deposit.updateMany({
     where: {
       status: { in: [DepositStatus.PENDING, DepositStatus.PROCESSING] },
@@ -67,6 +68,29 @@ export async function expireOldDeposits() {
       status: DepositStatus.EXPIRED,
       failReason: "expired",
       cancelledAt: new Date(),
+    },
+  });
+}
+
+/**
+ * A crash between "lock acquired" and "credit committed" leaves a deposit stuck on the lock.
+ * The wallet credit and `transactionId` commit in ONE database transaction, so a lock older than
+ * this window with no `transactionId` provably credited nothing and is safe to release.
+ */
+const STALE_LOCK_MS = 10 * 60 * 1000;
+
+export async function releaseStaleCreditLocks(depositId?: string) {
+  return prisma.deposit.updateMany({
+    where: {
+      ...(depositId ? { id: depositId } : {}),
+      adminAction: DEPOSIT_CREDIT_LOCK_ACTION,
+      updatedAt: { lt: new Date(Date.now() - STALE_LOCK_MS) },
+      AND: [withoutTransactionId()],
+    },
+    data: {
+      adminAction: null,
+      status: DepositStatus.PENDING,
+      adminNote: "Stale wallet credit lock released (previous attempt never committed).",
     },
   });
 }
@@ -108,6 +132,7 @@ export async function completeDepositOnce(options: {
   reviewerId?: string;
   note?: string;
 }) {
+  await releaseStaleCreditLocks(options.depositId).catch(() => undefined);
   const deposit = await prisma.deposit.findUnique({
     where: { id: options.depositId },
   });
@@ -187,16 +212,12 @@ export async function completeDepositOnce(options: {
   try {
     transactionId = await prisma.$transaction(
       async (tx) => {
-        const user = await tx.user.findUnique({ where: { id: deposit.userId } });
-        if (!user) throw new Error("USER_NOT_FOUND");
-
-        const next = user.walletBalance + credit;
-        if (next < 0) throw new Error("INSUFFICIENT_BALANCE");
-
-        await tx.user.update({
+        // Atomic increment — never read-modify-write the balance, or a concurrent purchase is lost.
+        const bumped = await tx.user.updateMany({
           where: { id: deposit.userId },
-          data: { walletBalance: next },
+          data: { walletBalance: { increment: credit } },
         });
+        if (bumped.count !== 1) throw new Error("USER_NOT_FOUND");
 
         const txRow = await tx.transaction.create({
           data: {

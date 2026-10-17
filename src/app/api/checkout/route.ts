@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/customer";
 import { maintenanceApiBlock } from "@/lib/maintenance";
 import { createAndFulfillOrder } from "@/lib/orders";
 import { checkoutSchema } from "@/lib/validations";
+import { withIdempotency } from "@/lib/idempotent-route";
 
 export async function POST(request: Request) {
   const maint = await maintenanceApiBlock();
@@ -13,6 +14,13 @@ export async function POST(request: Request) {
     return jsonError("UNAUTHORIZED", "Login required.", 401);
   }
 
+  return withIdempotency(request, `checkout:${user.id}`, () => handleCheckout(request, user));
+}
+
+async function handleCheckout(
+  request: Request,
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+) {
   let body: unknown;
   try {
     body = await request.json();
@@ -42,7 +50,7 @@ export async function POST(request: Request) {
 
     if (!result.ok) {
       const status =
-        result.code === "STOCK_UNAVAILABLE"
+        result.code === "STOCK_UNAVAILABLE" || result.code === "CHECKOUT_BUSY"
           ? 409
           : result.code === "INSUFFICIENT_BALANCE"
             ? 402

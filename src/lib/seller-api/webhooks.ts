@@ -1,3 +1,8 @@
+import { validatePublicWebhookUrl, safePost } from "@/lib/safe-fetch";
+import { decryptSecret, encryptSecret } from "@/lib/auth/crypto-secret";
+
+/** Marks a signing secret stored encrypted at rest. */
+const ENC_PREFIX = "enc:v1:";
 import { prisma } from "@/lib/prisma";
 import {
   generateWebhookSecret,
@@ -32,15 +37,11 @@ export async function createUserWebhook(input: {
   url: string;
   events?: string[];
 }) {
-  let parsed: URL;
-  try {
-    parsed = new URL(input.url);
-  } catch {
-    return { ok: false as const, code: "INVALID_URL", message: "Invalid webhook URL." };
+  const checked = validatePublicWebhookUrl(input.url);
+  if (!checked.ok) {
+    return { ok: false as const, code: "INVALID_URL", message: checked.message };
   }
-  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-    return { ok: false as const, code: "INVALID_URL", message: "URL must be http(s)." };
-  }
+  const parsed = checked.url;
 
   const count = await prisma.sellerApiWebhook.count({
     where: { userId: input.userId, status: "ACTIVE" },
@@ -62,7 +63,7 @@ export async function createUserWebhook(input: {
     data: {
       userId: input.userId,
       url: parsed.toString(),
-      secretHash: secret,
+      secretHash: ENC_PREFIX + encryptSecret(secret),
       secretPrefix: prefix,
       events,
     },
@@ -113,18 +114,27 @@ export async function dispatchOrderFulfilledWebhooks(
 
   for (const hook of hooks) {
     try {
-      const signature = signWebhookPayload(hook.secretHash, body);
-      const res = await fetch(hook.url, {
-        method: "POST",
-        headers: {
+      const secret = hook.secretHash.startsWith(ENC_PREFIX)
+        ? decryptSecret(hook.secretHash.slice(ENC_PREFIX.length))
+        : hook.secretHash; // legacy plaintext row
+      if (!hook.secretHash.startsWith(ENC_PREFIX)) {
+        // Upgrade legacy rows to encrypted-at-rest on first use.
+        void prisma.sellerApiWebhook
+          .update({ where: { id: hook.id }, data: { secretHash: ENC_PREFIX + encryptSecret(secret) } })
+          .catch(() => undefined);
+      }
+      const signature = signWebhookPayload(secret, body);
+      const res = await safePost(
+        hook.url,
+        body,
+        {
           "Content-Type": "application/json",
           "X-Drip-Event": ORDER_FULFILLED,
           "X-Drip-Signature": signature,
         },
-        body,
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        8000,
+      );
+      if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`);
       await prisma.sellerApiWebhook.update({
         where: { id: hook.id },
         data: { failCount: 0, lastDeliveryAt: new Date() },

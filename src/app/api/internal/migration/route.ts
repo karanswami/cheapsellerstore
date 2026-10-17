@@ -2,12 +2,25 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adjustWallet } from "@/lib/wallet";
 import { TransactionType } from "@prisma/client";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { claimIdempotency, completeIdempotency, releaseIdempotency } from "@/lib/idempotency";
+import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
 
-const MIGRATION_SECRET = process.env.MIGRATION_SHARED_SECRET || "drip_migration_sec_key_994817293847";
-const TG_BOT_TOKEN = "8838380567:AAEB_d0duKvGe6ENnGU9MYrzFjh2Jf5c3gg";
-const ADMIN_CHAT_ID = "5337150824";
+// Secrets come from the environment ONLY. No in-code fallback: if MIGRATION_SHARED_SECRET is not set
+// (or is too short) this endpoint is switched off.
+const MIGRATION_SECRET = (process.env.MIGRATION_SHARED_SECRET ?? "").trim();
+const TG_BOT_TOKEN = (process.env.MIGRATION_TELEGRAM_BOT_TOKEN ?? "").trim();
+const ADMIN_CHAT_ID = (process.env.MIGRATION_TELEGRAM_CHAT_ID ?? "").trim();
+const MAX_CREDIT_CENTS = 5_000_00; // $5,000 per call hard ceiling
+
+function secretMatches(provided: string) {
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(MIGRATION_SECRET).digest();
+  return timingSafeEqual(a, b);
+}
 
 async function sendTelegramAlert(message: string) {
+  if (!TG_BOT_TOKEN || !ADMIN_CHAT_ID) return;
   try {
     await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -25,10 +38,23 @@ async function sendTelegramAlert(message: string) {
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const secret = authHeader?.replace("Bearer ", "").trim();
+    if (MIGRATION_SECRET.length < 32) {
+      return NextResponse.json({ ok: false, error: "DISABLED" }, { status: 503 });
+    }
 
-    if (!secret || secret !== MIGRATION_SECRET) {
+    const rl = await rateLimit({
+      key: `migration:${clientIpFromHeaders(req.headers)}`,
+      limit: 30,
+      windowMs: 60_000,
+    });
+    if (!rl.allowed) {
+      return NextResponse.json({ ok: false, error: "RATE_LIMITED" }, { status: 429 });
+    }
+
+    const authHeader = req.headers.get("authorization");
+    const secret = authHeader?.replace(/^Bearer\s+/i, "").trim();
+
+    if (!secret || !secretMatches(secret)) {
       return NextResponse.json({ ok: false, error: "UNAUTHORIZED" }, { status: 401 });
     }
 
@@ -98,8 +124,26 @@ export async function POST(req: Request) {
       const guruEmail = String(body.guruEmail || "unknown");
       const guruRole = String(body.guruRole || "").trim().toUpperCase();
 
-      if (!identifier || isNaN(amountCents) || amountCents <= 0) {
+      if (
+        !identifier ||
+        !Number.isInteger(amountCents) ||
+        amountCents <= 0 ||
+        amountCents > MAX_CREDIT_CENTS
+      ) {
         return NextResponse.json({ ok: false, error: "INVALID_CREDIT_PAYLOAD" }, { status: 400 });
+      }
+
+      // A migration credit must carry a unique idempotencyKey; replays never credit twice.
+      const idemKey = String(body.idempotencyKey || "").trim();
+      if (!/^[A-Za-z0-9._:\-]{8,200}$/.test(idemKey)) {
+        return NextResponse.json({ ok: false, error: "IDEMPOTENCY_KEY_REQUIRED" }, { status: 400 });
+      }
+      const claim = await claimIdempotency("migration-credit", idemKey, 3650 * 86_400_000);
+      if (!claim.ok) {
+        if (claim.inFlight || !claim.body) {
+          return NextResponse.json({ ok: false, error: "REQUEST_IN_PROGRESS" }, { status: 409 });
+        }
+        return NextResponse.json(claim.body, { status: claim.statusCode ?? 200 });
       }
 
       const targetUser = await prisma.user.findFirst({
@@ -112,10 +156,12 @@ export async function POST(req: Request) {
       });
 
       if (!targetUser) {
+        await releaseIdempotency("migration-credit", idemKey);
         return NextResponse.json({ ok: false, error: "TARGET_USER_NOT_FOUND" }, { status: 404 });
       }
 
       if (targetUser.banned) {
+        await releaseIdempotency("migration-credit", idemKey);
         return NextResponse.json({ ok: false, error: "TARGET_USER_BANNED" }, { status: 403 });
       }
 
@@ -149,15 +195,21 @@ export async function POST(req: Request) {
 
       // Convert cents to microcents: 1 cent = 1,000,000 microcents
       const microcentsToAdd = Math.round(amountCents * 1_000_000);
-      const refCode = `MIGRATE-${guruUserId.slice(-6)}-${Date.now()}`;
+      const refCode = `MIGRATE-${idemKey}`.slice(0, 120);
 
-      const updated = await adjustWallet({
-        userId: targetUser.id,
-        amount: microcentsToAdd,
-        type: TransactionType.DEPOSIT,
-        note: `Migrated from GuruGamingHub (@${guruUsername})`,
-        reference: refCode,
-      });
+      let updated;
+      try {
+        updated = await adjustWallet({
+          userId: targetUser.id,
+          amount: microcentsToAdd,
+          type: TransactionType.DEPOSIT,
+          note: `Migrated from GuruGamingHub (@${guruUsername})`,
+          reference: refCode,
+        });
+      } catch (e) {
+        await releaseIdempotency("migration-credit", idemKey);
+        throw e;
+      }
 
       const oldBalanceUsd = (targetUser.walletBalance / 100_000_000).toFixed(2);
       const transferredUsd = (amountCents / 100).toFixed(2);
@@ -180,7 +232,7 @@ export async function POST(req: Request) {
 
       void sendTelegramAlert(tgMsg);
 
-      return NextResponse.json({
+      const result = {
         ok: true,
         transferredUsd,
         newBalanceUsd,
@@ -188,7 +240,9 @@ export async function POST(req: Request) {
         roleUpgraded,
         newRole: finalRole,
         reference: refCode,
-      });
+      };
+      await completeIdempotency("migration-credit", idemKey, 200, result, 3650 * 86_400_000);
+      return NextResponse.json(result);
     }
 
     if (action === "sync-role") {

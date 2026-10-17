@@ -1,10 +1,56 @@
 import { prisma } from "@/lib/prisma";
 import { getRedis } from "@/lib/redis";
+import { decryptSecret, encryptSecret } from "@/lib/auth/crypto-secret";
 
 const SETTING_CACHE_PREFIX = "cheapseller:setting:";
 const SETTING_CACHE_TTL_SECONDS = 300; // 5 minutes
 
-export async function getSetting(key: string) {
+/** Settings whose text value is a credential: stored encrypted at rest (AES-256-GCM). */
+const SENSITIVE_SETTING_KEYS = new Set<string>([
+  "auto_gateways",
+  "google_client_secret",
+  "resend_api_key",
+  "binance_api_key",
+  "binance_secret_key",
+  "autogopay_api_key",
+  "ramashop_api_key",
+  "mgcloudpay_api_key",
+  "nasionalpay_key",
+  "famgateway_api_key",
+  "cashfree_secret_key",
+  "cashfree_webhook_secret",
+  "telegram_notifications",
+  "web_push_private_key",
+]);
+const SETTING_ENC_PREFIX = "enc:v1:";
+
+type SettingRow = { key: string; textValue: string | null; intValue: number | null };
+
+function sealRow<T extends { key: string; textValue: string | null }>(row: T): T {
+  if (!SENSITIVE_SETTING_KEYS.has(row.key) || !row.textValue) return row;
+  if (row.textValue.startsWith(SETTING_ENC_PREFIX)) {
+    try {
+      return { ...row, textValue: decryptSecret(row.textValue.slice(SETTING_ENC_PREFIX.length)) };
+    } catch {
+      return { ...row, textValue: null };
+    }
+  }
+  // Legacy plaintext row: serve it, and encrypt it in place (once) for next time.
+  void prisma.appSetting
+    .update({
+      where: { key: row.key },
+      data: { textValue: SETTING_ENC_PREFIX + encryptSecret(row.textValue) },
+    })
+    .catch(() => undefined);
+  return row;
+}
+
+export async function getSetting(key: string): Promise<SettingRow | null> {
+  const raw = await getSettingRaw(key);
+  return raw ? sealRow(raw as SettingRow) : null;
+}
+
+async function getSettingRaw(key: string) {
   try {
     const redis = await getRedis();
     if (redis) {
@@ -66,15 +112,19 @@ export async function upsertSetting(input: {
   intValue?: number | null;
 }) {
   // MongoDB is ALWAYS the persistent source of truth
+  const storedText =
+    input.textValue && SENSITIVE_SETTING_KEYS.has(input.key)
+      ? SETTING_ENC_PREFIX + encryptSecret(input.textValue)
+      : (input.textValue ?? null);
   const row = await prisma.appSetting.upsert({
     where: { key: input.key },
     create: {
       key: input.key,
-      textValue: input.textValue ?? null,
+      textValue: storedText,
       intValue: input.intValue ?? null,
     },
     update: {
-      textValue: input.textValue ?? null,
+      textValue: storedText,
       intValue: input.intValue ?? null,
     },
   });
@@ -89,7 +139,7 @@ export async function upsertSetting(input: {
     // ignore cache clear error
   }
 
-  return row;
+  return row ? sealRow(row) : row;
 }
 
 export const SETTING_KEYS = {

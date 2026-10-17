@@ -19,6 +19,8 @@ import {
 import { prisma } from "@/lib/prisma";
 import { userCanSelfDeposit } from "@/lib/roles";
 import { z } from "zod";
+import { withIdempotency } from "@/lib/idempotent-route";
+import { rateLimitAll } from "@/lib/rate-limit";
 
 const autoSchema = z.object({
   amount: z.number().positive(),
@@ -79,7 +81,19 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return jsonError("UNAUTHORIZED", "Login required.", 401);
 
-  const full = await prisma.user.findUnique({ where: { id: user.id } });
+  const limited = await rateLimitAll([
+    { key: `dep-create:${user.id}`, limit: 10, windowMs: 10 * 60_000 },
+  ]);
+  if (limited) {
+    return jsonError("RATE_LIMITED", "Too many deposit requests. Try again shortly.", 429, {
+      headers: { "Retry-After": String(limited.retryAfterSec) },
+    });
+  }
+  return withIdempotency(request, `deposit-create:${user.id}`, () => createDepositFor(request, user.id));
+}
+
+async function createDepositFor(request: Request, userId: string) {
+  const full = await prisma.user.findUnique({ where: { id: userId } });
   if (!full) return jsonError("UNAUTHORIZED", "Login required.", 401);
 
   if (!userCanSelfDeposit(full)) {

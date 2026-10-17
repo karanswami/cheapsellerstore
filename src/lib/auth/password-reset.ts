@@ -1,15 +1,17 @@
 import { hashPassword, verifyPassword } from "@/lib/auth/customer";
 import { prisma } from "@/lib/prisma";
+import { randomInt } from "node:crypto";
 
 export const OTP_TTL_MS = 10 * 60 * 1000;
 export const OTP_MAX_ATTEMPTS = 5;
+export const OTP_LOCK_COOLDOWN_MS = 60 * 60 * 1000;
 
 export type CreatePasswordResetOtpResult =
   | { status: "reused" }
   | { status: "created"; code: string };
 
 export function generateOtpCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(randomInt(100000, 1000000));
 }
 
 /**
@@ -29,6 +31,11 @@ export async function createPasswordResetOtp(
     const expired = latest.expiresAt.getTime() < Date.now();
     const locked = latest.attempts >= OTP_MAX_ATTEMPTS;
     if (!expired && !locked) {
+      return { status: "reused" };
+    }
+    // Locked after too many wrong guesses: no fresh code for a cool-down, so guessing can't be
+    // restarted in a loop. (Reported as "reused": the caller sends no mail and reveals nothing.)
+    if (locked && Date.now() - latest.createdAt.getTime() < OTP_LOCK_COOLDOWN_MS) {
       return { status: "reused" };
     }
     await prisma.passwordResetOtp.deleteMany({ where: { email: normalized } });
@@ -63,17 +70,18 @@ export async function consumePasswordResetOtp(email: string, code: string) {
     return { ok: false as const, reason: "EXPIRED" as const };
   }
 
-  if (record.attempts >= OTP_MAX_ATTEMPTS) {
-    await prisma.passwordResetOtp.deleteMany({ where: { email: normalized } });
+  // Spend an attempt BEFORE checking the code, atomically, so parallel guesses can't exceed the cap.
+  const spent = await prisma.passwordResetOtp.updateMany({
+    where: { id: record.id, attempts: { lt: OTP_MAX_ATTEMPTS } },
+    data: { attempts: { increment: 1 } },
+  });
+  if (spent.count === 0) {
+    // Keep the locked row (not deleted) so the cool-down above applies.
     return { ok: false as const, reason: "LOCKED" as const };
   }
 
   const valid = await verifyPassword(code, record.codeHash);
   if (!valid) {
-    await prisma.passwordResetOtp.update({
-      where: { id: record.id },
-      data: { attempts: { increment: 1 } },
-    });
     return { ok: false as const, reason: "INVALID" as const };
   }
 

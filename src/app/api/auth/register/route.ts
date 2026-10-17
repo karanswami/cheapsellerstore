@@ -1,3 +1,4 @@
+import { clientIpFromHeaders, rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import { jsonError, jsonOk } from "@/lib/api";
 import { logActivity } from "@/lib/activity-log";
 import {
@@ -41,6 +42,12 @@ export async function POST(request: Request) {
       400,
     );
   }
+
+  const limited = await rateLimitAll([
+    { key: `register-ip:${clientIpFromHeaders(request.headers)}`, limit: 5, windowMs: 60 * 60_000 },
+    { key: `register-ip-day:${clientIpFromHeaders(request.headers)}`, limit: 15, windowMs: 24 * 60 * 60_000 },
+  ]);
+  if (limited) return tooManyRequests(limited, "Too many sign-ups from this network. Try again later.");
 
   const { name, username, email, password } = parsed.data;
   const referralCode = normalizeReferralCode(parsed.data.referralCode);

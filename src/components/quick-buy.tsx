@@ -1,5 +1,6 @@
 "use client";
 
+import { newIdempotencyKey } from "@/lib/idempotency-client";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { Dialog as D } from "radix-ui";
@@ -80,7 +81,7 @@ export function QuickBuy({ productId, title, imageUrl, currency, duration: d, ba
     try {
       const request = fetch("/api/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey() },
         body: JSON.stringify({
           promoCode: promo.applied?.code,
           items: [

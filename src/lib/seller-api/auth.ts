@@ -14,6 +14,7 @@ import type {
   User,
   UserRole,
 } from "@prisma/client";
+import { clientIpFromHeaders } from "@/lib/rate-limit";
 import type { NextRequest } from "next/server";
 
 export const API_SCOPES = [
@@ -62,9 +63,9 @@ export type AuthFail = {
 export type AuthOk = { ok: true; ctx: AuthenticatedApiKey };
 
 function clientIp(req: NextRequest): string | null {
-  const xf = req.headers.get("x-forwarded-for");
-  if (xf) return xf.split(",")[0]?.trim() || null;
-  return req.headers.get("x-real-ip");
+  // Never trust a client-supplied leftmost X-Forwarded-For: it would let anyone bypass an IP allowlist.
+  const ip = clientIpFromHeaders(req.headers);
+  return ip === "unknown" ? null : ip;
 }
 
 function extractBearer(req: NextRequest): string | null {

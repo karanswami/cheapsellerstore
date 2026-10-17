@@ -213,7 +213,7 @@ export async function createManualMethodDeposit(input: {
   proofImage: string;
 }) {
   const proofUrl = input.proofImage.trim();
-  if (!proofUrl || proofUrl.length > 500) {
+  if (!proofUrl || proofUrl.length > 500 || !isOwnProofUpload(proofUrl)) {
     return {
       ok: false as const,
       code: "INVALID_PROOF",
@@ -557,13 +557,18 @@ export async function cancelDeposit(depositId: string, userId: string) {
   return { ok: true as const, deposit: updated };
 }
 
+/** Proof screenshots must be files WE stored (no external URLs, no javascript:/data: links). */
+function isOwnProofUpload(url: string) {
+  return /^\/uploads\/support\/[A-Za-z0-9._-]+\.(jpg|png|webp)$/i.test(url);
+}
+
 export async function attachProof(
   depositId: string,
   userId: string,
   proofImage: string,
 ) {
   const url = proofImage.trim();
-  if (!url || url.length > 500) {
+  if (!url || url.length > 500 || !isOwnProofUpload(url)) {
     return { ok: false as const, code: "INVALID_PROOF", message: "Invalid proof URL." };
   }
 

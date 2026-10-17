@@ -2,10 +2,13 @@ import { maintenanceApiBlock } from "@/lib/maintenance";
 import { withSellerApi } from "@/lib/seller-api/handler";
 import {
   createAndFulfillApiOrder,
-  getIdempotentResponse,
   listApiOrdersForUser,
-  saveIdempotentResponse,
 } from "@/lib/seller-api/orders";
+import {
+  claimIdempotency,
+  completeIdempotency,
+  releaseIdempotency,
+} from "@/lib/idempotency";
 import type { UserRole } from "@prisma/client";
 import type { NextRequest } from "next/server";
 
@@ -35,8 +38,8 @@ export async function POST(req: NextRequest) {
   if (maint) return maint;
 
   return withSellerApi(req, "orders:write", async (ctx) => {
-    const idemKey = req.headers.get("idempotency-key")?.trim() || null;
-    if (!idemKey) {
+    const idemKeyRaw = req.headers.get("idempotency-key")?.trim() || null;
+    if (!idemKeyRaw) {
       return {
         error: {
           code: "IDEMPOTENCY_REQUIRED",
@@ -47,28 +50,56 @@ export async function POST(req: NextRequest) {
       };
     }
 
-    const cached = await getIdempotentResponse(ctx.user.id, idemKey);
-    if (cached) {
-      if (
-        cached.body &&
-        typeof cached.body === "object" &&
-        "error" in (cached.body as object)
-      ) {
-        const err = (cached.body as { error: { code: string; message: string } })
-          .error;
-        return {
-          error: {
-            code: err.code,
-            message: err.message,
-            status: cached.statusCode,
-          },
-        };
-      }
+    const idemKey: string = idemKeyRaw;
+    if (!/^[A-Za-z0-9._:\-]{1,200}$/.test(idemKey)) {
       return {
-        data: (cached.body as { data: unknown }).data,
+        error: {
+          code: "INVALID_IDEMPOTENCY_KEY",
+          message: "Idempotency-Key must be 1-200 chars of A-Z a-z 0-9 . _ : -",
+          status: 400,
+        },
       };
     }
 
+    // Atomic claim: concurrent duplicates cannot both pass (unique index), so no double order.
+    const scope = `api-order:${ctx.user.id}`;
+    const claim = await claimIdempotency(scope, idemKey, 24 * 60 * 60 * 1000);
+    if (!claim.ok) {
+      if (claim.inFlight || claim.statusCode == null) {
+        return {
+          error: {
+            code: "REQUEST_IN_PROGRESS",
+            message: "A request with this Idempotency-Key is still processing.",
+            status: 409,
+          },
+        };
+      }
+      const cachedBody = claim.body as
+        | { error?: { code: string; message: string }; data?: unknown }
+        | null;
+      if (cachedBody?.error) {
+        return {
+          error: {
+            code: cachedBody.error.code,
+            message: cachedBody.error.message,
+            status: claim.statusCode,
+          },
+        };
+      }
+      return { data: cachedBody?.data };
+    }
+
+    let finished = false;
+    try {
+      const out = await runOrder();
+      finished = true;
+      return out;
+    } finally {
+      // Validation errors / crashes leave no stored result: free the key so a corrected retry works.
+      if (!finished) await releaseIdempotency(scope, idemKey).catch(() => undefined);
+    }
+
+    async function runOrder() {
     let body: {
       sku?: string | number;
       duration?: string | number;
@@ -126,12 +157,7 @@ export async function POST(req: NextRequest) {
       const errorBody = {
         error: { code: result.code, message: result.message },
       };
-      await saveIdempotentResponse({
-        userId: ctx.user.id,
-        key: idemKey,
-        statusCode: status,
-        body: errorBody,
-      });
+      await completeIdempotency(scope, idemKey, status, errorBody);
       return {
         error: {
           code: result.code,
@@ -142,15 +168,11 @@ export async function POST(req: NextRequest) {
     }
 
     const okBody = { data: result.order };
-    await saveIdempotentResponse({
-      userId: ctx.user.id,
-      key: idemKey,
-      statusCode: 200,
-      body: okBody,
-    });
+    await completeIdempotency(scope, idemKey, 200, okBody);
 
     return {
       data: result.order,
     };
+    }
   });
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { newIdempotencyKey } from "@/lib/idempotency-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -205,7 +206,7 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, gate
           : { amount: value, gatewayId: choice.key };
       const res = await fetch("/api/deposits", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey() },
         body: JSON.stringify(body),
       });
       const json = await res.json();

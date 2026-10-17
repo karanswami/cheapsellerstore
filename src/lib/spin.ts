@@ -4,6 +4,7 @@ import { notifyUser } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { getSettingInt, upsertSetting } from "@/lib/settings";
 import { adjustWallet } from "@/lib/wallet";
+import { claimOnce, releaseIdempotency } from "@/lib/idempotency";
 import { Currency, formatMoney } from "@/lib/currencies";
 import { OrderStatus, TransactionType } from "@prisma/client";
 
@@ -229,9 +230,16 @@ export async function grantSpinForDeposit(input: { userId: string; depositId: st
     });
     if (already) return;
 
-    await prisma.referralSpin.create({
-      data: { userId: parent.id, source: "REFERRAL", referredUserId: friend.id, depositId: input.depositId },
-    });
+    // Atomic once-per-friend claim: two deposits completing at the same instant can't both pay out.
+    if (!(await claimOnce("spin-grant", friend.id, 3650 * 86_400_000))) return;
+    try {
+      await prisma.referralSpin.create({
+        data: { userId: parent.id, source: "REFERRAL", referredUserId: friend.id, depositId: input.depositId },
+      });
+    } catch (e) {
+      await releaseIdempotency("spin-grant", friend.id).catch(() => undefined);
+      throw e;
+    }
 
     void notifyUser({
       userId: parent.id,

@@ -1,6 +1,7 @@
+import { clientIpFromHeaders, rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import { jsonError, jsonOk } from "@/lib/api";
 import { logActivity } from "@/lib/activity-log";
-import { hashPassword } from "@/lib/auth/customer";
+import { hashPassword, revokeUserSessions } from "@/lib/auth/customer";
 import { consumePasswordResetOtp } from "@/lib/auth/password-reset";
 import { prisma } from "@/lib/prisma";
 import { resetPasswordSchema } from "@/lib/validations";
@@ -23,6 +24,11 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase();
+  const limited = await rateLimitAll([
+    { key: `reset-ip:${clientIpFromHeaders(request.headers)}`, limit: 20, windowMs: 15 * 60_000 },
+    { key: `reset-email:${email}`, limit: 12, windowMs: 60 * 60_000 },
+  ]);
+  if (limited) return tooManyRequests(limited, "Too many attempts. Try again later.");
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
     return jsonError("INVALID_CODE", "Invalid or expired reset code.", 400);
@@ -44,6 +50,8 @@ export async function POST(request: Request) {
     where: { id: user.id },
     data: { passwordHash },
   });
+  // A reset must kill every session an attacker may already hold.
+  await revokeUserSessions(user.id);
 
   logActivity({
     request,

@@ -1,3 +1,4 @@
+import { clientIpFromHeaders, rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import { jsonError, jsonOk } from "@/lib/api";
 import { logActivity } from "@/lib/activity-log";
 import {
@@ -9,6 +10,9 @@ import { maintenanceLoginBlock } from "@/lib/maintenance";
 import { homePathForRole } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations";
+
+// bcrypt hash of a random string; only used to equalise timing for unknown accounts.
+const DUMMY_HASH = "$2b$10$l1GycZLMq6Saa5aiqUGZ.eMjxC2cMCvZ6npkU1hd.23SEFplJ5cRe";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -28,6 +32,12 @@ export async function POST(request: Request) {
   }
 
   const identifier = parsed.data.identifier.toLowerCase();
+  const ip = clientIpFromHeaders(request.headers);
+  const limited = await rateLimitAll([
+    { key: `login-ip:${ip}`, limit: 30, windowMs: 10 * 60_000 },
+    { key: `login-id:${identifier}`, limit: 8, windowMs: 15 * 60_000 },
+  ]);
+  if (limited) return tooManyRequests(limited, "Too many login attempts. Try again in a few minutes.");
   const user = await prisma.user.findFirst({
     where: {
       OR: [{ email: identifier }, { username: identifier }],
@@ -35,6 +45,8 @@ export async function POST(request: Request) {
   });
 
   if (!user) {
+    // Burn the same bcrypt time as a real check so response timing doesn't reveal valid accounts.
+    await verifyPassword(parsed.data.password, DUMMY_HASH).catch(() => false);
     logActivity({
       request,
       action: "LOGIN_FAILED",

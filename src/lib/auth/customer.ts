@@ -131,11 +131,35 @@ export async function getSessionRoleFromToken(
   }
 }
 
+/** Session subject + issue time, for revocation checks. */
+async function getSessionClaims(): Promise<{ userId: string; issuedAtMs: number } | null> {
+  const jar = await cookies();
+  const token = jar.get(CUSTOMER_COOKIE)?.value;
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, secretKey());
+    if (typeof payload.sub !== "string") return null;
+    return { userId: payload.sub, issuedAtMs: (payload.iat ?? 0) * 1000 };
+  } catch {
+    return null;
+  }
+}
+
+/** Invalidate every existing session of a user (all devices). Returns the cut-off instant. */
+export async function revokeUserSessions(userId: string): Promise<Date> {
+  const cutoff = new Date(Math.floor(Date.now() / 1000) * 1000);
+  await prisma.user.update({ where: { id: userId }, data: { sessionsValidAfter: cutoff } });
+  return cutoff;
+}
+
 export async function getCurrentUser(): Promise<SafeUser | null> {
-  const userId = await getSessionUserId();
-  if (!userId) return null;
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const claims = await getSessionClaims();
+  if (!claims) return null;
+  const user = await prisma.user.findUnique({ where: { id: claims.userId } });
   if (!user || user.banned) return null;
+  if (user.sessionsValidAfter && claims.issuedAtMs < user.sessionsValidAfter.getTime()) {
+    return null;
+  }
   return toSafeUser(user);
 }
 

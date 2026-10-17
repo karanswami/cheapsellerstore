@@ -2,8 +2,8 @@ const { MongoClient } = require('mongodb');
 const fs = require('fs');
 
 async function main() {
-    const dripUri = "mongodb+srv://guru_gaming:OLSvzzl00TYZoLJX@gurugaming.5kqpl3y.mongodb.net/drip-client-reseller?retryWrites=true&w=majority";
-    const guruUri = "mongodb+srv://guru_gaming:OLSvzzl00TYZoLJX@gurugaming.5kqpl3y.mongodb.net/gurugaminghub_store?retryWrites=true&w=majority";
+    const dripUri = process.env.DRIP_DB_URL;
+    const guruUri = process.env.GURU_DB_URL;
 
     const clientDrip = new MongoClient(dripUri);
     await clientDrip.connect();

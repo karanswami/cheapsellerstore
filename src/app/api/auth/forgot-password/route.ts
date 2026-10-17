@@ -1,3 +1,4 @@
+import { clientIpFromHeaders, rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import { jsonError, jsonOk } from "@/lib/api";
 import { createPasswordResetOtp } from "@/lib/auth/password-reset";
 import { sendPasswordResetOtpEmail } from "@/lib/email";
@@ -29,6 +30,11 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase();
+  const limited = await rateLimitAll([
+    { key: `forgot-ip:${clientIpFromHeaders(request.headers)}`, limit: 8, windowMs: 15 * 60_000 },
+    { key: `forgot-email:${email}`, limit: 3, windowMs: 60 * 60_000 },
+  ]);
+  if (limited) return tooManyRequests(limited, "Too many reset requests. Try again later.");
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) {

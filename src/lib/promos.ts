@@ -273,3 +273,44 @@ export async function lookupPromoDetailed(
     },
   };
 }
+
+
+/**
+ * Race-safe redemption: insert first, then re-count. If concurrent checkouts pushed the count
+ * over the promo's global or per-user limit, the over-limit row is removed and the caller fails.
+ * (Both racers may fail, never both succeed.)
+ */
+export async function claimPromoRedemption(input: {
+  promoCodeId: string;
+  userId: string;
+  orderId: string;
+  discount: number;
+}): Promise<{ ok: true } | { ok: false; code: "MAXED" | "USER_LIMIT" | "NOT_FOUND" }> {
+  const promo = await prisma.promoCode.findUnique({ where: { id: input.promoCodeId } });
+  if (!promo || !promo.active) return { ok: false, code: "NOT_FOUND" };
+
+  const row = await prisma.promoRedemption.create({
+    data: {
+      promoCodeId: input.promoCodeId,
+      userId: input.userId,
+      orderId: input.orderId,
+      discount: input.discount,
+    },
+  });
+
+  if (promo.maxRedemptions != null) {
+    const total = await prisma.promoRedemption.count({ where: { promoCodeId: promo.id } });
+    if (total > promo.maxRedemptions) {
+      await prisma.promoRedemption.delete({ where: { id: row.id } }).catch(() => undefined);
+      return { ok: false, code: "MAXED" };
+    }
+  }
+  const mine = await prisma.promoRedemption.count({
+    where: { promoCodeId: promo.id, userId: input.userId },
+  });
+  if (mine > promo.perUserLimit) {
+    await prisma.promoRedemption.delete({ where: { id: row.id } }).catch(() => undefined);
+    return { ok: false, code: "USER_LIMIT" };
+  }
+  return { ok: true };
+}
