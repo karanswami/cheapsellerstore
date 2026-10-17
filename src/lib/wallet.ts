@@ -42,11 +42,13 @@ async function applyDelta(
   tx: Prisma.TransactionClient,
   userId: string,
   amount: number,
+  /** Rounding slack for purchases only. Transfers/adjustments must be fully covered (no free money). */
+  tolerance = 0,
 ) {
   if (amount < 0) {
     const debit = -amount;
     const res = await tx.user.updateMany({
-      where: { id: userId, walletBalance: { gte: debit - SUB_CENT_TOLERANCE } },
+      where: { id: userId, walletBalance: { gte: debit - tolerance } },
       data: { walletBalance: { decrement: debit } },
     });
     if (res.count === 0) {
@@ -158,7 +160,7 @@ export async function debitWalletForPurchase(input: {
   if (amount === 0) return;
   await withWriteRetry(() =>
     prisma.$transaction(async (tx) => {
-      await applyDelta(tx, input.userId, -amount);
+      await applyDelta(tx, input.userId, -amount, SUB_CENT_TOLERANCE);
       await tx.transaction.create({
         data: {
           userId: input.userId,

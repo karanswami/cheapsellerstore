@@ -7,6 +7,7 @@ import type { User, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { randomBytes } from "node:crypto";
 
 export const CUSTOMER_COOKIE = "drip_customer_session";
 const SESSION_DAYS = 14;
@@ -75,6 +76,8 @@ export async function createCustomerSessionToken(
   return new SignJWT({ sub: userId, role })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
+    // jti lets logout revoke exactly this token (a copied cookie stops working).
+    .setJti(randomBytes(16).toString("hex"))
     .setExpirationTime(`${SESSION_DAYS}d`)
     .sign(secretKey());
 }
@@ -106,12 +109,47 @@ export async function clearCustomerSessionCookie() {
   });
 }
 
+const REVOKED_SCOPE = "revoked-session";
+
+async function isSessionTokenRevoked(jti: unknown): Promise<boolean> {
+  if (typeof jti !== "string") return false; // tokens issued before jti existed
+  const row = await prisma.idempotencyClaim.findUnique({
+    where: { scope_key: { scope: REVOKED_SCOPE, key: jti } },
+    select: { id: true },
+  });
+  return Boolean(row);
+}
+
+/** Logout: kill the presented token server-side, not just the cookie. */
+export async function revokeCurrentSessionToken() {
+  const jar = await cookies();
+  const token = jar.get(CUSTOMER_COOKIE)?.value;
+  if (!token) return;
+  try {
+    const { payload } = await jwtVerify(token, secretKey());
+    if (typeof payload.jti !== "string") return;
+    await prisma.idempotencyClaim
+      .create({
+        data: {
+          scope: REVOKED_SCOPE,
+          key: payload.jti,
+          state: "DONE",
+          expiresAt: new Date(Date.now() + (SESSION_DAYS + 1) * 24 * 60 * 60 * 1000),
+        },
+      })
+      .catch(() => undefined);
+  } catch {
+    // invalid/expired token: nothing to revoke
+  }
+}
+
 export async function getSessionUserId(): Promise<string | null> {
   const jar = await cookies();
   const token = jar.get(CUSTOMER_COOKIE)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey());
+    if (await isSessionTokenRevoked(payload.jti)) return null;
     const sub = payload.sub;
     return typeof sub === "string" ? sub : null;
   } catch {
@@ -139,6 +177,7 @@ async function getSessionClaims(): Promise<{ userId: string; issuedAtMs: number 
   try {
     const { payload } = await jwtVerify(token, secretKey());
     if (typeof payload.sub !== "string") return null;
+    if (await isSessionTokenRevoked(payload.jti)) return null;
     return { userId: payload.sub, issuedAtMs: (payload.iat ?? 0) * 1000 };
   } catch {
     return null;

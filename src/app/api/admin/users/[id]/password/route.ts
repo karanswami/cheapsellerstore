@@ -2,7 +2,7 @@ import { randomInt } from "node:crypto";
 import { jsonError, jsonOk } from "@/lib/api";
 import { logActivity } from "@/lib/activity-log";
 import { requireAdmin } from "@/lib/auth/admin";
-import { hashPassword } from "@/lib/auth/customer";
+import { hashPassword, revokeUserSessions } from "@/lib/auth/customer";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -39,12 +39,18 @@ export async function POST(request: Request, { params }: Params) {
     return jsonError("FORBIDDEN", "Change your own password from Profile.", 400);
   }
 
+  if (target.role === "ADMIN") {
+    return jsonError("FORBIDDEN", "Admin passwords can only be changed by the owner from Profile.", 403);
+  }
+
   const generated = parsed.data.password === undefined;
   const password = parsed.data.password ?? generatePassword();
   await prisma.user.update({
     where: { id },
     data: { passwordHash: await hashPassword(password) },
   });
+  // The old password may be compromised: end every existing session of that account.
+  await revokeUserSessions(id);
   // Any pending email reset code is now stale.
   await prisma.passwordResetOtp.deleteMany({ where: { email: target.email } }).catch(() => undefined);
 

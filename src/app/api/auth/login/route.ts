@@ -9,6 +9,7 @@ import {
 import { maintenanceLoginBlock } from "@/lib/maintenance";
 import { homePathForRole } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
+import { getSecurityConfig } from "@/lib/security-config";
 import { loginSchema } from "@/lib/validations";
 
 // bcrypt hash of a random string; only used to equalise timing for unknown accounts.
@@ -33,9 +34,11 @@ export async function POST(request: Request) {
 
   const identifier = parsed.data.identifier.toLowerCase();
   const ip = clientIpFromHeaders(request.headers);
+  const cfg = await getSecurityConfig();
+  // Per-account bucket is scoped to the caller's IP too, so a stranger can't lock the real owner out.
   const limited = await rateLimitAll([
-    { key: `login-ip:${ip}`, limit: 30, windowMs: 10 * 60_000 },
-    { key: `login-id:${identifier}`, limit: 8, windowMs: 15 * 60_000 },
+    { key: `login-ip:${ip}`, limit: cfg.loginPerIpPer10Min, windowMs: 10 * 60_000 },
+    { key: `login-id:${identifier}:${ip}`, limit: cfg.loginPerAccountPer15Min, windowMs: 15 * 60_000 },
   ]);
   if (limited) return tooManyRequests(limited, "Too many login attempts. Try again in a few minutes.");
   const user = await prisma.user.findFirst({

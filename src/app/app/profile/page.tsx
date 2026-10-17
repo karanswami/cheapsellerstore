@@ -5,6 +5,7 @@ import { getRecentSecurityEvents, type SecurityEvent } from "@/lib/account-secur
 import { getCurrentUser } from "@/lib/auth/customer";
 import { isGoogleAuthConfigured } from "@/lib/auth/google";
 import { getUserActivitySummary } from "@/lib/history";
+import { clientIpFromHeaders } from "@/lib/rate-limit";
 import { cn } from "@/lib/utils";
 import { ProfileClient } from "./profile-client";
 
@@ -15,7 +16,7 @@ export default async function ProfilePage() {
   const user = (await getCurrentUser())!;
   const h = await headers();
   const client = {
-    ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip")?.trim() || null,
+    ip: clientIpFromHeaders(h) === "unknown" ? null : clientIpFromHeaders(h),
     userAgent: h.get("user-agent")?.trim() || null,
   };
   const [summary, events, googleEnabled] = await Promise.all([

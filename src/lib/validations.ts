@@ -121,10 +121,14 @@ export const updateProfileSchema = z
     },
   );
 
+/** Only web links: blocks javascript:/data: URLs from user-supplied profile fields. */
+const httpUrlText = (max: number) =>
+  z.string().trim().max(max).refine((v) => v === "" || /^https?:\/\//i.test(v), "Use a full http(s) link.");
+
 export const bioCustomLinkSchema = z.object({
   id: z.string().trim().min(1).max(64),
   title: z.string().trim().min(1, "Link title required").max(60),
-  url: z.string().trim().min(1, "URL required").max(500),
+  url: httpUrlText(500).refine((v) => v !== "", "URL required"),
   icon: z.string().trim().max(40).optional(),
   badge: z.string().trim().max(30).optional(),
   isPinned: z.boolean().optional(),
@@ -142,13 +146,19 @@ export const bioConfigSchema = z.object({
     ])
     .optional(),
   bioTagline: z.string().trim().max(120, "Tagline under 120 chars").nullable().optional(),
-  bioBannerUrl: z.string().trim().max(500).nullable().optional(),
+  bioBannerUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => v === "" || /^https?:\/\//i.test(v) || /^\/uploads\/[a-zA-Z0-9._/-]+$/.test(v), "Use a full http(s) link.")
+    .nullable()
+    .optional(),
   bioPromoCode: z.string().trim().max(32).nullable().optional(),
   bioLinks: z.array(bioCustomLinkSchema).max(20, "Max 20 links").nullable().optional(),
   showVouches: z.boolean().optional(),
   discordInvite: z.string().trim().max(120).nullable().optional(),
   telegramChannel: z.string().trim().max(120).nullable().optional(),
-  youtubeVideoUrl: z.string().trim().max(300).nullable().optional(),
+  youtubeVideoUrl: httpUrlText(300).nullable().optional(),
   bio: z.string().trim().max(500).nullable().optional(),
   isProfilePublic: z.boolean().optional(),
   featuredProducts: z.array(z.string().min(1)).max(12).optional(),

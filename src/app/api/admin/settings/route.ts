@@ -31,6 +31,7 @@ import {
 } from "@/lib/payment-provider-config";
 import { getApiSandboxEnabled } from "@/lib/seller-api/settings";
 import { requireAdmin } from "@/lib/auth/admin";
+import { getSecurityConfig, saveSecurityConfig } from "@/lib/security-config";
 import {
   getDepositMins,
   normalizeDepositMins,
@@ -204,6 +205,16 @@ const telegramNotificationsSchema = z.object({
   channels: z.record(z.string(), telegramChannelSchema),
 });
 
+const securityConfigSchema = z.object({
+  pushEndpointHosts: z.array(z.string().max(100)).max(50),
+  loginPerIpPer10Min: z.number(),
+  loginPerAccountPer15Min: z.number(),
+  registerPerIpPerHour: z.number(),
+  registerPerIpPerDay: z.number(),
+  supportChatPerMinute: z.number(),
+  impersonationHours: z.number(),
+});
+
 const pagesEnabledSchema = z.object({
   giftCodes: z.boolean(),
 });
@@ -232,6 +243,7 @@ export async function GET() {
     feedbackSounds: await getFeedbackSoundConfig(),
     telegramNotifications: await getTelegramNotifyConfig(),
     pagesEnabled: await getPagesEnabled(),
+    securityConfig: await getSecurityConfig(),
     referralCommissionEnabled: await isReferralCommissionEnabled(),
     referralPercent: await getReferralPercent(),
     sellerPurchasePercent: await getSellerPurchasePercent(),
@@ -289,6 +301,7 @@ const schema = z.object({
   feedbackSounds: feedbackSoundsSchema.optional(),
   telegramNotifications: telegramNotificationsSchema.optional(),
   pagesEnabled: pagesEnabledSchema.optional(),
+  securityConfig: securityConfigSchema.optional(),
   referralCommissionEnabled: z.boolean().optional(),
   referralPercent: z.number().min(0).max(100).optional(),
   sellerPurchasePercent: z.number().min(0).max(100).optional(),
@@ -473,6 +486,9 @@ export async function PATCH(request: Request) {
         d.telegramNotifications as TelegramNotifyConfig,
       ),
     );
+  }
+  if (d.securityConfig !== undefined) {
+    await saveSecurityConfig(d.securityConfig);
   }
   if (d.pagesEnabled !== undefined) {
     await savePagesEnabled(

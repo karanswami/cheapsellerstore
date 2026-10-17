@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { clientIpFromHeaders } from "@/lib/rate-limit";
 import {
   redisBufferMongoFallback,
   redisPopMongoFallbackBatch,
@@ -52,11 +53,9 @@ export function getRequestClientInfo(request?: Request | null): {
   userAgent: string | null;
 } {
   if (!request) return { ip: null, userAgent: null };
-  const xf = request.headers.get("x-forwarded-for");
-  const ip =
-    xf?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim() ||
-    null;
+  // Same trusted source as the rate limiter: a client-sent leftmost X-Forwarded-For must not forge the log.
+  const resolved = clientIpFromHeaders(request.headers);
+  const ip = resolved === "unknown" ? null : resolved;
   const userAgent = request.headers.get("user-agent")?.trim() || null;
   return { ip, userAgent };
 }

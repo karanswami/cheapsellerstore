@@ -6,6 +6,7 @@ import { ensureReferralCode, generateReferralCodeCandidate } from "@/lib/referra
 import { getResellerCreateMinFundingUsd } from "@/lib/settings";
 import { notifyUser } from "@/lib/notifications";
 import { adjustWallet, transferWallet } from "@/lib/wallet";
+import { acquireLock } from "@/lib/idempotency";
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { TransactionType, UserRole } from "@prisma/client";
 
@@ -222,26 +223,33 @@ export async function creditOwnReseller(input: {
   }
   const reseller = await requireOwnReseller(input.sellerId, input.resellerId);
   const amount = usdToMicrocents(Math.abs(input.amountUsd));
-  if (input.amountUsd < 0 && amount > (await reclaimableFrom(reseller)) + 1_000_000) {
-    throw new Error(isIndependentReseller(reseller) ? "RECLAIM_OWN_FUNDS" : "INSUFFICIENT_BALANCE");
+  // Check + move under one per-reseller lock so parallel reclaims can't each pass the cap.
+  const release = await acquireLock("reseller-wallet", input.resellerId, 30_000);
+  if (!release) throw new Error("BUSY");
+  try {
+    if (input.amountUsd < 0 && amount > (await reclaimableFrom(await requireOwnReseller(input.sellerId, input.resellerId)))) {
+      throw new Error(isIndependentReseller(reseller) ? "RECLAIM_OWN_FUNDS" : "INSUFFICIENT_BALANCE");
+    }
+    await transferWallet(
+      input.amountUsd > 0
+        ? {
+            fromUserId: input.sellerId,
+            toUserId: input.resellerId,
+            amount,
+            note: "Seller credit to reseller",
+            reference: `reseller-credit:${input.resellerId}`,
+          }
+        : {
+            fromUserId: input.resellerId,
+            toUserId: input.sellerId,
+            amount,
+            note: "Seller reclaim from reseller",
+            reference: `reseller-cut:${input.resellerId}`,
+          },
+    );
+  } finally {
+    await release();
   }
-  await transferWallet(
-    input.amountUsd > 0
-      ? {
-          fromUserId: input.sellerId,
-          toUserId: input.resellerId,
-          amount,
-          note: "Seller credit to reseller",
-          reference: `reseller-credit:${input.resellerId}`,
-        }
-      : {
-          fromUserId: input.resellerId,
-          toUserId: input.sellerId,
-          amount,
-          note: "Seller reclaim from reseller",
-          reference: `reseller-cut:${input.resellerId}`,
-        },
-  );
   void notifyUser({
     userId: input.resellerId,
     type: input.amountUsd > 0 ? "wallet_credit" : "wallet_debit",

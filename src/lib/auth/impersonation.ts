@@ -7,6 +7,8 @@ import {
 import type { UserRole } from "@prisma/client";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
+import { getSecurityConfig } from "@/lib/security-config";
 
 export const IMPERSONATION_COOKIE = "drip_admin_impersonation";
 
@@ -19,6 +21,8 @@ export type ImpersonationPayload = {
   adminRole: UserRole;
   targetId: string;
   targetUsername: string;
+  /** Restore-token issue time (seconds), used for session revocation checks. */
+  issuedAt?: number;
 };
 
 export async function startImpersonation(input: {
@@ -28,6 +32,7 @@ export async function startImpersonation(input: {
   targetRole: UserRole;
   targetUsername: string;
 }) {
+  const { impersonationHours } = await getSecurityConfig();
   const restoreToken = await new SignJWT({
     adminId: input.adminId,
     adminRole: input.adminRole,
@@ -36,7 +41,7 @@ export async function startImpersonation(input: {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("8h")
+    .setExpirationTime(`${impersonationHours}h`)
     .sign(secretKey());
 
   const jar = await cookies();
@@ -45,7 +50,7 @@ export async function startImpersonation(input: {
     sameSite: "lax",
     secure: sessionCookieSecure(),
     path: "/",
-    maxAge: 8 * 60 * 60,
+    maxAge: impersonationHours * 60 * 60,
   });
 
   await setCustomerSessionCookie(input.targetId, input.targetRole);
@@ -74,6 +79,7 @@ export async function getImpersonationState(): Promise<ImpersonationPayload | nu
       adminRole: adminRole as UserRole,
       targetId,
       targetUsername,
+      issuedAt: typeof payload.iat === "number" ? payload.iat : undefined,
     };
   } catch {
     return null;
@@ -88,7 +94,19 @@ export async function exitImpersonation(): Promise<{ ok: boolean }> {
     jar.delete(CUSTOMER_COOKIE);
     return { ok: false };
   }
-  const token = await createCustomerSessionToken(state.adminId, state.adminRole);
+  // Re-check the admin NOW: a demoted/banned/revoked admin must not get a session back from an old cookie.
+  const admin = await prisma.user.findUnique({ where: { id: state.adminId } });
+  const issuedAtMs = (state.issuedAt ?? 0) * 1000;
+  if (
+    !admin ||
+    admin.banned ||
+    admin.role !== "ADMIN" ||
+    (admin.sessionsValidAfter && issuedAtMs < admin.sessionsValidAfter.getTime())
+  ) {
+    jar.delete(CUSTOMER_COOKIE);
+    return { ok: false };
+  }
+  const token = await createCustomerSessionToken(admin.id, admin.role);
   jar.set(CUSTOMER_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",

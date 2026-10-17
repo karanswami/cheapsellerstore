@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { SubmitButton, adminFetch, errMsg } from "@/components/admin/kit";
 import type { SellerProgramConfig } from "@/types/seller-program";
+import type { SecurityConfig } from "@/lib/security-config-shared";
 
 export type AdminSettings = {
   maintenanceMode: boolean;
@@ -30,6 +31,7 @@ export type AdminSettings = {
   developerProfitSharePercent: number;
   specialStockDeveloperSharePercent: number;
   defaultProductDemoUrl: string;
+  securityConfig: SecurityConfig;
   googleClientId: string;
   googleClientSecret: string;
   resendApiKey: string;

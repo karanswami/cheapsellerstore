@@ -48,7 +48,8 @@ export async function POST(request: Request) {
   const passwordHash = await hashPassword(parsed.data.password);
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash },
+    // Receiving the OTP proves the mailbox, so the address counts as verified from now on.
+    data: { passwordHash, emailVerified: true },
   });
   // A reset must kill every session an attacker may already hold.
   await revokeUserSessions(user.id);

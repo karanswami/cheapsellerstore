@@ -359,16 +359,23 @@ export async function upsertGoogleUser(
     if (byEmail.googleId && byEmail.googleId !== profile.sub) {
       throw new Error("GOOGLE_EMAIL_TAKEN");
     }
-    return prisma.user.update({
+    // Pre-hijack guard: a password account whose mailbox was never verified may have been created by
+    // someone else. Google just proved the real owner, so drop that password and all old sessions.
+    const unverifiedPassword = Boolean(byEmail.passwordHash) && !byEmail.emailVerified;
+    const linked = await prisma.user.update({
       where: { id: byEmail.id },
       data: {
         googleId: profile.sub,
         emailVerified: true,
+        ...(unverifiedPassword
+          ? { passwordHash: null, sessionsValidAfter: new Date(Math.floor(Date.now() / 1000) * 1000) }
+          : {}),
         ...(profile.picture && !byEmail.avatarUrl
           ? { avatarUrl: profile.picture }
           : {}),
       },
     });
+    return linked;
   }
 
   const cleanRef = referralCode ? normalizeReferralCode(referralCode) : null;

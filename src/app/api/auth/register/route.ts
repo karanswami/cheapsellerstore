@@ -14,6 +14,7 @@ import {
   resolveReferrerByCode,
 } from "@/lib/referrals";
 import { isReservedProfileUsername } from "@/lib/profile";
+import { getSecurityConfig } from "@/lib/security-config";
 import { registerSchema } from "@/lib/validations";
 import { notifyUser } from "@/lib/notifications";
 import { notifyTelegram } from "@/lib/telegram-notify";
@@ -43,9 +44,10 @@ export async function POST(request: Request) {
     );
   }
 
+  const cfg = await getSecurityConfig();
   const limited = await rateLimitAll([
-    { key: `register-ip:${clientIpFromHeaders(request.headers)}`, limit: 5, windowMs: 60 * 60_000 },
-    { key: `register-ip-day:${clientIpFromHeaders(request.headers)}`, limit: 15, windowMs: 24 * 60 * 60_000 },
+    { key: `register-ip:${clientIpFromHeaders(request.headers)}`, limit: cfg.registerPerIpPerHour, windowMs: 60 * 60_000 },
+    { key: `register-ip-day:${clientIpFromHeaders(request.headers)}`, limit: cfg.registerPerIpPerDay, windowMs: 24 * 60 * 60_000 },
   ]);
   if (limited) return tooManyRequests(limited, "Too many sign-ups from this network. Try again later.");
 
@@ -93,7 +95,8 @@ export async function POST(request: Request) {
       username: usernameLower,
       email: emailLower,
       passwordHash,
-      emailVerified: true,
+      // Not proven yet: nobody has confirmed they own this mailbox (see Google link / reset flows).
+      emailVerified: false,
       currency: "USD",
       role: "USER",
       referredById: referrer?.id ?? null,

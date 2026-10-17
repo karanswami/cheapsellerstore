@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getSettingText, getSettingInt, upsertSetting, SETTING_KEYS } from "@/lib/settings";
 import webpush from "web-push";
+import { getSecurityConfig } from "@/lib/security-config";
+import { isAllowedPushEndpoint } from "@/lib/security-config-shared";
 
 export type WebPushPayload = {
   title: string;
@@ -60,6 +62,17 @@ export async function sendWebPushToSubscriptions(
   const config = await getWebPushConfig();
   if (!config.enabled || !config.publicKey || !config.privateKey) {
     return { sent: 0, failed: 0, deleted: 0 };
+  }
+
+  // Never POST to a stored endpoint that isn't a real push service (older rows could be attacker-chosen).
+  const { pushEndpointHosts } = await getSecurityConfig();
+  const bad = subscriptions.filter((s) => !isAllowedPushEndpoint(s.endpoint, pushEndpointHosts));
+  if (bad.length) {
+    await prisma.pushSubscription
+      .deleteMany({ where: { id: { in: bad.map((b) => b.id) } } })
+      .catch(() => undefined);
+    subscriptions = subscriptions.filter((s) => !bad.includes(s));
+    if (subscriptions.length === 0) return { sent: 0, failed: bad.length, deleted: bad.length };
   }
 
   const subject = config.contactEmail.startsWith("mailto:")

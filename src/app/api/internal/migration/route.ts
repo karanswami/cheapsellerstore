@@ -19,6 +19,8 @@ function secretMatches(provided: string) {
   return timingSafeEqual(a, b);
 }
 
+const esc = (v: unknown) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 async function sendTelegramAlert(message: string) {
   if (!TG_BOT_TOKEN || !ADMIN_CHAT_ID) return;
   try {
@@ -220,7 +222,7 @@ export async function POST(req: Request) {
       const tgMsg = [
         `🚀 <b>GuruGamingHub Migration Transfer!</b>`,
         `━━━━━━━━━━━━━━━━━━`,
-        `👤 <b>Guru User:</b> @${guruUsername} (<code>${guruEmail}</code> | Role: <b>${guruRole || "USER"}</b>)`,
+        `👤 <b>Guru User:</b> @${esc(guruUsername)} (<code>${esc(guruEmail)}</code> | Role: <b>${esc(guruRole || "USER")}</b>)`,
         `🎯 <b>Target Cheap Seller User:</b> @${targetUser.username} (<code>${targetUser.email}</code>)`,
         roleUpgraded ? `⭐ <b>Role Upgraded:</b> ${oldRole} ➔ <b>SELLER</b> (Guru Reseller Perk)` : `🛡️ <b>Cheap Seller Role:</b> ${finalRole}`,
         `💰 <b>Amount Migrated:</b> <b>$${transferredUsd} USD</b>`,
@@ -306,7 +308,7 @@ export async function POST(req: Request) {
           const tgMsg = [
             `⭐ <b>GuruGamingHub Reseller Role Sync!</b>`,
             `━━━━━━━━━━━━━━━━━━`,
-            `👤 <b>Guru User:</b> @${guruUsername} (<code>${guruEmail}</code>)`,
+            `👤 <b>Guru User:</b> @${esc(guruUsername)} (<code>${esc(guruEmail)}</code>)`,
             `🎯 <b>Target Cheap Seller User:</b> @${targetUser.username} (<code>${targetUser.email}</code>)`,
             `⭐ <b>Role Upgraded:</b> ${oldRole} ➔ <b>SELLER</b>`,
             `🔑 <b>Permissions Granted:</b> Create, Manage & Fund Resellers`,
@@ -329,6 +331,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "UNKNOWN_ACTION" }, { status: 400 });
   } catch (error: any) {
     console.error("Migration API Error:", error);
-    return NextResponse.json({ ok: false, error: error.message || "INTERNAL_ERROR" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

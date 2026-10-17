@@ -1,6 +1,8 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth/customer";
 import { prisma } from "@/lib/prisma";
+import { getSecurityConfig } from "@/lib/security-config";
+import { isAllowedPushEndpoint } from "@/lib/security-config-shared";
 import { z } from "zod";
 
 const subscribeSchema = z.object({
@@ -22,6 +24,12 @@ export async function POST(request: Request) {
   const parsed = subscribeSchema.safeParse(body);
   if (!parsed.success) {
     return jsonError("VALIDATION", "Invalid subscription payload.", 400);
+  }
+
+  // The server later POSTs to this URL, so only real browser push services are accepted (no SSRF).
+  const { pushEndpointHosts } = await getSecurityConfig();
+  if (!isAllowedPushEndpoint(parsed.data.endpoint, pushEndpointHosts)) {
+    return jsonError("VALIDATION", "Unsupported push endpoint.", 400);
   }
 
   const user = await getCurrentUser();

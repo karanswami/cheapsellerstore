@@ -1,4 +1,5 @@
 import { jsonError, jsonOk } from "@/lib/api";
+import { clientIpFromHeaders, rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import {
   normalizeReferralCode,
   resolveReferrerByCode,
@@ -6,6 +7,10 @@ import {
 
 /** Public: validate an optional referral code during register. */
 export async function GET(request: Request) {
+  const limited = await rateLimitAll([
+    { key: `referral-check:${clientIpFromHeaders(request.headers)}`, limit: 30, windowMs: 60_000 },
+  ]);
+  if (limited) return tooManyRequests(limited);
   const url = new URL(request.url);
   const code = normalizeReferralCode(url.searchParams.get("code"));
 

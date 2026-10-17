@@ -284,6 +284,8 @@ export const SETTING_KEYS = {
   webPushContactEmail: "web_push_contact_email",
   /** Web Push master kill switch (1 = on, 0 = off). */
   webPushEnabled: "web_push_enabled",
+  /** JSON SecurityConfig — rate limits, push endpoint allow-list, impersonation window. */
+  securityConfig: "security_config",
 } as const;
 
 /** Built-in fallback when AppSetting is also empty. */
