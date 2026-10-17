@@ -15,12 +15,17 @@ export async function GET(req: Request) {
   const skip = (page - 1) * limit;
   const q = url.searchParams.get("q")?.trim() ?? "";
   const filter = url.searchParams.get("filter") ?? "all";
+  const userId = url.searchParams.get("userId");
+  const apiKeyId = url.searchParams.get("keyId");
 
   const where: Record<string, unknown> = {};
+  if (userId) where.userId = userId;
+  if (apiKeyId) where.apiKeyId = apiKeyId;
 
   if (filter === "ok") where.statusCode = { lt: 400 };
   else if (filter === "error") where.statusCode = { gte: 400 };
   else if (filter === "busy") where.statusCode = 429;
+  else if (filter === "slow") where.durationMs = { gte: 1000 };
   else if (filter === "purchases") {
     where.AND = [
       { method: "POST" },
@@ -84,6 +89,9 @@ export async function GET(req: Request) {
       statusCode: r.statusCode,
       durationMs: r.durationMs,
       errorCode: r.errorCode,
+      requestId: r.requestId,
+      ip: r.ip,
+      userId: r.userId,
       username: r.user.username,
       keyPrefix: r.apiKey.keyPrefix,
       createdAt: r.createdAt.toISOString(),

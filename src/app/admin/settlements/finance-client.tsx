@@ -295,7 +295,6 @@ function ImportSpecial({ onDone }: { onDone: () => void }) {
           <SelectContent>
             {(product?.durations ?? []).map((d) => (
               <SelectItem key={d.id} value={d.id}>
-                {d.version ? `${d.version} · ` : ""}
                 {d.label}
               </SelectItem>
             ))}

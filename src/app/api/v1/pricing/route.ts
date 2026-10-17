@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         error: {
           code: "UNKNOWN_DURATION",
           message:
-            "Query param sku is required (items[].apiCode from GET /api/v1/products). Alias: duration.",
+            "Query param sku is required (items[].sku from GET /api/v1/products). Alias: duration.",
           status: 400,
         },
       };
@@ -25,14 +25,14 @@ export async function GET(req: NextRequest) {
     if (ctx.auth?.isSandbox) {
       const items = await sandboxSkus(role, ctx.auth?.user.id);
       const matched =
-        items.find((i) => i.apiCode.toLowerCase() === sku.toLowerCase()) ||
+        items.find((i) => String(i.sku) === sku) ||
         items[0]!;
       return {
         data: {
-          apiCode: matched.apiCode,
+          sku: matched.sku,
           name: matched.name,
           product: matched.product,
-          productApiCode: matched.productApiCode,
+          productNumber: matched.productNumber,
           label: matched.label,
           price: matched.price,
           priceUsd: matched.priceUsd,

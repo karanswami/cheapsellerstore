@@ -8,6 +8,7 @@ import {
 const METHOD_LABEL: Record<string, string> = {
   BINANCE: "Binance Pay",
   QRIS: "QRIS / Rupiah",
+  NASIONALPAY: "QRIS / DANA (IDR)",
   UPI: "UPI / INR",
   ESEWA: "eSewa Nepal",
   // legacy rows

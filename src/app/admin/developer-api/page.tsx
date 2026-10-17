@@ -4,7 +4,7 @@ import { PlatformApiTab } from "./platform-api";
 export default function AdminDeveloperApiPage() {
   return (
     <>
-      <PageHeader title="Developer API" subtitle="Access, limits, developers, keys and request logs." />
+      <PageHeader title="Developer API" subtitle="Traffic, developers, keys, request logs and limits for the Platform API." />
       <PlatformApiTab />
     </>
   );

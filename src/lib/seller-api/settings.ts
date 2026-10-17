@@ -126,6 +126,7 @@ export async function savePlatformApiSettings(input: {
   platformEnabled?: boolean;
   allowedRoles?: ApiAllowedRoles;
   defaultRateLimitRpm?: number;
+  publicRateLimitRpm?: number;
   burstLimit?: number;
   maxKeysPerUser?: number;
   sandboxEnabled?: boolean;
@@ -146,6 +147,12 @@ export async function savePlatformApiSettings(input: {
     await upsertSetting({
       key: SETTING_KEYS.apiDefaultRateLimitRpm,
       intValue: Math.min(300, Math.max(1, Math.round(input.defaultRateLimitRpm))),
+    });
+  }
+  if (input.publicRateLimitRpm !== undefined) {
+    await upsertSetting({
+      key: SETTING_KEYS.apiPublicRateLimitRpm,
+      intValue: Math.min(100, Math.max(1, Math.round(input.publicRateLimitRpm) || 1)),
     });
   }
   if (input.burstLimit !== undefined) {

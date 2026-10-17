@@ -47,18 +47,16 @@ function Shares({ s }: { s: AdminSettings }) {
   const { save, busy } = useSettingsSave();
   const [dev, setDev] = useState(String(s.developerProfitSharePercent));
   const [special, setSpecial] = useState(String(s.specialStockDeveloperSharePercent));
-  const [buy, setBuy] = useState(String(s.supplierBuyPricePercent));
   return (
     <SettingsCard
       title="Profit sharing"
       description="Used by statistics and the Finance settlements."
       busy={busy}
-      onSave={() => save({ developerProfitSharePercent: Number(dev), specialStockDeveloperSharePercent: Number(special), supplierBuyPricePercent: Number(buy) })}
+      onSave={() => save({ developerProfitSharePercent: Number(dev), specialStockDeveloperSharePercent: Number(special) })}
     >
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Pct label="Developer share of profit (%)" value={dev} onChange={setDev} />
         <Pct label="Developer share, special stock (%)" value={special} onChange={setSpecial} />
-        <Pct label="Supplier cost (% of supplier price)" hint="Estimated cost basis for supplier keys." value={buy} onChange={setBuy} />
       </div>
     </SettingsCard>
   );

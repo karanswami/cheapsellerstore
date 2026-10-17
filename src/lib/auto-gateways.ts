@@ -61,30 +61,51 @@ export function normalizeGateways(raw: unknown): AutoGateway[] {
     const currency = meta.lockedCurrency ?? (/^[A-Z]{2,8}$/.test(cur) ? cur : meta.defaultCurrency);
     const qr = cleanStr(e.qrUrl, 500);
     const creds: Record<string, string> = {};
-    for (const f of meta.fields) {
-      const v = cleanStr(e.creds?.[f.key], 500);
-      if (v && GATEWAY_CRED_KEYS.has(f.key)) creds[f.key] = v;
+    for (const key of [...meta.fields.map((f) => f.key), ...(meta.payTarget ? [meta.payTarget.key] : [])]) {
+      const v = cleanStr(e.creds?.[key], 500);
+      if (v && GATEWAY_CRED_KEYS.has(key)) creds[key] = v;
     }
+    if (meta.permanent && out.some((o) => o.provider === e.provider)) return;
+    const maintenance = e.maintenance === true && e.enabled !== false;
     out.push({
       id,
       provider: e.provider,
       name: cleanStr(e.name, 60) || meta.label,
       currency,
       enabled: e.enabled !== false,
-      maintenance: e.maintenance === true,
-      maintenanceNote: cleanStr(e.maintenanceNote, 200),
+      maintenance,
+      maintenanceNote: maintenance ? cleanStr(e.maintenanceNote, 200) : "",
       qrUrl: meta.qr && qr && isDepositQrImageUrl(qr) ? qr : "",
       creds,
       sortOrder: i,
     });
   });
+  // Permanent providers (Binance) can never be removed; restore them switched off.
+  for (const provider of GATEWAY_PROVIDERS) {
+    const meta = PROVIDER_META[provider];
+    if (!meta.permanent || out.some((g) => g.provider === provider)) continue;
+    out.push({
+      id: provider,
+      provider,
+      name: meta.label,
+      currency: meta.lockedCurrency ?? meta.defaultCurrency,
+      enabled: false,
+      maintenance: false,
+      maintenanceNote: "",
+      qrUrl: "",
+      creds: {},
+      sortOrder: out.length,
+    });
+  }
   return out;
 }
 
 /** Gateways derived from the old fixed 4-rail config, used until the admin first saves. */
 async function legacyGateways(): Promise<AutoGateway[]> {
   const legacy = await getDepositMethodsConfig();
-  return GATEWAY_PROVIDERS.map((provider, i) => ({
+  // NasionalPay has no legacy rail: it only exists once the admin sets it up.
+  const legacyProviders = GATEWAY_PROVIDERS.filter((p): p is keyof typeof legacy => p in legacy);
+  return legacyProviders.map((provider, i) => ({
     id: provider,
     provider,
     name: PROVIDER_META[provider].label,

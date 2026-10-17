@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, Dices, Pencil, Plus, Tag, Trash2, Users } from "lucide-react";
+import { Clock, Copy, Dices, Pencil, Plus, Tag, Ticket, Trash2, Users } from "lucide-react";
 import { EmptyState } from "@/components/app-ui";
-import { ConfirmDialog, Field, SubmitButton, ToggleRow, adminFetch, errMsg, useAdminQuery } from "@/components/admin/kit";
+import { Chips, ConfirmDialog, Field, StatCard, SubmitButton, ToggleRow, adminFetch, errMsg, useAdminQuery } from "@/components/admin/kit";
 import { AudienceSelect, ScopeFields, type Audience, type Scope } from "@/components/admin/pickers";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { formatMoney, microcentsToUsd } from "@/lib/currencies";
+import { flashDateTimeInput, flashDateTimeLabel, localDateTimeToIso } from "@/lib/flash-sale-format";
 import { cn } from "@/lib/utils";
-import { Segmented, SectionHead, audienceText, useScopeLabel } from "./shared";
+import { LIFECYCLE_BADGE, Segmented, ScheduleFields, SectionHead, audienceText, lifecycle, scheduleError, useScopeLabel, type Lifecycle } from "./shared";
 
 type Promo = {
   id: string;
@@ -37,8 +39,16 @@ function discountText(p: Pick<Promo, "discountPercent" | "discountAmount">) {
   return formatMoney(p.discountAmount);
 }
 
-function expired(p: Promo) {
-  return !!p.expiresAt && new Date(p.expiresAt).getTime() < Date.now();
+const QUICK_ENDS = [
+  { label: "24 hours", hours: 24 },
+  { label: "7 days", hours: 168 },
+  { label: "30 days", hours: 720 },
+];
+
+/** Exhausted codes read as "ended" even while still switched on. */
+function promoLifecycle(p: Promo): Lifecycle {
+  const lc = lifecycle(p);
+  return lc === "live" && p.maxRedemptions && p._count.redemptions >= p.maxRedemptions ? "ended" : lc;
 }
 
 function randomCode() {
@@ -51,7 +61,15 @@ export function PromoSection() {
   const [editing, setEditing] = useState<Promo | "new" | null>(null);
   const [del, setDel] = useState<Promo | null>(null);
   const scopeLabel = useScopeLabel();
-  const promos = data?.promos ?? [];
+  const [filter, setFilter] = useState<"all" | Lifecycle>("all");
+  const all = data?.promos ?? [];
+  const counts = { live: 0, scheduled: 0, ended: 0, off: 0 } as Record<Lifecycle, number>;
+  let totalUses = 0;
+  for (const p of all) {
+    counts[promoLifecycle(p)]++;
+    totalUses += p._count.redemptions;
+  }
+  const promos = filter === "all" ? all : all.filter((p) => promoLifecycle(p) === filter);
 
   async function toggle(p: Promo, active: boolean) {
     try {
@@ -78,6 +96,28 @@ export function PromoSection() {
         }
       />
 
+      {all.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatCard label="Active codes" value={counts.live} icon={Ticket} tone="success" />
+            <StatCard label="Scheduled" value={counts.scheduled} icon={Clock} tone="warning" />
+            <StatCard label="Ended / used up" value={counts.ended} />
+            <StatCard label="Total redemptions" value={totalUses} icon={Tag} />
+          </div>
+          <Chips
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { v: "all", label: "All", count: all.length },
+              { v: "live", label: "Live", count: counts.live },
+              { v: "scheduled", label: "Scheduled", count: counts.scheduled },
+              { v: "ended", label: "Ended", count: counts.ended },
+              { v: "off", label: "Off", count: counts.off },
+            ]}
+          />
+        </>
+      ) : null}
+
       {loading && !data ? (
         <div className="grid gap-3 md:grid-cols-2">
           {[0, 1, 2, 3].map((i) => (
@@ -86,14 +126,20 @@ export function PromoSection() {
         </div>
       ) : promos.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8">
-          <EmptyState icon={Tag} title="No promo codes yet" hint="Create one — it takes about 10 seconds." />
+          <EmptyState
+            icon={Tag}
+            title={all.length ? "Nothing in this filter" : "No promo codes yet"}
+            hint={all.length ? "Try another status." : "Create one — it takes about 10 seconds."}
+          />
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {promos.map((p) => {
             const used = p._count.redemptions;
             const pct = p.maxRedemptions ? Math.min(100, (used / p.maxRedemptions) * 100) : 0;
-            const off = !p.active || expired(p);
+            const lc = promoLifecycle(p);
+            const st = LIFECYCLE_BADGE[lc];
+            const off = lc === "ended" || lc === "off";
             return (
               <div key={p.id} className={cn("flex overflow-hidden rounded-xl border bg-card transition-opacity", off && "opacity-60")}>
                 <div className="flex w-28 shrink-0 flex-col items-center justify-center gap-0.5 border-r border-dashed bg-primary/10 px-2 text-center">
@@ -112,6 +158,17 @@ export function PromoSection() {
                       <Copy className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                     </button>
                     <Switch checked={p.active} onCheckedChange={(v) => toggle(p, v)} aria-label="On/Off" />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    <Badge variant={st.variant}>{st.label}</Badge>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="size-3" />
+                      {lc === "scheduled"
+                        ? `Starts ${flashDateTimeLabel(p.startsAt)}`
+                        : p.expiresAt
+                          ? `${lc === "ended" ? "Ended" : "Ends"} ${flashDateTimeLabel(p.expiresAt)}`
+                          : "No end date"}
+                    </span>
                   </div>
                   <p className="truncate text-xs text-muted-foreground">
                     {scopeLabel(p.scope, p.productId, p.durationId)} · <Users className="mb-0.5 inline size-3" /> {audienceText(p.targetRole)}
@@ -189,12 +246,22 @@ function PromoForm({ promo, onSaved }: { promo: Promo | null; onSaved: () => voi
   const [scope, setScope] = useState({ scope: promo?.scope ?? ("GLOBAL" as Scope), productId: promo?.productId ?? "", durationId: promo?.durationId ?? "" });
   const [audience, setAudience] = useState<Audience>(promo?.targetRole ?? "ALL");
   const [active, setActive] = useState(promo?.active ?? true);
+  const [startsAt, setStartsAt] = useState(flashDateTimeInput(promo?.startsAt));
+  const [endsAt, setEndsAt] = useState(flashDateTimeInput(promo?.expiresAt));
+  const [notify, setNotify] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function save() {
+    const n = Number(value) || 0;
+    if (!code.trim()) return toast.error("Enter a code or generate one.");
+    if (n <= 0) return toast.error("Discount must be greater than zero.");
+    if (kind === "percent" && n > 100) return toast.error("Percent can't exceed 100.");
+    if (scope.scope === "PRODUCT" && !scope.productId) return toast.error("Pick a product.");
+    if (scope.scope === "DURATION" && !scope.durationId) return toast.error("Pick a duration.");
+    const err = scheduleError(startsAt, endsAt === flashDateTimeInput(promo?.expiresAt) ? "" : endsAt);
+    if (err) return toast.error(err);
     setBusy(true);
     try {
-      const n = Number(value) || 0;
       await adminFetch(promo ? `/api/admin/promos/${promo.id}` : "/api/admin/promos", {
         method: promo ? "PATCH" : "POST",
         json: {
@@ -208,6 +275,9 @@ function PromoForm({ promo, onSaved }: { promo: Promo | null; onSaved: () => voi
           durationId: scope.scope === "DURATION" ? scope.durationId || null : null,
           targetRole: audience,
           active,
+          startsAt: localDateTimeToIso(startsAt),
+          expiresAt: localDateTimeToIso(endsAt),
+          sendNotification: notify,
         },
       });
       toast.success(promo ? "Promo saved." : "Promo created.");
@@ -259,9 +329,11 @@ function PromoForm({ promo, onSaved }: { promo: Promo | null; onSaved: () => voi
           </Field>
         </div>
 
+        <ScheduleFields startsAt={startsAt} endsAt={endsAt} onStarts={setStartsAt} onEnds={setEndsAt} quickEnds={QUICK_ENDS} endHint="Empty = never expires." />
         <ScopeFields {...scope} onChange={setScope} />
         <AudienceSelect value={audience} onChange={setAudience} />
         <ToggleRow label="On" hint="Turn off to stop customers using this code." checked={active} onChange={setActive} />
+        <ToggleRow label="Notify customers" hint="Send a notification to the audience when you save." checked={notify} onChange={setNotify} />
       </div>
 
       <DialogFooter>

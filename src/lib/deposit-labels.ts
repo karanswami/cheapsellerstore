@@ -2,6 +2,7 @@
 export const DEPOSIT_METHOD_LABELS: Record<string, string> = {
   BINANCE: "Binance Pay",
   QRIS: "QRIS",
+  NASIONALPAY: "QRIS / DANA (IDR)",
   UPI: "INR (Cashfree)",
   ESEWA: "eSewa Nepal",
   MANUAL: "Manual",

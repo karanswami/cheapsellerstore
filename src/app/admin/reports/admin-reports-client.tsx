@@ -22,7 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { EmptyState, StatusBadge, formatDate } from "@/components/app-ui";
-import { Chips, SearchBox } from "@/components/admin/kit";
+import { ADMIN_LIVE_EVENT, Chips, SearchBox } from "@/components/admin/kit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -104,6 +104,20 @@ export function AdminReportsClient({ initial }: { initial: Page }) {
     },
     [status, kind, q],
   );
+
+  // Silent refetch of the first page when the shell reports new data.
+  useEffect(() => {
+    const on = () => {
+      const qs = new URLSearchParams({ page: "1", limit: "20", status, kind });
+      if (q.trim()) qs.set("q", q.trim());
+      fetch(`/api/admin/issue-reports?${qs}`)
+        .then((r) => r.json())
+        .then((j) => j?.data?.reports && setData(j.data))
+        .catch(() => {});
+    };
+    window.addEventListener(ADMIN_LIVE_EVENT, on);
+    return () => window.removeEventListener(ADMIN_LIVE_EVENT, on);
+  }, [status, kind, q]);
 
   // Refetch when filters/search change (debounced); skip the server-rendered first load.
   useEffect(() => {

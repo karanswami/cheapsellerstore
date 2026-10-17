@@ -1,6 +1,4 @@
-import { releaseKey } from "@/lib/keys";
-import { resolveKeyForDuration } from "@/lib/supplier/resolve-key";
-import { getEffectiveStockByDuration } from "@/lib/supplier/stock";
+import { claimKey, countAvailableKeysByDuration, releaseKey } from "@/lib/keys";
 import { prisma } from "@/lib/prisma";
 import { getSpecialPricesForUser, resolveUnitPrice } from "@/lib/pricing";
 import { creditReferralReward } from "@/lib/referral-rewards";
@@ -21,7 +19,7 @@ function makeAccessToken() {
 function buildOrderDetail(input: {
   id: string;
   status: string;
-  sku: string;
+  sku: number | null;
   quantity: number;
   price: number;
   total: number;
@@ -55,7 +53,7 @@ function buildOrderDetail(input: {
     ...(input.createdAt ? { createdAt: input.createdAt } : {}),
     ...(input.accessToken ? { accessToken: input.accessToken } : {}),
     // Soft-compat aliases for older clients
-    durationApiCode: input.sku,
+    durationSku: input.sku,
     subtotalMicrocents: input.price,
     totalMicrocents: input.total,
   };
@@ -65,7 +63,7 @@ export async function createAndFulfillApiOrder(input: {
   userId: string;
   buyerEmail: string;
   role: UserRole;
-  /** SKU apiCode (duration). Body may send `sku` or legacy `duration`. */
+  /** SKU number (duration). Body may send `sku` or legacy `duration`. */
   duration: string;
   quantity: number;
   sandbox?: boolean;
@@ -88,12 +86,12 @@ export async function createAndFulfillApiOrder(input: {
     };
   }
   const duration = resolved.duration;
-  if (!duration.apiCode || !duration.product.isActive) {
+  if (!duration.product.isActive) {
     return {
       ok: false as const,
       code: "UNKNOWN_DURATION",
       message:
-        "Unknown SKU. Call GET /api/v1/products and use items[].apiCode.",
+        "Unknown SKU. Call GET /api/v1/products and use items[].sku.",
     };
   }
   if (duration.product.isMaintenance) {
@@ -123,9 +121,7 @@ export async function createAndFulfillApiOrder(input: {
     specialPrice: specialPrices.get(duration.id),
   });
   const subtotal = Math.round(unitPrice * qty);
-  const labelPart = duration.version?.trim()
-    ? `${duration.version.trim()} · ${duration.label}`
-    : duration.label;
+  const labelPart = duration.label;
   const displayName = `${duration.product.title} — ${labelPart}`;
 
   if (input.sandbox) {
@@ -143,7 +139,7 @@ export async function createAndFulfillApiOrder(input: {
       order: buildOrderDetail({
         id: `sandbox_${randomBytes(8).toString("hex")}`,
         status: "FULFILLED",
-        sku: duration.apiCode,
+        sku: duration.number,
         quantity: qty,
         price: subtotal,
         total: subtotal,
@@ -168,7 +164,7 @@ export async function createAndFulfillApiOrder(input: {
     };
   }
 
-  const stockMap = await getEffectiveStockByDuration([duration.id]);
+  const stockMap = await countAvailableKeysByDuration([duration.id]);
   if ((stockMap.get(duration.id) ?? 0) < qty) {
     return {
       ok: false as const,
@@ -193,13 +189,7 @@ export async function createAndFulfillApiOrder(input: {
 
   try {
     for (let i = 0; i < qty; i++) {
-      const key = await resolveKeyForDuration({
-        durationId: duration.id,
-        supplierProductId: duration.supplierProductId ?? null,
-        orderId: order.id,
-        idempotencyKey: `${order.id}:${duration.id}:${i}`,
-        userId: input.userId,
-      });
+      const key = await claimKey(duration.id, order.id);
       if (!key) throw new Error("STOCK_UNAVAILABLE");
       claimedKeyIds.push(key.id);
       await prisma.orderItem.create({
@@ -241,7 +231,7 @@ export async function createAndFulfillApiOrder(input: {
     const payload = buildOrderDetail({
       id: order.id,
       status: "FULFILLED",
-      sku: duration.apiCode,
+      sku: duration.number,
       quantity: qty,
       price: subtotal,
       total: subtotal,
@@ -265,7 +255,7 @@ export async function createAndFulfillApiOrder(input: {
         `Order: ${order.id}`,
         `User: @${user.username} (${user.email})`,
         `Product: ${displayName}`,
-        `SKU: ${duration.apiCode}`,
+        `SKU: ${duration.number}`,
         `Qty: ${qty}`,
         `Unit: ${formatMoney(unitPrice)}`,
         `Subtotal: ${formatMoney(subtotal)}`,
@@ -318,9 +308,7 @@ export async function getApiOrderForUser(userId: string, orderId: string) {
   if (!order) return null;
 
   const sku =
-    order.items[0]?.duration.apiCode ??
-    order.items[0]?.durationLabel ??
-    "";
+    order.items[0]?.duration.number ?? null;
 
   return buildOrderDetail({
     id: order.id,
@@ -358,7 +346,7 @@ export async function listApiOrdersForUser(
       take: safeLimit,
       include: {
         items: {
-          include: { duration: { select: { apiCode: true } } },
+          include: { duration: { select: { number: true } } },
           orderBy: { createdAt: "asc" },
         },
       },
@@ -367,9 +355,7 @@ export async function listApiOrdersForUser(
 
   const items = orders.map((order) => {
     const sku =
-      order.items[0]?.duration.apiCode ??
-      order.items[0]?.durationLabel ??
-      "";
+      order.items[0]?.duration.number ?? null;
     const name = order.items[0]
       ? `${order.items[0].productTitle} — ${order.items[0].durationLabel}`
       : "Order";

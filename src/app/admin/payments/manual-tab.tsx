@@ -99,8 +99,6 @@ export function ManualTab({ list, setList, codes }: Props) {
             extra={
               <InlineDelete
                 busy={busy}
-                disabled={list.length <= 1}
-                title={list.length <= 1 ? "Keep at least one manual method" : undefined}
                 onConfirm={async () => {
                   if (await persist(list.filter((_, j) => j !== editIdx), "Method removed.")) setEditIdx(null);
                 }}

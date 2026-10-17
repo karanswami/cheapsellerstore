@@ -95,6 +95,7 @@ enum DepositMethod {
   ESEWA
   MANUAL
   MGCLOUDPAY
+  NASIONALPAY
 }
 
 enum DepositStatus {
@@ -292,8 +293,8 @@ model Product {
   id           String          @id @default(auto()) @map("_id") @db.ObjectId
   title        String
   description  String
-  /// Stable Platform API SKU (unique). Prefer over Mongo id in /api/v1.
-  apiCode      String?         @unique
+  /// Sequential catalog number (starts at 1). Shown in admin + Platform API.
+  number       Int             @unique
   /// Legacy star rating (no longer shown).
   rating       Float           @default(0)
   imageUrl     String?
@@ -321,12 +322,10 @@ model Duration {
   id         String          @id @default(auto()) @map("_id") @db.ObjectId
   label      String
   days       Int?
-  /// Optional storefront version group (e.g. Lite / Brutal). Empty = no version step.
-  version    String          @default("")
-  /// Globally unique Platform API SKU for pricing / stock / buy.
-  apiCode    String?         @unique
-  /// Upstream supplier catalog product id (licencedashboard). Null = local inventory only.
-  supplierProductId Int?
+  /// Short-lived keys (e.g. 6 hours). Set instead of `days`.
+  hours      Int?
+  /// Sequential SKU number (starts at 500). Platform API `sku`.
+  number     Int             @unique
   requiresAndroidId Boolean  @default(false)
   deviceIdName      String   @default("")
   productId  String          @db.ObjectId
@@ -338,9 +337,14 @@ model Duration {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 
-  @@unique([productId, version, label])
+  @@unique([productId, label])
   @@index([productId])
-  @@index([supplierProductId])
+}
+
+/// Monotonic counters (product / duration catalog numbers). Never reused after delete.
+model Counter {
+  id  String @id @map("_id")
+  seq Int    @default(0)
 }
 
 /// Per-user exact sell price for a duration (USD microcents). Beats role tier; skips flash/promo.
@@ -1087,33 +1091,6 @@ model ActivityLog {
   @@index([action, createdAt])
   @@index([category, createdAt])
   @@index([success, createdAt])
-}
-
-/// Upstream supplier API call log (balance / catalog / generate / history).
-model SupplierApiLog {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  /// balance | catalog | generate | history
-  endpoint       String
-  method         String
-  httpStatus     Int
-  ok             Boolean
-  productId      Int?
-  quantity       Int?
-  idempotencyKey String?
-  orderId        String?  @db.ObjectId
-  durationId     String?  @db.ObjectId
-  userId         String?  @db.ObjectId
-  requestJson    String
-  responseJson   String
-  usedFallback   Boolean  @default(false)
-  errorCode      String?
-  errorMessage   String?
-  createdAt      DateTime @default(now())
-
-  @@index([createdAt])
-  @@index([orderId])
-  @@index([ok, createdAt])
-  @@index([endpoint, createdAt])
 }
 
 /// Web Push (VAPID) browser notification subscriptions per device/user.

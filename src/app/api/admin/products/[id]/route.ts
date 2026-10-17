@@ -3,15 +3,14 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { archiveOrDeleteProduct } from "@/lib/admin-products";
 import { prisma } from "@/lib/prisma";
 import { isProductImageUrl } from "@/lib/public-uploads";
-import { allocateProductApiCode } from "@/lib/seller-api/ensure-api-code";
 import { slugify } from "@/lib/slug";
+import { KeyStatus } from "@prisma/client";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 const patchSchema = z.object({
   title: z.string().trim().min(1).max(120).optional(),
   description: z.string().trim().min(1).max(2000).optional(),
-  apiCode: z.string().trim().max(64).optional().nullable(),
   categoryId: z.string().min(1).nullable().optional(),
   categoryName: z.string().trim().min(1).max(80).optional(),
   features: z.array(z.string()).optional(),
@@ -86,22 +85,22 @@ export async function GET(
     include: {
       category: true,
       durations: {
-        include: {
-          prices: true,
-          _count: { select: { keys: true } },
-        },
-        orderBy: { createdAt: "asc" },
+        include: { prices: true, keys: { select: { status: true } } },
+        orderBy: { number: "asc" },
       },
     },
   });
   if (!product) return jsonError("NOT_FOUND", "Product not found.", 404);
+  const durations = product.durations.map(({ keys, ...d }) => ({
+    ...d,
+    keyCount: keys.length,
+    available: keys.filter((k) => k.status === KeyStatus.AVAILABLE).length,
+    sold: keys.filter((k) => k.status === KeyStatus.SOLD).length,
+  }));
   return jsonOk({
     ...product,
-    keyTotal: product.durations.reduce((n, d) => n + d._count.keys, 0),
-    durations: product.durations.map((d) => ({
-      ...d,
-      keyCount: d._count.keys,
-    })),
+    durations,
+    keyTotal: durations.reduce((n, d) => n + d.keyCount, 0),
   });
 }
 
@@ -130,21 +129,6 @@ export async function PATCH(
     touched: categoryTouched,
   });
 
-  let apiCode: string | undefined;
-  if (parsed.data.apiCode !== undefined) {
-    apiCode = await allocateProductApiCode(
-      parsed.data.title ?? existing.title,
-      parsed.data.apiCode,
-      id,
-    );
-  } else if (!existing.apiCode) {
-    apiCode = await allocateProductApiCode(
-      parsed.data.title ?? existing.title,
-      null,
-      id,
-    );
-  }
-
   const product = await prisma.product.update({
     where: { id },
     data: {
@@ -152,7 +136,6 @@ export async function PATCH(
       ...(parsed.data.description !== undefined
         ? { description: parsed.data.description }
         : {}),
-      ...(apiCode !== undefined ? { apiCode } : {}),
       ...(categoryTouched ? { categoryId: categoryId ?? null } : {}),
       ...(parsed.data.features !== undefined ? { features: parsed.data.features } : {}),
       ...(parsed.data.imageUrl !== undefined

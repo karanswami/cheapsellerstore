@@ -8,7 +8,6 @@ import {
   recheckDepositNow,
 } from "@/lib/deposit-recheck";
 import { prisma } from "@/lib/prisma";
-import { purgeExpiredSupplierApiLogs } from "@/lib/supplier/client";
 import { DepositMethod, type Prisma } from "@prisma/client";
 
 const DEFAULT_PROVIDER_GRACE_MINUTES = 60;
@@ -186,35 +185,6 @@ export async function runDepositCronPoll(): Promise<DepositCronPollResult> {
       }
     } catch (purgeErr) {
       console.warn("DEPOSIT_CRON_PURGE_FAILED", purgeErr);
-    }
-
-    try {
-      const supplierPurged = await purgeExpiredSupplierApiLogs();
-      if (supplierPurged.deleted > 0) {
-        providers.supplierLogPurge = {
-          deleted: supplierPurged.deleted,
-        } as Prisma.InputJsonValue;
-      }
-    } catch (purgeErr) {
-      console.warn("SUPPLIER_LOG_PURGE_FAILED", purgeErr);
-    }
-
-    try {
-      const { getCachedSupplierCatalog, getCachedSupplierBalance } =
-        await import("@/lib/supplier/catalog-cache");
-      const [supplierCache, supplierBalance] = await Promise.all([
-        getCachedSupplierCatalog(),
-        getCachedSupplierBalance(),
-      ]);
-      if (supplierCache) {
-        providers.supplierCatalogSynced = {
-          itemsCount: supplierCache.items.length,
-          fetchedAt: supplierCache.fetchedAt,
-          balance: supplierBalance?.balance ?? null,
-        } as Prisma.InputJsonValue;
-      }
-    } catch (suppErr) {
-      console.warn("SUPPLIER_CATALOG_SYNC_FAILED", suppErr);
     }
   } catch (err) {
     ok = false;

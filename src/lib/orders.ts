@@ -1,6 +1,8 @@
-import { releaseKeysForOrder } from "@/lib/keys";
-import { resolveKeyForDuration } from "@/lib/supplier/resolve-key";
-import { getEffectiveStockByDuration } from "@/lib/supplier/stock";
+import {
+  claimKey,
+  countAvailableKeysByDuration,
+  releaseKeysForOrder,
+} from "@/lib/keys";
 import {
   applyFlashPercent,
   listActiveFlashSales,
@@ -302,7 +304,6 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
     unitPrice: number;
     flashSaleId: string | null;
     isSpecialPrice: boolean;
-    supplierProductId: number | null;
     androidId: string | null;
   };
 
@@ -352,9 +353,7 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
       : listPrice;
 
     for (let i = 0; i < line.quantity; i++) {
-      const labelPart = duration.version?.trim()
-        ? `${duration.version.trim()} · ${duration.label}`
-        : duration.label;
+      const labelPart = duration.label;
       planned.push({
         durationId: duration.id,
         productId: duration.productId,
@@ -363,7 +362,6 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
         unitPrice,
         flashSaleId: flash?.id ?? null,
         isSpecialPrice,
-        supplierProductId: duration.supplierProductId ?? null,
         androidId: line.androidId ?? null,
       });
     }
@@ -465,7 +463,7 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
 
   const flashSaleId = planned.find((p) => p.flashSaleId)?.flashSaleId ?? null;
 
-  // Fail fast when qty exceeds local + supplier-eligible effective stock.
+  // Fail fast when qty exceeds available stock.
   const neededByDuration = new Map<string, number>();
   for (const line of planned) {
     neededByDuration.set(
@@ -473,7 +471,7 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
       (neededByDuration.get(line.durationId) ?? 0) + 1,
     );
   }
-  const stockByDuration = await getEffectiveStockByDuration([
+  const stockByDuration = await countAvailableKeysByDuration([
     ...neededByDuration.keys(),
   ]);
   for (const [durationId, needed] of neededByDuration) {
@@ -501,17 +499,8 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
   });
 
   try {
-    let lineIndex = 0;
     for (const line of planned) {
-      const key = await resolveKeyForDuration({
-        durationId: line.durationId,
-        supplierProductId: line.supplierProductId,
-        orderId: order.id,
-        idempotencyKey: `${order.id}:${line.durationId}:${lineIndex}`,
-        userId: input.userId,
-        androidId: line.androidId ?? undefined,
-      });
-      lineIndex += 1;
+      const key = await claimKey(line.durationId, order.id);
       if (!key) {
         throw new Error("STOCK_UNAVAILABLE");
       }
@@ -608,23 +597,11 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
         );
         if (uniqueDurationIds.length === 0) return;
 
-        const durations = await prisma.duration.findMany({
-          where: { id: { in: uniqueDurationIds } },
-          select: { id: true, supplierProductId: true },
-        });
-        const durationMap = new Map(durations.map((d) => [d.id, d]));
-
         const checkedDurationIds = new Set<string>();
         for (const it of fulfilled.items) {
           if (!it.durationId || !isObjectId(it.durationId)) continue;
           if (checkedDurationIds.has(it.durationId)) continue;
           checkedDurationIds.add(it.durationId);
-
-          const dur = durationMap.get(it.durationId);
-          // If duration is fulfilled via upstream supplier, skip out-of-stock alert
-          if (dur?.supplierProductId != null) {
-            continue;
-          }
 
           const remaining = await prisma.key.count({
             where: { durationId: it.durationId, status: "AVAILABLE" },

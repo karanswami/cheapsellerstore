@@ -47,6 +47,7 @@ const EXPIRY_MINUTES: Record<DepositMethod, number> = {
   ESEWA: 30,
   MANUAL: 30,
   MGCLOUDPAY: 10,
+  NASIONALPAY: 15,
 };
 
 function addMinutes(minutes: number) {
@@ -60,6 +61,7 @@ function normalizeLocalAmount(value: number, method: DepositMethod) {
     method === DepositMethod.UPI ||
     method === DepositMethod.QRIS ||
     method === DepositMethod.MGCLOUDPAY ||
+    method === DepositMethod.NASIONALPAY ||
     method === DepositMethod.ESEWA ||
     method === DepositMethod.MANUAL
   ) {

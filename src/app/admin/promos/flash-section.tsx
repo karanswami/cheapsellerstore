@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Clock, Pencil, Plus, Trash2, Users, Zap } from "lucide-react";
 import { EmptyState } from "@/components/app-ui";
-import { ConfirmDialog, Field, SubmitButton, ToggleRow, adminFetch, errMsg, useAdminQuery } from "@/components/admin/kit";
+import { Chips, ConfirmDialog, Field, StatCard, SubmitButton, ToggleRow, adminFetch, errMsg, useAdminQuery } from "@/components/admin/kit";
 import { AudienceSelect, ScopeFields, type Audience, type Scope } from "@/components/admin/pickers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { flashDateTimeInput, flashDateTimeLabel, formatFlashCountdown, localDateTimeToIso } from "@/lib/flash-sale-format";
 import { cn } from "@/lib/utils";
-import { SectionHead, audienceText, useScopeLabel } from "./shared";
+import { LIFECYCLE_BADGE, ScheduleFields, SectionHead, audienceText, lifecycle, scheduleError, useScopeLabel, type Lifecycle } from "./shared";
 
 type Flash = {
   id: string;
@@ -30,14 +30,6 @@ type Flash = {
   expiresAt: string | null;
 };
 
-function status(s: Flash): { label: string; variant: "success" | "warning" | "muted" } {
-  const now = Date.now();
-  if (!s.active) return { label: "Off", variant: "muted" };
-  if (s.expiresAt && new Date(s.expiresAt).getTime() < now) return { label: "Ended", variant: "muted" };
-  if (s.startsAt && new Date(s.startsAt).getTime() > now) return { label: "Scheduled", variant: "warning" };
-  return { label: "Live", variant: "success" };
-}
-
 const QUICK_ENDS = [
   { label: "6 hours", hours: 6 },
   { label: "24 hours", hours: 24 },
@@ -50,7 +42,11 @@ export function FlashSection() {
   const [editing, setEditing] = useState<Flash | "new" | null>(null);
   const [del, setDel] = useState<Flash | null>(null);
   const scopeLabel = useScopeLabel();
-  const sales = data?.sales ?? [];
+  const [filter, setFilter] = useState<"all" | Lifecycle>("all");
+  const all = data?.sales ?? [];
+  const counts = { live: 0, scheduled: 0, ended: 0, off: 0 } as Record<Lifecycle, number>;
+  for (const s of all) counts[lifecycle(s)]++;
+  const sales = filter === "all" ? all : all.filter((s) => lifecycle(s) === filter);
 
   async function toggle(s: Flash, active: boolean) {
     try {
@@ -73,6 +69,28 @@ export function FlashSection() {
         }
       />
 
+      {all.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatCard label="Live now" value={counts.live} icon={Zap} tone="success" />
+            <StatCard label="Scheduled" value={counts.scheduled} icon={Clock} tone="warning" />
+            <StatCard label="Ended" value={counts.ended} />
+            <StatCard label="Paused" value={counts.off} />
+          </div>
+          <Chips
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { v: "all", label: "All", count: all.length },
+              { v: "live", label: "Live", count: counts.live },
+              { v: "scheduled", label: "Scheduled", count: counts.scheduled },
+              { v: "ended", label: "Ended", count: counts.ended },
+              { v: "off", label: "Off", count: counts.off },
+            ]}
+          />
+        </>
+      ) : null}
+
       {loading && !data ? (
         <div className="grid gap-3 md:grid-cols-2">
           {[0, 1].map((i) => (
@@ -81,15 +99,20 @@ export function FlashSection() {
         </div>
       ) : sales.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8">
-          <EmptyState icon={Zap} title="No flash sales yet" hint="Run a timed discount on one product or the whole store." />
+          <EmptyState
+            icon={Zap}
+            title={all.length ? "Nothing in this filter" : "No flash sales yet"}
+            hint={all.length ? "Try another status." : "Run a timed discount on one product or the whole store."}
+          />
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {sales.map((s) => {
-            const st = status(s);
-            const left = st.label === "Live" ? formatFlashCountdown(s.expiresAt) : null;
+            const lc = lifecycle(s);
+            const st = LIFECYCLE_BADGE[lc];
+            const left = lc === "live" ? formatFlashCountdown(s.expiresAt) : null;
             return (
-              <div key={s.id} className={cn("overflow-hidden rounded-xl border bg-card", st.variant === "muted" && "opacity-60")}>
+              <div key={s.id} className={cn("overflow-hidden rounded-xl border bg-card", (lc === "ended" || lc === "off") && "opacity-60")}>
                 <div className="flex items-center gap-3 bg-gradient-to-r from-warning/25 via-warning/10 to-transparent p-3.5">
                   <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-warning text-black">
                     <Zap className="size-5" />
@@ -105,7 +128,13 @@ export function FlashSection() {
                     <Badge variant={st.variant}>{st.label}</Badge>
                     <span className="inline-flex items-center gap-1">
                       <Clock className="size-3" />
-                      {left ? `Ends in ${left}` : s.expiresAt ? `Ends ${flashDateTimeLabel(s.expiresAt)}` : "No end date"}
+                      {lc === "scheduled"
+                        ? `Starts ${flashDateTimeLabel(s.startsAt)}`
+                        : left
+                          ? `Ends in ${left}`
+                          : s.expiresAt
+                            ? `${lc === "ended" ? "Ended" : "Ends"} ${flashDateTimeLabel(s.expiresAt)}`
+                            : "No end date"}
                     </span>
                   </div>
                   <p className="truncate text-xs text-muted-foreground">
@@ -170,27 +199,32 @@ export function FlashSection() {
 function FlashForm({ sale, onSaved }: { sale: Flash | null; onSaved: () => void }) {
   const [title, setTitle] = useState(sale?.title ?? "");
   const [percent, setPercent] = useState(String(sale?.discountPercent ?? 20));
+  const [startsAt, setStartsAt] = useState(flashDateTimeInput(sale?.startsAt));
   const [endsAt, setEndsAt] = useState(flashDateTimeInput(sale?.expiresAt));
+  const [notify, setNotify] = useState(false);
   const [banner, setBanner] = useState(sale?.bannerDescription ?? "");
   const [scope, setScope] = useState({ scope: sale?.scope ?? ("GLOBAL" as Scope), productId: sale?.productId ?? "", durationId: sale?.durationId ?? "" });
   const [audience, setAudience] = useState<Audience>(sale?.targetRole ?? "ALL");
   const [active, setActive] = useState(sale?.active ?? true);
   const [busy, setBusy] = useState(false);
 
-  function endIn(hours: number) {
-    const d = new Date();
-    d.setHours(d.getHours() + hours);
-    setEndsAt(flashDateTimeInput(d));
-  }
-
   async function save() {
+    const pct = Number(percent);
+    if (!title.trim()) return toast.error("Give the sale a title.");
+    if (!Number.isFinite(pct) || pct < 1 || pct > 100) return toast.error("Discount must be between 1 and 100%.");
+    if (scope.scope === "PRODUCT" && !scope.productId) return toast.error("Pick a product.");
+    if (scope.scope === "DURATION" && !scope.durationId) return toast.error("Pick a duration.");
+    // Editing an already-ended sale is allowed as long as the end isn't moved into a contradiction.
+    const err = scheduleError(startsAt, endsAt === flashDateTimeInput(sale?.expiresAt) ? "" : endsAt);
+    if (err) return toast.error(err);
     setBusy(true);
     try {
       await adminFetch(sale ? `/api/admin/flash-sales/${sale.id}` : "/api/admin/flash-sales", {
         method: sale ? "PATCH" : "POST",
         json: {
           title: title.trim(),
-          discountPercent: Number(percent),
+          discountPercent: pct,
+          startsAt: localDateTimeToIso(startsAt),
           expiresAt: localDateTimeToIso(endsAt),
           bannerDescription: banner.trim() || null,
           scope: scope.scope,
@@ -198,6 +232,7 @@ function FlashForm({ sale, onSaved }: { sale: Flash | null; onSaved: () => void 
           durationId: scope.scope === "DURATION" ? scope.durationId || null : null,
           targetRole: audience,
           active,
+          sendNotification: notify,
           ...(sale ? {} : { showBanner: true }),
         },
       });
@@ -227,19 +262,7 @@ function FlashForm({ sale, onSaved }: { sale: Flash | null; onSaved: () => void 
           </Field>
         </div>
 
-        <Field label="Ends" hint="Empty = runs until you turn it off.">
-          <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
-          <div className="flex flex-wrap gap-1.5">
-            {QUICK_ENDS.map((q) => (
-              <Button key={q.hours} type="button" variant="outline" size="sm" onClick={() => endIn(q.hours)}>
-                +{q.label}
-              </Button>
-            ))}
-            <Button type="button" variant="ghost" size="sm" onClick={() => setEndsAt("")}>
-              No end
-            </Button>
-          </div>
-        </Field>
+        <ScheduleFields startsAt={startsAt} endsAt={endsAt} onStarts={setStartsAt} onEnds={setEndsAt} quickEnds={QUICK_ENDS} />
 
         <Field label="Banner text" hint="Short line shown under the title on the storefront.">
           <Input value={banner} onChange={(e) => setBanner(e.target.value)} placeholder="Limited time — grab it before it ends" maxLength={240} />
@@ -248,6 +271,7 @@ function FlashForm({ sale, onSaved }: { sale: Flash | null; onSaved: () => void 
         <ScopeFields {...scope} onChange={setScope} />
         <AudienceSelect value={audience} onChange={setAudience} />
         <ToggleRow label="On" hint="Turn off to pause the sale." checked={active} onChange={setActive} />
+        <ToggleRow label="Notify customers" hint="Send a notification to the audience when you save." checked={notify} onChange={setNotify} />
       </div>
 
       <DialogFooter>

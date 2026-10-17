@@ -2,15 +2,27 @@ import { jsonError, jsonOk } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth/admin";
 import { prisma } from "@/lib/prisma";
 import { isProductImageUrl } from "@/lib/public-uploads";
-import { allocateProductApiCode } from "@/lib/seller-api/ensure-api-code";
+import { nextCatalogNumber } from "@/lib/catalog-numbers";
+import { Currency, usdToMicrocents } from "@/lib/currencies";
 import { slugify } from "@/lib/slug";
 import { KeyStatus } from "@prisma/client";
 import { z } from "zod";
 
+const durationInput = z.object({
+  label: z.string().trim().min(1).max(80),
+  days: z.number().int().positive().nullable().optional(),
+  hours: z.number().int().positive().nullable().optional(),
+  requiresAndroidId: z.boolean().optional().default(false),
+  deviceIdName: z.string().trim().max(80).optional().default(""),
+  /** USD decimals; stored as microcents. */
+  price: z.number().positive(),
+  resellerPrice: z.number().min(0).optional(),
+  buyPrice: z.number().min(0).optional(),
+});
+
 const createSchema = z.object({
   title: z.string().trim().min(1).max(120),
   description: z.string().trim().min(1).max(2000),
-  apiCode: z.string().trim().max(64).optional().nullable(),
   categoryId: z.string().min(1).nullable().optional(),
   /** When set and categoryId is empty, create/find category by name. */
   categoryName: z.string().trim().min(1).max(80).optional(),
@@ -36,6 +48,8 @@ const createSchema = z.object({
   isPinned: z.boolean().optional(),
   isMaintenance: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  /** Durations created together with the product (admin "New product" page). */
+  durations: z.array(durationInput).max(40).default([]),
 });
 
 async function resolveCategoryId(input: {
@@ -86,6 +100,7 @@ export async function GET(request: Request) {
             OR: [
               { title: { contains: q } },
               { description: { contains: q } },
+              ...(/^\d{1,9}$/.test(q) ? [{ number: Number(q) }] : []),
             ],
           }
         : {}),
@@ -108,7 +123,7 @@ export async function GET(request: Request) {
           _count: { select: { keys: true } },
           keys: { select: { status: true } },
         },
-        orderBy: { createdAt: "asc" },
+        orderBy: { number: "asc" },
       },
     },
     orderBy: [
@@ -165,16 +180,22 @@ export async function POST(request: Request) {
     categoryName: parsed.data.categoryName,
   });
 
-  const apiCode = await allocateProductApiCode(
-    parsed.data.title,
-    parsed.data.apiCode,
-  );
+  const labels = parsed.data.durations.map((d) => d.label.toLowerCase());
+  if (new Set(labels).size !== labels.length) {
+    return jsonError("CONFLICT", "Duplicate duration labels.", 409);
+  }
+
+  const number = await nextCatalogNumber("product");
+  const durations = [];
+  for (const d of parsed.data.durations) {
+    durations.push({ ...d, number: await nextCatalogNumber("duration") });
+  }
 
   const product = await prisma.product.create({
     data: {
       title: parsed.data.title,
       description: parsed.data.description,
-      apiCode,
+      number,
       categoryId,
       features: parsed.data.features,
       imageUrl: parsed.data.imageUrl || null,
@@ -184,6 +205,24 @@ export async function POST(request: Request) {
       isPinned: parsed.data.isPinned ?? false,
       isMaintenance: parsed.data.isMaintenance ?? false,
       isActive: parsed.data.isActive ?? true,
+      durations: {
+        create: durations.map((d) => ({
+          number: d.number,
+          label: d.label,
+          days: d.days ?? null,
+          hours: d.hours ?? null,
+          requiresAndroidId: d.requiresAndroidId,
+          deviceIdName: d.deviceIdName,
+          prices: {
+            create: {
+              currency: Currency.USD,
+              price: usdToMicrocents(d.price),
+              resellerPrice: usdToMicrocents(d.resellerPrice ?? 0),
+              buyPrice: usdToMicrocents(d.buyPrice ?? 0),
+            },
+          },
+        })),
+      },
     },
     include: {
       category: true,

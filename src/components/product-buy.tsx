@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Check, Loader2, Minus, Plus, ShoppingBag, Wallet } from "lucide-react";
 import { FlashStrip } from "@/components/flash-strip";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { PromoField, TotalBreakdown, usePromo } from "@/components/promo-field";
 import { formatMoney, type Currency } from "@/lib/currencies";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { listProductVersions, type DurationOption } from "@/types/product";
+import { type DurationOption } from "@/types/product";
 
 type Props = {
   product: { id: string; title: string; currency: Currency; isMaintenance: boolean; durations: DurationOption[] };
@@ -21,9 +21,7 @@ type Props = {
 
 export function ProductBuy({ product, loggedIn, balance }: Props) {
   const router = useRouter();
-  const versions = useMemo(() => listProductVersions(product.durations), [product.durations]);
-  const [version, setVersion] = useState(versions[0] ?? "");
-  const options = product.durations.filter((d) => d.version.trim() === version);
+  const options = product.durations;
   const firstAvailable = options.find((d) => d.stock > 0 && d.price != null) ?? options[0];
   const [selectedId, setSelectedId] = useState(firstAvailable?.id ?? "");
   const [qty, setQty] = useState(1);
@@ -40,13 +38,6 @@ export function ProductBuy({ product, loggedIn, balance }: Props) {
   const canBuy = !product.isMaintenance && selected && selected.price != null && selected.stock > 0;
   const short = balance != null && canBuy && balance < total;
   const next = encodeURIComponent(`/product/${product.id}`);
-
-  function pickVersion(v: string) {
-    setVersion(v);
-    const first = product.durations.filter((d) => d.version.trim() === v);
-    setSelectedId((first.find((d) => d.stock > 0 && d.price != null) ?? first[0])?.id ?? "");
-    setQty(1);
-  }
 
   async function buy() {
     if (!selected || !canBuy) return;
@@ -113,26 +104,6 @@ export function ProductBuy({ product, loggedIn, balance }: Props) {
           </span>
         ) : null}
       </div>
-
-      {versions.length > 1 ? (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Version</p>
-          <div className="flex flex-wrap gap-2">
-            {versions.map((v) => (
-              <button
-                key={v}
-                onClick={() => pickVersion(v)}
-                className={cn(
-                  "h-9 rounded-full border px-4 text-[13px] font-semibold transition-colors",
-                  v === version ? "border-primary bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:border-primary/50",
-                )}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Choose duration</p>

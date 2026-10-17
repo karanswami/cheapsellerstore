@@ -79,6 +79,7 @@ const AUTO: Record<PublicGateway["provider"], { hint: string; icon: LucideIcon; 
   UPI: { hint: "UPI apps", icon: Landmark, tone: "emerald", instant: true },
   QRIS: { hint: "Scan QRIS", icon: QrCode, tone: "sky", instant: true },
   BINANCE: { hint: "Binance Pay", icon: Bitcoin, tone: "amber", instant: true },
+  NASIONALPAY: { hint: "QRIS / DANA", icon: QrCode, tone: "sky", instant: true },
   ESEWA: { hint: "Upload proof", icon: Banknote, tone: "violet", instant: false },
 };
 

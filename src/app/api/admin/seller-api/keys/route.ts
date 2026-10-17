@@ -17,9 +17,11 @@ export async function GET(req: Request) {
 
   const status = url.searchParams.get("status");
   const mode = url.searchParams.get("mode");
+  const userId = url.searchParams.get("userId");
   const whereSafe: Record<string, unknown> = {};
   if (status === "ACTIVE" || status === "REVOKED") whereSafe.status = status;
   if (mode === "LIVE" || mode === "SANDBOX") whereSafe.mode = mode;
+  if (userId) whereSafe.userId = userId;
   if (q) {
     whereSafe.OR = [
       { name: { contains: q } },
@@ -29,7 +31,7 @@ export async function GET(req: Request) {
     ];
   }
 
-  const [total, rows] = await Promise.all([
+  const [total, rows, activeCount, revokedCount, sandboxCount] = await Promise.all([
     prisma.sellerApiKey.count({ where: whereSafe }),
     prisma.sellerApiKey.findMany({
       where: whereSafe,
@@ -42,9 +44,13 @@ export async function GET(req: Request) {
         },
       },
     }),
+    prisma.sellerApiKey.count({ where: { status: "ACTIVE" } }),
+    prisma.sellerApiKey.count({ where: { status: "REVOKED" } }),
+    prisma.sellerApiKey.count({ where: { status: "ACTIVE", mode: "SANDBOX" } }),
   ]);
 
   return jsonOk({
+    counts: { active: activeCount, revoked: revokedCount, sandbox: sandboxCount },
     page,
     limit,
     total,
@@ -57,6 +63,9 @@ export async function GET(req: Request) {
       mode: k.mode,
       status: k.status,
       rateLimitRpm: k.rateLimitRpm,
+      expiresAt: k.expiresAt?.toISOString() ?? null,
+      scopes: k.scopes,
+      ipAllowlist: k.ipAllowlist,
       lastUsedAt: k.lastUsedAt?.toISOString() ?? null,
       createdAt: k.createdAt.toISOString(),
       user: k.user,

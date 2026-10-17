@@ -19,6 +19,9 @@ function pricesFor(usd: number): { currency: Currency; price: number }[] {
 
 type DurationSeed = { label: string; days: number | null; usd: number };
 
+let seedProductNo = 0;
+let seedDurationNo = 499;
+
 async function createProductWithDurations(input: {
   title: string;
   description: string;
@@ -32,7 +35,7 @@ async function createProductWithDurations(input: {
   const product = await prisma.product.create({
     data: {
       title: input.title,
-      apiCode: input.title.toLowerCase().replace(/[^a-z0-9]/g, "_"),
+      number: ++seedProductNo,
       description: input.description,
       rating: input.rating,
       features: input.features,
@@ -43,7 +46,7 @@ async function createProductWithDurations(input: {
         create: input.durations.map((d) => ({
           label: d.label,
           days: d.days,
-          apiCode: `${input.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}_${d.label.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
+          number: ++seedDurationNo,
         })),
       },
     },

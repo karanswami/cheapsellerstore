@@ -2,7 +2,7 @@ import { jsonError, jsonOk } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth/admin";
 import { prisma } from "@/lib/prisma";
 import { Currency, usdToMicrocents } from "@/lib/currencies";
-import { allocateDurationApiCode } from "@/lib/seller-api/ensure-api-code";
+import { KeyStatus } from "@prisma/client";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -15,11 +15,8 @@ const priceRow = z.object({
 
 const schema = z.object({
   label: z.string().trim().min(1).max(80).optional(),
-  /** Optional version group (Lite / Brutal). Empty string clears. */
-  version: z.string().trim().max(40).optional(),
   days: z.number().int().positive().nullable().optional(),
-  apiCode: z.string().trim().max(64).optional().nullable(),
-  supplierProductId: z.number().int().positive().nullable().optional(),
+  hours: z.number().int().positive().nullable().optional(),
   requiresAndroidId: z.boolean().optional(),
   deviceIdName: z.string().trim().max(80).optional(),
   /** Admin sends USD decimals; stored as microcents. */
@@ -43,57 +40,19 @@ export async function PATCH(
   const existing = await prisma.duration.findUnique({ where: { id } });
   if (!existing) return jsonError("NOT_FOUND", "Duration not found.", 404);
 
-  const nextLabel = parsed.data.label ?? existing.label;
-  const nextVersion =
-    parsed.data.version !== undefined ? parsed.data.version : existing.version;
-  if (nextLabel !== existing.label || nextVersion !== existing.version) {
+  if (parsed.data.label !== undefined && parsed.data.label !== existing.label) {
     const clash = await prisma.duration.findFirst({
-      where: {
-        productId: existing.productId,
-        version: nextVersion,
-        label: nextLabel,
-        NOT: { id },
-      },
+      where: { productId: existing.productId, label: parsed.data.label, NOT: { id } },
     });
     if (clash) {
-      return jsonError(
-        "CONFLICT",
-        "Duration label must be unique for this version on the product.",
-        409,
-      );
+      return jsonError("CONFLICT", "This product already has a duration with that label.", 409);
     }
   }
 
-  let apiCode: string | undefined;
-  if (
-    parsed.data.apiCode !== undefined ||
-    !existing.apiCode ||
-    parsed.data.label !== undefined ||
-    parsed.data.days !== undefined
-  ) {
-    const product = await prisma.product.findUnique({
-      where: { id: existing.productId },
-      select: { apiCode: true, title: true },
-    });
-    apiCode = await allocateDurationApiCode({
-      productApiCode: product?.apiCode ?? product?.title ?? "PRODUCT",
-      label: nextLabel,
-      days:
-        parsed.data.days !== undefined ? parsed.data.days : existing.days,
-      preferred:
-        parsed.data.apiCode !== undefined
-          ? parsed.data.apiCode
-          : existing.apiCode,
-      excludeId: id,
-    });
-  }
-
   if (
     parsed.data.label !== undefined ||
-    parsed.data.version !== undefined ||
     parsed.data.days !== undefined ||
-    apiCode !== undefined ||
-    parsed.data.supplierProductId !== undefined ||
+    parsed.data.hours !== undefined ||
     parsed.data.requiresAndroidId !== undefined ||
     parsed.data.deviceIdName !== undefined
   ) {
@@ -102,14 +61,8 @@ export async function PATCH(
         where: { id },
         data: {
           ...(parsed.data.label !== undefined ? { label: parsed.data.label } : {}),
-          ...(parsed.data.version !== undefined
-            ? { version: parsed.data.version }
-            : {}),
           ...(parsed.data.days !== undefined ? { days: parsed.data.days } : {}),
-          ...(apiCode !== undefined ? { apiCode } : {}),
-          ...(parsed.data.supplierProductId !== undefined
-            ? { supplierProductId: parsed.data.supplierProductId }
-            : {}),
+          ...(parsed.data.hours !== undefined ? { hours: parsed.data.hours } : {}),
           ...(parsed.data.requiresAndroidId !== undefined
             ? { requiresAndroidId: parsed.data.requiresAndroidId }
             : {}),
@@ -119,11 +72,7 @@ export async function PATCH(
         },
       });
     } catch {
-      return jsonError(
-        "CONFLICT",
-        "Duration label must be unique for this version on the product.",
-        409,
-      );
+      return jsonError("CONFLICT", "This product already has a duration with that label.", 409);
     }
   }
 
@@ -176,18 +125,24 @@ export async function DELETE(
   const existing = await prisma.duration.findUnique({ where: { id } });
   if (!existing) return jsonError("NOT_FOUND", "Duration not found.", 404);
 
-  const keyCount = await prisma.key.count({ where: { durationId: id } });
-  if (keyCount > 0) {
+  // Safe delete: never remove a duration that has purchase history.
+  const [soldKeys, orderItems] = await Promise.all([
+    prisma.key.count({ where: { durationId: id, status: KeyStatus.SOLD } }),
+    prisma.orderItem.count({ where: { durationId: id } }),
+  ]);
+  if (soldKeys > 0 || orderItems > 0) {
     return jsonError(
       "CONFLICT",
-      "Cannot delete a duration that still has keys.",
+      "This duration has purchase history and cannot be deleted. Hide the whole product instead.",
       409,
     );
   }
 
+  const purged = await prisma.key.deleteMany({ where: { durationId: id } });
   await prisma.$transaction([
+    prisma.userSpecialPrice.deleteMany({ where: { durationId: id } }),
     prisma.durationPrice.deleteMany({ where: { durationId: id } }),
     prisma.duration.delete({ where: { id } }),
   ]);
-  return jsonOk({ ok: true });
+  return jsonOk({ ok: true, purgedKeys: purged.count });
 }

@@ -25,10 +25,10 @@ export function generateApiKeySecret(mode: "LIVE" | "SANDBOX"): {
   prefix: string;
   hash: string;
 } {
-  const tag = mode === "LIVE" ? "live" : "test";
-  // drip_sk_live_<64 hex> · drip_sk_test_<64 hex>  (256-bit)
-  const secret = `drip_sk_${tag}_${randomHexToken(32)}`;
-  const prefix = `${secret.slice(0, 22)}…`;
+  // Plain 64-hex key (256-bit); live/sandbox is tracked by the key's mode, not its text.
+  void mode;
+  const secret = randomHexToken(32);
+  const prefix = `${secret.slice(0, 8)}…`;
   return { secret, prefix, hash: sha256Hex(secret) };
 }
 

@@ -4,6 +4,7 @@ import { binanceDepositProvider } from "./binance";
 import { esewaManualDepositProvider } from "./esewa";
 import { manualDepositProvider } from "./manual";
 import { mgcloudpayDepositProvider } from "./mgcloudpay";
+import { nasionalpayDepositProvider } from "./nasionalpay";
 import { qrisDepositProvider } from "./qris";
 import { upiDepositProvider } from "./upi";
 import type { DepositProviderAdapter } from "./types";
@@ -16,6 +17,7 @@ const DEPOSIT_PROVIDER_REGISTRY: Record<DepositMethod, DepositProviderAdapter> =
     ESEWA: esewaManualDepositProvider,
     MANUAL: manualDepositProvider,
     MGCLOUDPAY: mgcloudpayDepositProvider,
+    NASIONALPAY: nasionalpayDepositProvider,
   };
 
 export function getDepositProviderAdapter(method: DepositMethod) {

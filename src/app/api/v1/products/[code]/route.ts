@@ -4,7 +4,6 @@ import {
   resolvePriceTier,
   sandboxCatalogProduct,
 } from "@/lib/seller-api/catalog";
-import { normalizeApiCode } from "@/lib/seller-api/codes";
 import { withPublicApi } from "@/lib/seller-api/handler";
 import type { UserRole } from "@prisma/client";
 import type { NextRequest } from "next/server";
@@ -34,7 +33,7 @@ export async function GET(req: NextRequest, ctxRoute: Ctx) {
         error: {
           code: "NOT_FOUND",
           message:
-            "Not found. Use a product apiCode or SKU from GET /api/v1/products.",
+            "Not found. Use a product number or SKU from GET /api/v1/products.",
           status: 404,
         },
       };

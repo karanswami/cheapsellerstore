@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export type Scope = "GLOBAL" | "PRODUCT" | "DURATION";
 export type Audience = "ALL" | "USER" | "SELLER";
-type CatalogProduct = { id: string; title: string; durations: { id: string; label: string; version: string }[] };
+type CatalogProduct = { id: string; title: string; durations: { id: string; label: string }[] };
 
 /** Product/duration catalog for scope pickers (shared by promos, flash sales…). */
 export function useCatalog() {
@@ -68,7 +68,6 @@ export function ScopeFields({
             <SelectContent>
               {(pickedProduct?.durations ?? []).map((d) => (
                 <SelectItem key={d.id} value={d.id}>
-                  {d.version ? `${d.version} · ` : ""}
                   {d.label}
                 </SelectItem>
               ))}

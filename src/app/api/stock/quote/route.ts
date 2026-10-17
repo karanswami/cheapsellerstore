@@ -1,6 +1,6 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { releaseOrphanedSoldKeys } from "@/lib/keys";
-import { getEffectiveStockByDuration } from "@/lib/supplier/stock";
+import { countAvailableKeysByDuration } from "@/lib/keys";
 import { z } from "zod";
 
 const schema = z.object({
@@ -10,7 +10,7 @@ const schema = z.object({
 let lastOrphanRepairAt = 0;
 const ORPHAN_REPAIR_TTL_MS = 5 * 60 * 1000;
 
-/** Live sellable stock (local AVAILABLE + supplier-eligible virtual) for cart / product durations. */
+/** Live sellable stock (AVAILABLE keys) for cart / product durations. */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   }
 
   const ids = [...new Set(parsed.data.durationIds)];
-  const counts = await getEffectiveStockByDuration(ids);
+  const counts = await countAvailableKeysByDuration(ids);
   const lines = ids.map((durationId) => ({
     durationId,
     available: counts.get(durationId) ?? 0,

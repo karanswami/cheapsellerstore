@@ -13,7 +13,7 @@ import { GATEWAY_PROVIDERS, PROVIDER_META, type GatewayProvider, type GatewaySta
 import { useSettingsSave, type AdminGateway, type AdminSettings } from "../settings/settings-kit";
 import { EditorDialog, EditorFooter, InlineDelete, ListRow, SectionHead, StatusSwitch } from "./payments-ui";
 
-const ICON: Record<GatewayProvider, LucideIcon> = { QRIS: QrCode, UPI: Landmark, BINANCE: Bitcoin, ESEWA: Banknote };
+const ICON: Record<GatewayProvider, LucideIcon> = { QRIS: QrCode, UPI: Landmark, BINANCE: Bitcoin, ESEWA: Banknote, NASIONALPAY: QrCode };
 
 const statusOf = (g: AdminGateway): GatewayStatus => (!g.enabled ? "off" : g.maintenance ? "maintenance" : "live");
 const withStatus = (g: AdminGateway, s: GatewayStatus): AdminGateway => ({ ...g, enabled: s !== "off", maintenance: s === "maintenance" });
@@ -145,8 +145,9 @@ function GatewayCard({ g, onEdit, shared, busy, onStatus }: {
   const required = meta.fields.filter((f) => f.required);
   const have = required.filter((f) => (g.creds[f.key] || shared[f.key] || "").trim()).length;
   const ready = have === required.length;
-  const ownKeys = Object.keys(g.creds).length > 0;
+  const ownKeys = required.some((f) => g.creds[f.key]);
   const status = statusOf(g);
+  const target = meta.payTarget ? Boolean(g.qrUrl || g.creds[meta.payTarget.key]) : true;
 
   return (
     <ListRow
@@ -154,14 +155,23 @@ function GatewayCard({ g, onEdit, shared, busy, onStatus }: {
       icon={ICON[g.provider]}
       title={g.name}
       dim={status === "off"}
-      badges={<Badge variant="outline">{meta.label}</Badge>}
+      badges={
+        <>
+          <Badge variant="outline">{meta.label}</Badge>
+          {meta.lockedCurrency ? <Badge variant="muted">{g.currency}</Badge> : null}
+        </>
+      }
       meta={
         <>
           <span>via {meta.via}</span>
           {required.length > 0 ? (
             <Badge variant={ready ? "success" : "warning"}><KeyRound /> {ready ? (ownKeys ? "Own keys" : "Shared keys") : `Keys ${have}/${required.length}`}</Badge>
           ) : null}
-          {meta.qr ? <Badge variant={g.qrUrl ? "highlight" : "warning"}>{g.qrUrl ? "QR uploaded" : "QR missing"}</Badge> : null}
+          {meta.payTarget ? (
+            <Badge variant={target ? "highlight" : "warning"}>
+              {g.qrUrl && g.creds[meta.payTarget.key] ? "QR + Pay ID" : g.qrUrl ? "QR uploaded" : g.creds[meta.payTarget.key] ? "Pay ID set" : "No QR / Pay ID"}
+            </Badge>
+          ) : meta.qr ? <Badge variant={g.qrUrl ? "highlight" : "warning"}>{g.qrUrl ? "QR uploaded" : "QR missing"}</Badge> : null}
           {status === "maintenance" ? <Badge variant="warning"><Wrench /> {g.maintenanceNote || "Maintenance"}</Badge> : null}
         </>
       }
@@ -184,23 +194,39 @@ function GatewayEditor({ g, codes, shared, busy, onSave, onClose, onDelete }: {
   const dirty = JSON.stringify(d) !== JSON.stringify(g);
   const setCred = (k: string, v: string) => setD({ ...d, creds: { ...d.creds, [k]: v } });
 
+  const status = statusOf(d);
+  const setStatus = (v: GatewayStatus) => setD(withStatus(d, v));
+
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
-        <Field label="Display name"><Input value={d.name} maxLength={60} onChange={(e) => setD({ ...d, name: e.target.value })} /></Field>
-        <Field label="Pay currency" hint={meta.lockedCurrency ? "Fixed by provider." : "Wallet credit converts at its rate."}>
-          <CurrencySelect value={d.currency} codes={codes} disabled={Boolean(meta.lockedCurrency)} onChange={(v) => setD({ ...d, currency: v })} />
+        <Field label="Display name" hint="What customers see on the deposit page."><Input value={d.name} maxLength={60} onChange={(e) => setD({ ...d, name: e.target.value })} /></Field>
+        <Field label="Currency" hint={meta.lockedCurrency ? "Locked by provider." : "Wallet credit converts at its rate."}>
+          <CurrencySelect value={d.currency} codes={codes.includes(d.currency) ? codes : [...codes, d.currency]} disabled={Boolean(meta.lockedCurrency)} onChange={(v) => setD({ ...d, currency: v })} />
         </Field>
       </div>
 
-      <Field label="Maintenance message" hint="Shown to customers while this gateway is in Maintenance (it stays visible but can’t be picked).">
-        <Textarea rows={2} maxLength={200} value={d.maintenanceNote} placeholder="Back in ~1 hour — please use another method." onChange={(e) => setD({ ...d, maintenanceNote: e.target.value })} />
-      </Field>
+      <div className="grid gap-3 rounded-xl border bg-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold">Status</p>
+            <p className="text-xs text-muted-foreground">
+              {meta.permanent ? "This gateway can’t be deleted — switch it Off to hide it." : "Off hides it from customers."}
+            </p>
+          </div>
+          <StatusSwitch value={status} disabled={busy} onChange={setStatus} />
+        </div>
+        {status === "maintenance" ? (
+          <Field label="Maintenance message" hint="Shown to customers on this gateway; they can’t select it meanwhile.">
+            <Textarea rows={2} maxLength={200} value={d.maintenanceNote} placeholder="Back in ~1 hour — please use another method." onChange={(e) => setD({ ...d, maintenanceNote: e.target.value })} />
+          </Field>
+        ) : null}
+      </div>
 
       {meta.fields.length > 0 ? (
         <div className="grid gap-4 rounded-xl border bg-card p-4">
           <div>
-            <p className="flex items-center gap-1.5 text-sm font-semibold"><KeyRound className="size-4 text-primary" /> Keys for this gateway</p>
+            <p className="flex items-center gap-1.5 text-sm font-semibold"><KeyRound className="size-4 text-primary" /> {meta.permanent ? "API setup" : "Keys for this gateway"}</p>
             <p className="text-xs text-muted-foreground">Leave a box empty to use the shared key from Settings / env. Fill it to give this gateway its own account.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -213,6 +239,15 @@ function GatewayEditor({ g, codes, shared, busy, onSave, onClose, onDelete }: {
                       <SelectItem value="shared">Use shared setting</SelectItem>
                       <SelectItem value="sandbox">Sandbox</SelectItem>
                       <SelectItem value="production">Production</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              ) : f.options ? (
+                <Field key={f.key} label={f.label}>
+                  <Select value={d.creds[f.key] || f.options[0].value} onValueChange={(v) => setCred(f.key, v)}>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {f.options.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </Field>
@@ -233,18 +268,42 @@ function GatewayEditor({ g, codes, shared, busy, onSave, onClose, onDelete }: {
         </div>
       ) : null}
 
-      {meta.qr ? <ImageUpload label="Payment QR" hint="Shown to customers on the payment ticket." value={d.qrUrl || null} onChange={(u) => setD({ ...d, qrUrl: u ?? "" })} endpoint="/api/admin/settings/deposit-qr" /> : null}
+      {meta.webhookPath ? (
+        <div className="grid gap-2 rounded-xl border bg-card p-4">
+          <p className="text-sm font-semibold">Callback URL</p>
+          <p className="text-xs text-muted-foreground">Paste this into the Callback URL field of your {meta.via} store so payments are confirmed automatically.</p>
+          <Input readOnly className="font-mono text-xs" value={`${typeof window === "undefined" ? "" : window.location.origin}${meta.webhookPath}`} onFocus={(e) => e.currentTarget.select()} />
+        </div>
+      ) : null}
+
+      {meta.payTarget ? (
+        <div className="grid gap-4 rounded-xl border bg-card p-4">
+          <div>
+            <p className="flex items-center gap-1.5 text-sm font-semibold"><QrCode className="size-4 text-primary" /> Where customers pay</p>
+            <p className="text-xs text-muted-foreground">Upload your Binance Pay QR or enter your Binance Pay ID — at least one is needed. Both can be shown together.</p>
+          </div>
+          <ImageUpload label="Payment QR" hint="Shown to customers on the payment ticket." value={d.qrUrl || null} onChange={(u) => setD({ ...d, qrUrl: u ?? "" })} endpoint="/api/admin/settings/deposit-qr" />
+          <Field label={meta.payTarget.label} hint="Customers can send to this ID instead of scanning.">
+            <Input
+              inputMode="numeric"
+              autoComplete="off"
+              className="font-mono text-xs"
+              value={d.creds[meta.payTarget.key] ?? ""}
+              placeholder={shared[meta.payTarget.key] ? "Using shared Pay ID" : "e.g. 123456789"}
+              onChange={(e) => setCred(meta.payTarget!.key, e.target.value)}
+            />
+          </Field>
+        </div>
+      ) : meta.qr ? (
+        <ImageUpload label="Payment QR" hint="Shown to customers on the payment ticket." value={d.qrUrl || null} onChange={(u) => setD({ ...d, qrUrl: u ?? "" })} endpoint="/api/admin/settings/deposit-qr" />
+      ) : null}
 
       <EditorFooter
         busy={busy}
         dirty={dirty}
         onSave={() => onSave(d)}
         onCancel={onClose}
-        extra={
-          <>
-            <InlineDelete busy={busy} onConfirm={onDelete} />
-          </>
-        }
+        extra={meta.permanent ? <span className="text-xs text-muted-foreground">Permanent gateway</span> : <InlineDelete busy={busy} onConfirm={onDelete} />}
       />
     </>
   );

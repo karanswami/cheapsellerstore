@@ -121,7 +121,7 @@ export async function listPrizesAdmin(): Promise<SpinPrizeAdmin[]> {
       kind: r.kind as SpinKind,
       label: r.label,
       durationId: r.durationId,
-      durationName: d ? `${d.product.title} — ${d.version ? `${d.version} ` : ""}${d.label}` : null,
+      durationName: d ? `${d.product.title} — ${d.label}` : null,
       quantity: r.quantity,
       walletAmount: r.walletAmount,
       couponPercent: r.couponPercent,
@@ -146,7 +146,7 @@ export async function listDurationOptions(): Promise<DurationOption[]> {
     id: d.id,
     productId: d.productId,
     productTitle: d.product.title,
-    label: `${d.version ? `${d.version} ` : ""}${d.label}`,
+    label: d.label,
     stock: stock.get(d.id) ?? 0,
   }));
 }
@@ -304,7 +304,7 @@ async function deliverKeys(input: { userId: string; email: string; prize: Candid
           durationId: duration.id,
           keyId: key.id,
           productTitle: duration.product.title,
-          durationLabel: `${duration.version ? `${duration.version} ` : ""}${duration.label}`,
+          durationLabel: duration.label,
           unitPrice: 0,
         },
       });

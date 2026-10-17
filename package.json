@@ -15,7 +15,6 @@
     "db:seed-support-bot": "tsx prisma/seed-support-bot.ts",
     "db:seed-faqs": "tsx prisma/seed-faqs.ts",
     "db:seed-pages": "tsx prisma/seed-static-pages.ts",
-    "db:backfill-api-codes": "tsx prisma/backfill-api-codes.ts",
     "db:backfill-reseller-deposits": "tsx prisma/backfill-reseller-deposits-disabled.ts",
     "db:enforce-single-api-key": "tsx prisma/enforce-single-api-key.ts",
     "cap:sync": "cap sync android",

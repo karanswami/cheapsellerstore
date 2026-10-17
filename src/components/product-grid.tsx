@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { getCategoryLucideIcon } from "@/lib/category-icons";
 import { ProductCard } from "@/components/product-card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -35,10 +36,12 @@ export function ProductGrid({
   const [category, setCategory] = useState("All");
   const [query, setQuery] = useState("");
 
-  const categories = useMemo(
-    () => ["All", ...Array.from(new Set(products.map((p) => p.category?.name).filter((n): n is string => !!n)))],
-    [products],
-  );
+  const categories = useMemo(() => {
+    const seen = new Map<string, NonNullable<ProductCardData["category"]>>();
+    for (const p of products) if (p.category && !seen.has(p.category.name)) seen.set(p.category.name, p.category);
+    const ordered = [...seen.values()].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    return [{ name: "All", icon: null as string | null, slug: "" }, ...ordered];
+  }, [products]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -83,20 +86,24 @@ export function ProductGrid({
 
       {categories.length > 2 ? (
         <div className="mb-6 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={cn(
-                "h-10 shrink-0 rounded-full border px-5 text-sm font-medium transition-all hover:border-primary/50 hover:text-foreground",
-                category === c
-                  ? "border-transparent bg-brand-gradient text-primary-foreground glow-primary"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              {c}
-            </button>
-          ))}
+          {categories.map((c) => {
+            const Icon = c.name === "All" ? null : getCategoryLucideIcon(c.icon, c.slug);
+            return (
+              <button
+                key={c.name}
+                onClick={() => setCategory(c.name)}
+                className={cn(
+                  "inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-5 text-sm font-medium transition-all hover:border-primary/50 hover:text-foreground",
+                  category === c.name
+                    ? "border-transparent bg-brand-gradient text-primary-foreground glow-primary"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {Icon ? <Icon className="size-4" /> : null}
+                {c.name}
+              </button>
+            );
+          })}
         </div>
       ) : null}
 

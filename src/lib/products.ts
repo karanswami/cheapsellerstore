@@ -14,7 +14,7 @@ import {
 import { Currency } from "@/lib/currencies";
 import { getSpecialPricesForUser, resolveUnitPrice } from "@/lib/pricing";
 import { getDefaultProductDemoUrl } from "@/lib/settings";
-import { getEffectiveStockByDuration } from "@/lib/supplier/stock";
+import { countAvailableKeysByDuration } from "@/lib/keys";
 import { type Prisma, type UserRole } from "@prisma/client";
 
 function productInclude(currency: Currency) {
@@ -123,7 +123,6 @@ function mapProductCard(
       return {
         id: duration.id,
         label: duration.label,
-        version: duration.version ?? "",
         days: duration.days,
         price,
         listPrice: flash && listPrice != null ? listPrice : null,
@@ -174,6 +173,7 @@ function mapProductCard(
           name: product.category.name,
           slug: product.category.slug,
           icon: product.category.icon ?? null,
+          sortOrder: product.category.sortOrder,
         }
       : null,
     durations,
@@ -254,7 +254,7 @@ export async function getProductsPage(options?: {
   );
 
   const durationIds = cards.flatMap((p) => p.durations.map((d) => d.id));
-  const stockMap = await getEffectiveStockByDuration(durationIds);
+  const stockMap = await countAvailableKeysByDuration(durationIds);
   for (const card of cards) {
     for (const d of card.durations) {
       d.stock = stockMap.get(d.id) ?? d.stock;
@@ -326,7 +326,7 @@ export async function getProductsByIds(
     .filter((product): product is ProductCardData => Boolean(product));
 
   const durationIds = cards.flatMap((p) => p.durations.map((d) => d.id));
-  const stockMap = await getEffectiveStockByDuration(durationIds);
+  const stockMap = await countAvailableKeysByDuration(durationIds);
   for (const card of cards) {
     for (const d of card.durations) {
       d.stock = stockMap.get(d.id) ?? d.stock;

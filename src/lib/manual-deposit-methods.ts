@@ -205,7 +205,7 @@ export async function getManualDepositMethods(): Promise<ManualDepositMethod[]> 
     // Load without registry filter so existing methods stay readable even if
     // a currency was temporarily missing; save path enforces registry.
     const normalized = normalizeManualDepositMethods(parsed);
-    if (normalized.length === 0) return defaultManualDepositMethods();
+    // An explicitly saved empty list means the admin removed every method.
     return normalized;
   } catch {
     return defaultManualDepositMethods();
@@ -218,11 +218,6 @@ export async function saveManualDepositMethods(
   const currencies = await getDepositCurrencies();
   const allowed = new Set(currencies.map((c) => c.code));
   const normalized = normalizeManualDepositMethods(methods, allowed);
-  if (normalized.length === 0) {
-    throw new Error(
-      "At least one valid manual deposit method is required. Add a currency under Rates first, then attach a method to it.",
-    );
-  }
   for (const m of methods) {
     const code = normalizeDepositCurrencyCode(m.currency);
     if (!code || !isCurrencyRegistered(currencies, code)) {

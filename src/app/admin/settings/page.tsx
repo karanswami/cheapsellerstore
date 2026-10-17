@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/app-ui";
 import { AdminSettingsClient } from "./settings-client";
 
-const TABS = ["general", "commerce", "sellers", "integrations", "notifications", "supplier"];
+const TABS = ["general", "commerce", "sellers", "integrations", "notifications"];
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams;

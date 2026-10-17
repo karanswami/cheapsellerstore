@@ -25,7 +25,7 @@ export const DEFAULT_DEPOSIT_CURRENCIES: DepositCurrencyDef[] = [
 ];
 
 /** Auto-rail currencies that must stay registered (cannot delete). */
-export const LOCKED_DEPOSIT_CURRENCY_CODES = ["USD", "INR", "IDR", "NPR"] as const;
+export const LOCKED_DEPOSIT_CURRENCY_CODES = ["USD"] as const;
 
 export function isDepositCurrencyCode(raw: unknown): raw is string {
   return typeof raw === "string" && DEPOSIT_CURRENCY_CODE_RE.test(raw.trim().toUpperCase());

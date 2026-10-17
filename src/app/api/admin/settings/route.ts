@@ -82,7 +82,6 @@ import {
   getSettingInt,
   getSettingText,
   getSpecialStockDeveloperSharePercent,
-  getSupplierBuyPricePercent,
   isResellerAutoApprove,
   isResellerProgramEnabled,
   SETTING_KEYS,
@@ -147,7 +146,7 @@ const depositMethodsSchema = z.object({
 
 const gatewaySchema = z.object({
   id: z.string().max(40).optional(),
-  provider: z.enum(["QRIS", "UPI", "BINANCE", "ESEWA"]),
+  provider: z.enum(["QRIS", "UPI", "BINANCE", "ESEWA", "NASIONALPAY"]),
   name: z.string().trim().min(1).max(60),
   currency: z.string().trim().max(8),
   enabled: z.boolean(),
@@ -176,7 +175,7 @@ const manualMethodSchema = z.object({
   sortOrder: z.number().int().min(0).max(9999),
 });
 
-const manualDepositMethodsSchema = z.array(manualMethodSchema).min(1);
+const manualDepositMethodsSchema = z.array(manualMethodSchema);
 
 const feedbackSoundsSchema = z.object({
   hapticsEnabled: z.boolean(),
@@ -244,7 +243,6 @@ export async function GET() {
     sellerProgram: await getSellerProgramConfig(),
     developerProfitSharePercent: await getDeveloperProfitSharePercent(),
     specialStockDeveloperSharePercent: await getSpecialStockDeveloperSharePercent(),
-    supplierBuyPricePercent: await getSupplierBuyPricePercent(),
     defaultProductDemoUrl: await getDefaultProductDemoUrl(),
     googleClientId: await getGoogleClientId(),
     googleClientSecret: await getGoogleClientSecret(),
@@ -310,7 +308,6 @@ const schema = z.object({
     .optional(),
   developerProfitSharePercent: z.number().min(0).max(100).optional(),
   specialStockDeveloperSharePercent: z.number().min(0).max(100).optional(),
-  supplierBuyPricePercent: z.number().min(0).max(100).optional(),
   defaultProductDemoUrl: z
     .string()
     .trim()
@@ -447,7 +444,7 @@ export async function PATCH(request: Request) {
     const normalized = normalizeManualDepositMethods(
       d.manualDepositMethods as ManualDepositMethod[],
     );
-    if (normalized.length === 0) {
+    if (normalized.length === 0 && d.manualDepositMethods.length > 0) {
       return jsonError("VALIDATION", "Invalid manual deposit methods.", 400);
     }
     try {
@@ -543,12 +540,6 @@ export async function PATCH(request: Request) {
     await upsertSetting({
       key: SETTING_KEYS.specialStockDeveloperSharePercent,
       intValue: Math.round(d.specialStockDeveloperSharePercent),
-    });
-  }
-  if (d.supplierBuyPricePercent !== undefined) {
-    await upsertSetting({
-      key: SETTING_KEYS.supplierBuyPricePercent,
-      intValue: Math.round(d.supplierBuyPricePercent),
     });
   }
   if (d.defaultProductDemoUrl !== undefined) {

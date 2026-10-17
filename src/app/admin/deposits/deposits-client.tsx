@@ -7,6 +7,7 @@ import { EmptyState, StatusBadge, formatDate } from "@/components/app-ui";
 import { Chips, Field, Pager, SearchBox, StatCard, TableSkeleton, adminFetch, errMsg, useAdminList, useDebounced } from "@/components/admin/kit";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { formatMoney } from "@/lib/currencies";
@@ -81,7 +82,6 @@ export function AdminDepositsClient() {
     set(v);
     setPage(1);
   };
-  const selectCls = "h-8 rounded-lg border bg-background px-2 text-xs";
 
   return (
     <div className="space-y-4">
@@ -94,87 +94,146 @@ export function AdminDepositsClient() {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 lg:flex-row lg:items-center lg:justify-between">
-        <Chips value={status} onChange={reset(setStatus)} options={STATUS_FILTERS} />
-        <div className="flex flex-wrap items-center gap-2">
-          <SearchBox value={q} onChange={reset(setQ)} placeholder="User, email or deposit ID…" />
-          <select value={proof} onChange={(e) => reset(setProof)(e.target.value)} className={selectCls} aria-label="Proof">
-            {PROOF_FILTERS.map((f) => (
-              <option key={f.v} value={f.v}>
-                {f.label}
-              </option>
-            ))}
-          </select>
-          {methods.length > 1 ? (
-            <select value={method} onChange={(e) => reset(setMethod)(e.target.value)} className={selectCls} aria-label="Method">
-              <option value="">All methods</option>
-              {methods.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
+      <div className="space-y-3 rounded-xl border bg-card p-3">
+        <div className="-mx-3 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="w-max">
+            <Chips value={status} onChange={reset(setStatus)} options={STATUS_FILTERS} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <SearchBox value={q} onChange={reset(setQ)} placeholder="User, email or deposit ID…" className="col-span-2 sm:w-72" />
+          <Select value={proof} onValueChange={reset(setProof)}>
+            <SelectTrigger size="sm" className="w-full sm:w-36" aria-label="Proof">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PROOF_FILTERS.map((f) => (
+                <SelectItem key={f.v} value={f.v}>
+                  {f.label}
+                </SelectItem>
               ))}
-            </select>
+            </SelectContent>
+          </Select>
+          {methods.length > 1 ? (
+            <Select value={method || "all"} onValueChange={(v) => reset(setMethod)(v === "all" ? "" : v)}>
+              <SelectTrigger size="sm" className="w-full sm:w-44" aria-label="Method">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All methods</SelectItem>
+                {methods.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : null}
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card">
-        {list.loading && list.items.length === 0 ? (
+      {list.loading && list.items.length === 0 ? (
+        <div className="rounded-xl border bg-card">
           <TableSkeleton />
-        ) : list.items.length === 0 ? (
-          <div className="p-6">
-            <EmptyState icon={Wallet} title="No deposits" hint="Nothing matches these filters." />
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead className="text-right">Credit</TableHead>
-                <TableHead>Proof</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="w-44" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.items.map((d) => {
-                const open = isOpenStatus(d.status);
-                return (
-                  <TableRow key={d.id} className="cursor-pointer" onClick={() => setActive({ deposit: d, step: "view" })}>
-                    <TableCell>
-                      <p className="text-sm font-medium">@{d.user.username}</p>
-                      <p className="text-xs text-muted-foreground">{d.user.email}</p>
-                    </TableCell>
-                    <TableCell className="text-sm">{d.manualMethodName ?? d.method}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatMoney(d.amount)}</TableCell>
-                    <TableCell>{d.proofImage ? <ImageIcon className="size-4 text-primary" /> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
-                    <TableCell>
+        </div>
+      ) : list.items.length === 0 ? (
+        <div className="rounded-xl border bg-card p-6">
+          <EmptyState icon={Wallet} title="No deposits" hint="Nothing matches these filters." />
+        </div>
+      ) : (
+        <>
+          {/* Mobile: stacked cards, no horizontal scroll */}
+          <ul className="space-y-2.5 md:hidden">
+            {list.items.map((d) => {
+              const open = isOpenStatus(d.status);
+              return (
+                <li key={d.id} className="overflow-hidden rounded-xl border bg-card">
+                  <button type="button" onClick={() => setActive({ deposit: d, step: "view" })} className="block w-full p-3.5 text-left active:bg-accent/50">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">@{d.user.username}</p>
+                        <p className="truncate text-xs text-muted-foreground">{d.user.email}</p>
+                      </div>
+                      <p className="shrink-0 text-base font-semibold tabular-nums">{formatMoney(d.amount)}</p>
+                    </div>
+                    <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
                       <StatusBadge status={d.status} />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(d.proofUploadedAt ?? d.createdAt, true)}</TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      {open ? (
-                        <div className="flex justify-end gap-1.5">
-                          <Button size="sm" variant="outline" onClick={() => setActive({ deposit: d, step: "reject" })}>
-                            <X /> Reject
-                          </Button>
-                          <Button size="sm" onClick={() => setActive({ deposit: d, step: "approve" })}>
-                            <Check /> Approve
-                          </Button>
-                        </div>
-                      ) : (
-                        <Eye className="ml-auto size-4 text-muted-foreground" />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                      <span className="min-w-0 truncate">{d.manualMethodName ?? d.method}</span>
+                      {d.proofImage ? (
+                        <span className="inline-flex items-center gap-1 text-primary">
+                          <ImageIcon className="size-3.5" /> Proof
+                        </span>
+                      ) : null}
+                      <span className="ml-auto">{formatDate(d.proofUploadedAt ?? d.createdAt, true)}</span>
+                    </div>
+                  </button>
+                  {open ? (
+                    <div className="grid grid-cols-2 gap-2 border-t bg-muted/30 p-2.5">
+                      <Button size="sm" variant="outline" onClick={() => setActive({ deposit: d, step: "reject" })}>
+                        <X /> Reject
+                      </Button>
+                      <Button size="sm" onClick={() => setActive({ deposit: d, step: "approve" })}>
+                        <Check /> Approve
+                      </Button>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Desktop: table */}
+          <div className="hidden rounded-xl border bg-card md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead className="text-right">Credit</TableHead>
+                  <TableHead>Proof</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden lg:table-cell">Date</TableHead>
+                  <TableHead className="w-44" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.items.map((d) => {
+                  const open = isOpenStatus(d.status);
+                  return (
+                    <TableRow key={d.id} className="cursor-pointer" onClick={() => setActive({ deposit: d, step: "view" })}>
+                      <TableCell className="max-w-56">
+                        <p className="truncate text-sm font-medium">@{d.user.username}</p>
+                        <p className="truncate text-xs text-muted-foreground">{d.user.email}</p>
+                      </TableCell>
+                      <TableCell className="text-sm">{d.manualMethodName ?? d.method}</TableCell>
+                      <TableCell className="text-right font-semibold">{formatMoney(d.amount)}</TableCell>
+                      <TableCell>{d.proofImage ? <ImageIcon className="size-4 text-primary" /> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={d.status} />
+                      </TableCell>
+                      <TableCell className="hidden whitespace-nowrap text-xs text-muted-foreground lg:table-cell">{formatDate(d.proofUploadedAt ?? d.createdAt, true)}</TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        {open ? (
+                          <div className="flex justify-end gap-1.5">
+                            <Button size="sm" variant="outline" onClick={() => setActive({ deposit: d, step: "reject" })}>
+                              <X /> Reject
+                            </Button>
+                            <Button size="sm" onClick={() => setActive({ deposit: d, step: "approve" })}>
+                              <Check /> Approve
+                            </Button>
+                          </div>
+                        ) : (
+                          <Eye className="ml-auto size-4 text-muted-foreground" />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
       <Pager page={page} pageSize={LIMIT} total={list.total} onPage={setPage} loading={list.loading} />
       <ReviewDialog
         key={active?.deposit.id}
@@ -184,6 +243,7 @@ export function AdminDepositsClient() {
         onDone={() => {
           setActive(null);
           list.reload();
+          window.dispatchEvent(new Event("admin:badges-refresh"));
         }}
       />
     </div>
@@ -195,7 +255,6 @@ const isOpenStatus = (s: string) => s === "PENDING" || s === "PROCESSING";
 
 function ReviewDialog({ deposit, initialStep, onClose, onDone }: { deposit: Deposit | null; initialStep: Step; onClose: () => void; onDone: () => void }) {
   const [step, setStep] = useState<Step>(initialStep);
-  const [note, setNote] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const isOpen = !!deposit && isOpenStatus(deposit.status);
@@ -207,7 +266,7 @@ function ReviewDialog({ deposit, initialStep, onClose, onDone }: { deposit: Depo
     try {
       await adminFetch(`/api/admin/deposits/${deposit.id}`, {
         method: "PATCH",
-        json: { action, note: (action === "reject" ? reason : note).trim() || undefined },
+        json: { action, note: action === "reject" ? reason.trim() : undefined },
       });
       toast.success(action === "approve" ? "Deposit approved and credited." : "Deposit rejected.");
       onDone();
@@ -218,103 +277,106 @@ function ReviewDialog({ deposit, initialStep, onClose, onDone }: { deposit: Depo
     }
   }
 
+  const title = step === "approve" ? "Approve deposit" : step === "reject" ? "Reject deposit" : "Deposit review";
+
   return (
     <Dialog open={!!deposit} onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg gap-0 p-0 sm:p-0">
         {deposit ? (
           <>
-            <DialogHeader>
-              <DialogTitle>
-                {step === "approve" ? "Approve deposit" : step === "reject" ? "Reject deposit" : `Deposit #${deposit.id.slice(-8).toUpperCase()}`}
-              </DialogTitle>
-              <DialogDescription>
-                @{deposit.user.username} · {deposit.user.email}
+            <DialogHeader className="border-b p-5 pr-12">
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription className="truncate">
+                #{deposit.id.slice(-8).toUpperCase()} · @{deposit.user.username}
                 {deposit.user.banned ? " · banned" : ""}
               </DialogDescription>
             </DialogHeader>
 
-            {step === "view" ? (
-              <>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <Info k="Status" v={<StatusBadge status={deposit.status} />} />
-                  <Info k="Method" v={deposit.manualMethodName ?? deposit.method} />
-                  <Info k="Wallet credit" v={formatMoney(deposit.amount)} />
-                  <Info k="Requested" v={`${deposit.requestedAmount} ${deposit.payCurrency}`} />
+            <div className="space-y-4 p-5">
+              <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/60 p-4">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">{step === "approve" ? "Will be credited" : "Wallet credit"}</p>
+                  <p className="text-2xl font-semibold tabular-nums">{formatMoney(deposit.amount)}</p>
                 </div>
-                {deposit.proofImage ? (
-                  <a href={deposit.proofImage} target="_blank" rel="noreferrer">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={deposit.proofImage} alt="Payment proof" className="max-h-72 w-full rounded-lg border object-contain" />
-                  </a>
-                ) : (
-                  <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">No proof uploaded.</p>
-                )}
-                {deposit.adminNote || deposit.failReason ? (
-                  <p className="rounded-lg bg-muted p-3 text-sm">{deposit.adminNote || deposit.failReason}</p>
-                ) : null}
-                {isOpen ? (
-                  <DialogFooter>
+                <StatusBadge status={deposit.status} />
+              </div>
+
+              {step === "view" ? (
+                <>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    <Info k="User" v={<span className="break-all">{deposit.user.email}</span>} />
+                    <Info k="Method" v={deposit.manualMethodName ?? deposit.method} />
+                    <Info k="Requested" v={`${deposit.requestedAmount} ${deposit.payCurrency}`} />
+                    <Info k="Submitted" v={formatDate(deposit.proofUploadedAt ?? deposit.createdAt, true)} />
+                  </div>
+                  {deposit.proofImage ? (
+                    <a href={deposit.proofImage} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border bg-muted/30">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={deposit.proofImage} alt="Payment proof" className="max-h-64 w-full object-contain" />
+                    </a>
+                  ) : (
+                    <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">No proof uploaded.</p>
+                  )}
+                  {deposit.adminNote || deposit.failReason ? <p className="rounded-lg bg-muted p-3 text-sm">{deposit.adminNote || deposit.failReason}</p> : null}
+                </>
+              ) : null}
+
+              {step === "approve" ? (
+                <p className="text-xs text-muted-foreground">
+                  {deposit.manualMethodName ?? deposit.method} · {deposit.proofImage ? "proof attached" : "no proof uploaded"}
+                </p>
+              ) : null}
+
+              {step === "reject" ? (
+                <>
+                  <Field label="Reason (shown to user)">
+                    <Textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} rows={3} placeholder="Why is this deposit being rejected?" autoFocus />
+                  </Field>
+                  <div className="flex flex-wrap gap-1.5">
+                    {REJECT_REASONS.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setReason(r)}
+                        className={`rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent hover:text-foreground ${reason === r ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground"}`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            {step === "view" && !isOpen ? null : (
+              <DialogFooter className="border-t bg-muted/30 p-4">
+                {step === "view" ? (
+                  <>
                     <Button variant="outline" onClick={() => setStep("reject")}>
                       <X /> Reject
                     </Button>
                     <Button onClick={() => setStep("approve")}>
                       <Check /> Approve
                     </Button>
-                  </DialogFooter>
-                ) : null}
-              </>
-            ) : null}
-
-            {step === "approve" ? (
-              <>
-                <div className="rounded-lg border bg-muted/40 p-4 text-sm">
-                  <p className="text-xs text-muted-foreground">Will be credited to wallet</p>
-                  <p className="text-2xl font-semibold">{formatMoney(deposit.amount)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {deposit.manualMethodName ?? deposit.method} · {deposit.proofImage ? "proof attached" : "no proof uploaded"}
-                  </p>
-                </div>
-                <Field label="Note to user (optional)">
-                  <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2} placeholder="Add a message…" />
-                </Field>
-                <DialogFooter>
-                  <Button variant="ghost" disabled={busy} onClick={() => setStep("view")}>
-                    Back
-                  </Button>
-                  <Button disabled={busy} onClick={() => act("approve")}>
-                    <Check /> {busy ? "Approving…" : "Approve & credit"}
-                  </Button>
-                </DialogFooter>
-              </>
-            ) : null}
-
-            {step === "reject" ? (
-              <>
-                <Field label="Reason (shown to user)">
-                  <Textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} rows={3} placeholder="Why is this deposit being rejected?" autoFocus />
-                </Field>
-                <div className="flex flex-wrap gap-1.5">
-                  {REJECT_REASONS.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setReason(r)}
-                      className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-                <DialogFooter>
-                  <Button variant="ghost" disabled={busy} onClick={() => setStep("view")}>
-                    Back
-                  </Button>
-                  <Button variant="destructive" disabled={busy || !reasonOk} onClick={() => act("reject")}>
-                    <X /> {busy ? "Rejecting…" : "Reject deposit"}
-                  </Button>
-                </DialogFooter>
-              </>
-            ) : null}
+                  </>
+                ) : (
+                  <>
+                    <Button variant="ghost" disabled={busy} onClick={() => setStep("view")}>
+                      Back
+                    </Button>
+                    {step === "approve" ? (
+                      <Button disabled={busy} onClick={() => act("approve")}>
+                        <Check /> {busy ? "Approving…" : "Approve & credit"}
+                      </Button>
+                    ) : (
+                      <Button variant="destructive" disabled={busy || !reasonOk} onClick={() => act("reject")}>
+                        <X /> {busy ? "Rejecting…" : "Reject deposit"}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </DialogFooter>
+            )}
           </>
         ) : null}
       </DialogContent>

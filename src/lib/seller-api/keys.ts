@@ -531,7 +531,7 @@ export async function listUserApiPurchases(input: {
           productTitle: true,
           durationLabel: true,
           unitPrice: true,
-          duration: { select: { apiCode: true } },
+          duration: { select: { number: true } },
         },
         orderBy: { createdAt: "asc" },
       },
@@ -572,7 +572,7 @@ export async function listUserApiPurchases(input: {
         status: order.status,
         productTitle: first?.productTitle ?? "Product",
         durationLabel: first?.durationLabel ?? null,
-        durationApiCode: first?.duration?.apiCode ?? null,
+        durationSku: first?.duration?.number ?? null,
         quantity: qty,
         uniqueProducts: new Set(products.map((p) => p.productTitle)).size,
         subtotalMicrocents: subtotal,
@@ -581,7 +581,7 @@ export async function listUserApiPurchases(input: {
         items: products.map((p) => ({
           productTitle: p.productTitle,
           durationLabel: p.durationLabel,
-          durationApiCode: p.duration?.apiCode ?? null,
+          durationSku: p.duration?.number ?? null,
           unitPriceMicrocents: p.unitPrice,
         })),
       };

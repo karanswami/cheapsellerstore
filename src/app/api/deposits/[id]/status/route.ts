@@ -26,7 +26,8 @@ export async function GET(_request: Request, { params }: Params) {
     if (
       (raw.method === DepositMethod.UPI && ageMs >= 15_000) ||
       (raw.method === DepositMethod.BINANCE && ageMs >= 5_000) ||
-      (raw.method === DepositMethod.QRIS && ageMs >= 5_000)
+      (raw.method === DepositMethod.QRIS && ageMs >= 5_000) ||
+      (raw.method === DepositMethod.NASIONALPAY && ageMs >= 5_000)
     ) {
       await recheckDepositNow(raw, {
         allowedStatuses: CRON_RECHECK_ALLOWED_STATUSES,

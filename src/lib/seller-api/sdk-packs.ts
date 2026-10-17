@@ -82,7 +82,7 @@ function buildPythonSdk(base: string): string {
 Env:
   DRIP_API_BASE  (default ${base})
   DRIP_API_KEY   (required for private calls)
-  DRIP_SKU       (default SANDBOX-DEMO-30D)
+  DRIP_SKU       (default 499)
   DRIP_QTY       (default 1)
 
 Never send price in POST /orders — the server ignores client prices.
@@ -98,7 +98,7 @@ import urllib.request
 
 BASE = os.environ.get("DRIP_API_BASE", "${base}").rstrip("/")
 API_KEY = os.environ.get("DRIP_API_KEY", "").strip()
-SKU = os.environ.get("DRIP_SKU", "SANDBOX-DEMO-30D")
+SKU = os.environ.get("DRIP_SKU", "499")
 QTY = int(os.environ.get("DRIP_QTY", "1"))
 
 
@@ -134,7 +134,7 @@ def main() -> None:
     if not items:
         print(json.dumps(catalog, indent=2))
         sys.exit(1)
-    sku = SKU if any(i.get("apiCode") == SKU for i in items) else items[0]["apiCode"]
+    sku = SKU if any(str(i.get("sku")) == SKU for i in items) else str(items[0]["sku"])
     print("using sku", sku)
 
     status, bal = request("GET", "/api/v1/balance", auth=True)
@@ -169,7 +169,7 @@ function buildNodeSdk(base: string): string {
  * Env:
  *   DRIP_API_BASE  (default ${base})
  *   DRIP_API_KEY   (required for private calls)
- *   DRIP_SKU       (default SANDBOX-DEMO-30D)
+ *   DRIP_SKU       (default 499)
  *   DRIP_QTY       (default 1)
  *
  * Never send price in POST /orders — the server ignores client prices.
@@ -178,7 +178,7 @@ import { randomUUID } from "node:crypto";
 
 const BASE = (process.env.DRIP_API_BASE || "${base}").replace(/\\/$/, "");
 const API_KEY = (process.env.DRIP_API_KEY || "").trim();
-const SKU = process.env.DRIP_SKU || "SANDBOX-DEMO-30D";
+const SKU = process.env.DRIP_SKU || "499";
 const QTY = Number(process.env.DRIP_QTY || "1");
 
 async function request(method, path, { auth = false, body, idempotency } = {}) {
@@ -207,7 +207,7 @@ if (!items.length) {
   console.log(JSON.stringify(catalog, null, 2));
   process.exit(1);
 }
-const sku = items.some((i) => i.apiCode === SKU) ? SKU : items[0].apiCode;
+const sku = items.some((i) => String(i.sku) === SKU) ? SKU : String(items[0].sku);
 console.log("using sku", sku);
 
 const { status: balStatus, json: bal } = await request("GET", "/api/v1/balance", {
@@ -236,7 +236,7 @@ function buildPhpSdk(base: string): string {
  * Env:
  *   DRIP_API_BASE  (default ${base})
  *   DRIP_API_KEY   (required for private calls)
- *   DRIP_SKU       (default SANDBOX-DEMO-30D)
+ *   DRIP_SKU       (default 499)
  *   DRIP_QTY       (default 1)
  *
  * Never send price in POST /orders — the server ignores client prices.
@@ -244,7 +244,7 @@ function buildPhpSdk(base: string): string {
 
 $base = rtrim(getenv('DRIP_API_BASE') ?: '${base}', '/');
 $apiKey = trim((string) (getenv('DRIP_API_KEY') ?: ''));
-$sku = getenv('DRIP_SKU') ?: 'SANDBOX-DEMO-30D';
+$sku = getenv('DRIP_SKU') ?: '499';
 $qty = (int) (getenv('DRIP_QTY') ?: '1');
 
 function drip_request(string $method, string $path, bool $auth = false, ?array $body = null, ?string $idempotency = null): array {
@@ -287,8 +287,8 @@ if (!$items) {
     echo json_encode($catalog, JSON_PRETTY_PRINT) . "\\n";
     exit(1);
 }
-$codes = array_column($items, 'apiCode');
-$useSku = in_array($sku, $codes, true) ? $sku : $items[0]['apiCode'];
+$codes = array_map('strval', array_column($items, 'sku'));
+$useSku = in_array($sku, $codes, true) ? $sku : (string) $items[0]['sku'];
 echo "using sku {$useSku}\\n";
 
 [$status, $bal] = drip_request('GET', '/api/v1/balance', true);
@@ -314,7 +314,7 @@ function buildGoSdk(base: string): string {
 // Env:
 //   DRIP_API_BASE  (default ${base})
 //   DRIP_API_KEY   (required for private calls)
-//   DRIP_SKU       (default SANDBOX-DEMO-30D)
+//   DRIP_SKU       (default 499)
 //   DRIP_QTY       (default 1)
 //
 // Never send price in POST /orders — the server ignores client prices.
@@ -379,7 +379,7 @@ func request(method, path string, auth bool, body any, idempotency string) (int,
 
 func main() {
 	apiKey := os.Getenv("DRIP_API_KEY")
-	skuWant := env("DRIP_SKU", "SANDBOX-DEMO-30D")
+	skuWant := env("DRIP_SKU", "499")
 	qty, _ := strconv.Atoi(env("DRIP_QTY", "1"))
 
 	status, catalog, err := request("GET", "/api/v1/products", apiKey != "", nil, "")
@@ -398,14 +398,14 @@ func main() {
 	found := false
 	for _, it := range items {
 		m, _ := it.(map[string]any)
-		if m["apiCode"] == skuWant {
+		if fmt.Sprint(m["sku"]) == skuWant {
 			found = true
 			break
 		}
 	}
 	if !found {
 		m, _ := items[0].(map[string]any)
-		sku, _ = m["apiCode"].(string)
+		sku = fmt.Sprint(m["sku"])
 	}
 	fmt.Println("using sku", sku)
 
@@ -445,7 +445,7 @@ set -euo pipefail
 BASE="\${DRIP_API_BASE:-${base}}"
 BASE="\${BASE%/}"
 KEY="\${DRIP_API_KEY:-}"
-SKU="\${DRIP_SKU:-SANDBOX-DEMO-30D}"
+SKU="\${DRIP_SKU:-499}"
 ORDER_ID="\${DRIP_ORDER_ID:-ORDER_ID}"
 AUTH=()
 if [[ -n "\$KEY" ]]; then
@@ -455,8 +455,8 @@ fi
 echo "== GET /api/v1/products =="
 curl -sS -H "Accept: application/json" "\${AUTH[@]}" "\$BASE/api/v1/products" | jq .
 
-echo "== GET /api/v1/products/SANDBOX-DEMO =="
-curl -sS -H "Accept: application/json" "\${AUTH[@]}" "\$BASE/api/v1/products/SANDBOX-DEMO" | jq .
+echo "== GET /api/v1/products/0 =="
+curl -sS -H "Accept: application/json" "\${AUTH[@]}" "\$BASE/api/v1/products/0" | jq .
 
 echo "== GET /api/v1/pricing?sku=\$SKU =="
 curl -sS -H "Accept: application/json" "\${AUTH[@]}" "\$BASE/api/v1/pricing?sku=\$SKU" | jq .

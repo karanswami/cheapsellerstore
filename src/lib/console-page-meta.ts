@@ -29,7 +29,6 @@ import {
   Store,
   Tag,
   Trophy,
-  Truck,
   User,
   UserPlus,
   Users,
@@ -181,12 +180,6 @@ const ADMIN_ROUTES: RouteEntry[] = [
     title: "Keys",
     subtitle: "Stock inventory and import",
     icon: KeyRound,
-  },
-  {
-    path: "/admin/supplier",
-    title: "Supplier",
-    subtitle: "Upstream key API and call logs",
-    icon: Truck,
   },
   {
     path: "/admin/key-check",

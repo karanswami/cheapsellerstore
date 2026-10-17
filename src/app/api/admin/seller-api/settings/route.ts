@@ -26,6 +26,7 @@ export async function PATCH(req: Request) {
     platformEnabled?: boolean;
     allowedRoles?: ApiAllowedRoles;
     defaultRateLimitRpm?: number;
+    publicRateLimitRpm?: number;
     burstLimit?: number;
     maxKeysPerUser?: number;
     sandboxEnabled?: boolean;

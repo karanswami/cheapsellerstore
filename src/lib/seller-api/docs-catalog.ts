@@ -68,13 +68,13 @@ const AUTH_BEARER_HEADER: DocParam = {
   name: "Authorization",
   type: "string",
   required: true,
-  description: "Bearer drip_sk_live_… or drip_sk_test_…",
+  description: "Bearer <your API key>",
 };
 
 const ORDER_DETAIL_DEMO = {
   id: "ord_demo_01HXYZ",
   status: "FULFILLED",
-  sku: "SANDBOX-DEMO-30D",
+  sku: 499,
   quantity: 1,
   price: 100_000_000,
   priceUsd: "1.00",
@@ -91,16 +91,16 @@ const ORDER_DETAIL_DEMO = {
     },
   ],
   createdAt: "2026-07-29T12:00:00.000Z",
-  durationApiCode: "SANDBOX-DEMO-30D",
+  durationSku: 499,
   subtotalMicrocents: 100_000_000,
   totalMicrocents: 100_000_000,
 };
 
 const SKU_ITEM_DEMO = {
-  apiCode: "SANDBOX-DEMO-30D",
+  sku: 499,
   name: "Sandbox Demo Product — 30 Days",
   product: "Sandbox Demo Product",
-  productApiCode: "SANDBOX-DEMO",
+  productNumber: 0,
   category: "Sandbox",
   label: "30 Days",
   days: 30,
@@ -171,7 +171,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     summary:
       "Flat buyable SKU catalog. Public returns retail price. With Bearer, price is your account tier.",
     warnings: [
-      "Use items[].apiCode as sku when buying. Product apiCode alone is not a SKU.",
+      "Use items[].sku as sku when buying. A product number alone is not a SKU.",
       "Public responses never include wholesale prices.",
     ],
     exampleRequest: {
@@ -199,28 +199,28 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     id: "product",
     method: "GET",
     path: "/api/v1/products/{code}",
-    pathExample: "/api/v1/products/SANDBOX-DEMO",
+    pathExample: "/api/v1/products/0",
     auth: "public",
     scope: "none (public)",
     group: "products",
     summary:
-      "Product detail by product apiCode or single SKU apiCode. Returns product meta + items[].",
+      "Product detail by product number or single SKU number. Returns product meta + items[].",
     params: [
       {
         name: "code",
         type: "string",
         required: true,
-        description: "Product apiCode or SKU apiCode",
+        description: "Product number or SKU number",
       },
     ],
     exampleRequest: {
       headers: { Accept: "application/json" },
-      pathParams: { code: "SANDBOX-DEMO" },
+      pathParams: { code: "0" },
     },
     exampleResponse: {
       data: {
         product: {
-          apiCode: "SANDBOX-DEMO",
+          productNumber: 0,
           title: "Sandbox Demo Product",
           description: "Fake catalog item for sandbox keys.",
           imageUrl: null,
@@ -234,7 +234,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     exampleError: {
       error: {
         code: "NOT_FOUND",
-        message: "Product not found. Call GET /api/v1/products for apiCodes.",
+        message: "Product not found. Call GET /api/v1/products for product numbers.",
       },
     },
     statuses: [
@@ -246,7 +246,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     id: "pricing",
     method: "GET",
     path: "/api/v1/pricing",
-    queryExample: "sku=SANDBOX-DEMO-30D",
+    queryExample: "sku=499",
     auth: "public",
     scope: "none (public)",
     group: "products",
@@ -257,16 +257,16 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
         name: "sku",
         type: "string",
         required: true,
-        description: "SKU apiCode (alias: duration)",
+        description: "SKU number (alias: duration)",
       },
     ],
     exampleRequest: {
       headers: { Accept: "application/json" },
-      query: { sku: "SANDBOX-DEMO-30D" },
+      query: { sku: "499" },
     },
     exampleResponse: {
       data: {
-        apiCode: "SANDBOX-DEMO-30D",
+        sku: 499,
         name: "Sandbox Demo Product — 30 Days",
         price: 100_000_000,
         priceUsd: "1.00",
@@ -282,7 +282,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
       error: {
         code: "UNKNOWN_DURATION",
         message:
-          "Unknown SKU. Call GET /api/v1/products and use items[].apiCode.",
+          "Unknown SKU. Call GET /api/v1/products and use items[].sku.",
       },
     },
     statuses: [
@@ -295,7 +295,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     id: "stock",
     method: "GET",
     path: "/api/v1/stock",
-    queryExample: "sku=SANDBOX-DEMO-30D",
+    queryExample: "sku=499",
     auth: "public",
     scope: "none (public)",
     group: "products",
@@ -305,16 +305,16 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
         name: "sku",
         type: "string",
         required: true,
-        description: "SKU apiCode (alias: duration)",
+        description: "SKU number (alias: duration)",
       },
     ],
     exampleRequest: {
       headers: { Accept: "application/json" },
-      query: { sku: "SANDBOX-DEMO-30D" },
+      query: { sku: "499" },
     },
     exampleResponse: {
       data: {
-        apiCode: "SANDBOX-DEMO-30D",
+        sku: 499,
         stock: 999,
         inStock: true,
         busy: false,
@@ -325,7 +325,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
       error: {
         code: "UNKNOWN_DURATION",
         message:
-          "Unknown SKU. Call GET /api/v1/products and use items[].apiCode.",
+          "Unknown SKU. Call GET /api/v1/products and use items[].sku.",
       },
     },
     statuses: [
@@ -346,7 +346,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     exampleRequest: {
       headers: {
         Accept: "application/json",
-        Authorization: "Bearer drip_sk_test_YOUR_KEY",
+        Authorization: "Bearer YOUR_KEY",
       },
     },
     exampleResponse: {
@@ -360,7 +360,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
         key: {
           id: "key_demo",
           name: "Production",
-          prefix: "drip_sk_live_",
+          prefix: "a1b2c3d4…",
           mode: "LIVE",
           scopes: ["balance:read", "orders:read", "orders:write"],
         },
@@ -389,7 +389,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     exampleRequest: {
       headers: {
         Accept: "application/json",
-        Authorization: "Bearer drip_sk_test_YOUR_KEY",
+        Authorization: "Bearer YOUR_KEY",
       },
     },
     exampleResponse: {
@@ -440,7 +440,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
         name: "sku",
         type: "string",
         required: true,
-        description: "SKU from items[].apiCode (alias: duration)",
+        description: "SKU from items[].sku (alias: duration)",
       },
       {
         name: "quantity",
@@ -449,15 +449,15 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
         description: "1–50, default 1",
       },
     ],
-    body: { sku: "SANDBOX-DEMO-30D", quantity: 1 },
+    body: { sku: "499", quantity: 1 },
     exampleRequest: {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: "Bearer drip_sk_test_YOUR_KEY",
+        Authorization: "Bearer YOUR_KEY",
         "Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
       },
-      body: { sku: "SANDBOX-DEMO-30D", quantity: 1 },
+      body: { sku: "499", quantity: 1 },
     },
     exampleResponse: {
       data: ORDER_DETAIL_DEMO,
@@ -511,7 +511,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     exampleRequest: {
       headers: {
         Accept: "application/json",
-        Authorization: "Bearer drip_sk_test_YOUR_KEY",
+        Authorization: "Bearer YOUR_KEY",
       },
       query: { page: "1", limit: "20" },
     },
@@ -525,7 +525,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
           {
             id: "ord_demo_01HXYZ",
             status: "FULFILLED",
-            sku: "SANDBOX-DEMO-30D",
+            sku: "499",
             name: "Sandbox Demo Product — 30 Days",
             quantity: 1,
             total: 101_000_000,
@@ -568,7 +568,7 @@ export const DOC_ENDPOINTS: DocEndpoint[] = [
     exampleRequest: {
       headers: {
         Accept: "application/json",
-        Authorization: "Bearer drip_sk_test_YOUR_KEY",
+        Authorization: "Bearer YOUR_KEY",
       },
       pathParams: { id: "ord_demo_01HXYZ" },
     },
@@ -597,7 +597,7 @@ export const DOC_ERRORS: DocStatus[] = [
   {
     http: 400,
     code: "DURATION_REQUIRED",
-    when: "Sent a product apiCode instead of a specific SKU apiCode (items[].apiCode)",
+    when: "Sent a product number instead of a specific SKU number (items[].sku)",
   },
   {
     http: 400,
@@ -637,12 +637,12 @@ export const DOC_ERRORS: DocStatus[] = [
   {
     http: 404,
     code: "UNKNOWN_DURATION",
-    when: "Unrecognized SKU apiCode. Call GET /api/v1/products to fetch valid SKUs",
+    when: "Unrecognized SKU number. Call GET /api/v1/products to fetch valid SKUs",
   },
   {
     http: 409,
     code: "BUSY",
-    when: "Product SKU is temporarily out of stock (no available keys in inventory/supplier)",
+    when: "Product SKU is temporarily out of stock (no available keys in inventory)",
   },
   {
     http: 429,
@@ -873,11 +873,11 @@ export function testerPath(
 ): string {
   let path = ep.path;
   if (ep.id === "product") {
-    path = `/api/v1/products/${overrides?.pathCode || "SANDBOX-DEMO"}`;
+    path = `/api/v1/products/${overrides?.pathCode || "0"}`;
   } else if (ep.id === "orders-get") {
     path = `/api/v1/orders/${overrides?.orderId || "ORDER_ID"}`;
   }
-  const sku = overrides?.duration || "SANDBOX-DEMO-30D";
+  const sku = overrides?.duration || "499";
   if (ep.id === "pricing" || ep.id === "stock") {
     return `${path}?sku=${encodeURIComponent(sku)}`;
   }
@@ -987,7 +987,7 @@ function buildApiRulesBlock(input: {
     "Never send price in POST body — server ignores it.",
     "No API fees: you pay only the SKU price.",
     "",
-    "SKU rules: buy with items[].apiCode as sku (alias duration). Product apiCode alone fails.",
+    "SKU rules: buy with items[].sku as sku (alias duration). A product number alone fails.",
     "Security: Idempotency-Key required on POST /orders. Order list has keysCount only; full keys on create + GET by id.",
     "",
     "Envelope: success { data } · error { error: { code, message } }",
@@ -1038,7 +1038,7 @@ export function buildAiPromptPack(
       "",
       "## Task — wire my site",
       "Build server-side middleware (never expose the API key in the browser) that:",
-      "1) Keeps a map from my local product IDs → Cheap Seller SKU apiCodes (items[].apiCode)",
+      "1) Keeps a map from my local product IDs → Cheap Seller SKU numbers (items[].sku)",
       "2) After my customer pays me, calls POST /api/v1/orders with { sku, quantity } + a unique Idempotency-Key",
       "3) Delivers data.keys[] (and/or items[].key) to the buyer",
       "4) On network retry, reuses the same Idempotency-Key",

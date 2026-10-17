@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         error: {
           code: "UNKNOWN_DURATION",
           message:
-            "Query param sku is required (items[].apiCode from GET /api/v1/products). Alias: duration.",
+            "Query param sku is required (items[].sku from GET /api/v1/products). Alias: duration.",
           status: 400,
         },
       };
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     if (ctx.auth?.isSandbox) {
       return {
         data: {
-          apiCode: "SANDBOX-DEMO-30D",
+          sku: 499,
           stock: 999,
           inStock: true,
           busy: false,

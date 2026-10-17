@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { adminFetch } from "@/components/admin/kit";
+import { ADMIN_LIVE_EVENT, adminFetch } from "@/components/admin/kit";
 import type { AdminSidebarBadges } from "@/lib/sidebar-stats";
 import { cn } from "@/lib/utils";
 
@@ -123,7 +123,7 @@ export function AdminShell({ siteName, user, initialBadges, children }: Props) {
   const [badges, setBadges] = useState<Badges>(initialBadges);
   const [open, setOpen] = useState(false);
 
-  // Refresh nav badges every minute and whenever the route changes.
+  // Nav badges: reload on route change and on any live change.
   useEffect(() => {
     let live = true;
     const load = () =>
@@ -132,11 +132,52 @@ export function AdminShell({ siteName, user, initialBadges, children }: Props) {
         .catch(() => {});
     void load();
     const t = setInterval(load, 60_000);
+    window.addEventListener("admin:badges-refresh", load);
+    window.addEventListener(ADMIN_LIVE_EVENT, load);
     return () => {
       live = false;
       clearInterval(t);
+      window.removeEventListener("admin:badges-refresh", load);
+      window.removeEventListener(ADMIN_LIVE_EVENT, load);
     };
   }, [pathname]);
+
+  // Live sync: poll a fingerprint; on change re-render server data and tell list hooks to refetch.
+  useEffect(() => {
+    let alive = true;
+    let inFlight = false;
+    let prev: string | null = null;
+    async function check() {
+      if (inFlight || document.visibilityState !== "visible") return;
+      inFlight = true;
+      try {
+        const { stamp } = await adminFetch<{ stamp: string }>("/api/admin/live");
+        if (!alive) return;
+        const last = prev;
+        prev = stamp;
+        if (last === null || last === stamp) return;
+        router.refresh();
+        window.dispatchEvent(new Event(ADMIN_LIVE_EVENT));
+      } catch {
+        // offline: retry next tick
+      } finally {
+        inFlight = false;
+      }
+    }
+    void check();
+    const t = setInterval(() => void check(), 5000);
+    const onShow = () => void check();
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("focus", onShow);
+    window.addEventListener("online", onShow);
+    return () => {
+      alive = false;
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onShow);
+      window.removeEventListener("focus", onShow);
+      window.removeEventListener("online", onShow);
+    };
+  }, [router]);
 
   const active = ALL.filter((it) => (it.exact ? pathname === it.href : pathname === it.href || pathname.startsWith(`${it.href}/`))).sort(
     (a, b) => b.href.length - a.href.length,

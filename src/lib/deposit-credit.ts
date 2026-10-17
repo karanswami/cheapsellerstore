@@ -308,7 +308,8 @@ export async function completeDepositOnce(options: {
   } else if (
     method === DepositMethod.UPI ||
     method === DepositMethod.ESEWA ||
-    method === DepositMethod.MGCLOUDPAY
+    method === DepositMethod.MGCLOUDPAY ||
+    method === DepositMethod.NASIONALPAY
   ) {
     void notifyTelegram("deposit", lines.join("\n"));
   } else if (method === DepositMethod.MANUAL) {

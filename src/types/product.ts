@@ -12,8 +12,6 @@ export type ProductFlashSale = {
 export type DurationOption = {
   id: string;
   label: string;
-  /** Optional version group (Lite / Brutal). Empty = no version step. */
-  version: string;
   days: number | null;
   /** Pay price (flash-adjusted when a sale applies). */
   price: number | null;
@@ -26,27 +24,9 @@ export type DurationOption = {
   deviceIdName?: string;
 };
 
-/** Cart / sheet display: "Lite · 1 Day" when version is set. */
-export function formatDurationLabel(
-  duration: Pick<DurationOption, "label" | "version">,
-): string {
-  const version = duration.version.trim();
-  return version ? `${version} · ${duration.label}` : duration.label;
-}
-
-/** Distinct non-empty versions on a product (order = first seen). */
-export function listProductVersions(
-  durations: Pick<DurationOption, "version">[],
-): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const d of durations) {
-    const v = d.version.trim();
-    if (!v || seen.has(v)) continue;
-    seen.add(v);
-    out.push(v);
-  }
-  return out;
+/** Cart / sheet display label for a duration. */
+export function formatDurationLabel(duration: Pick<DurationOption, "label">): string {
+  return duration.label;
 }
 
 export type ProductCardData = {
@@ -66,6 +46,7 @@ export type ProductCardData = {
     name: string;
     slug: string;
     icon?: string | null;
+    sortOrder?: number;
   } | null;
   durations: DurationOption[];
   startingPrice: number | null;

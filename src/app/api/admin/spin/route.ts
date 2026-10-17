@@ -86,7 +86,7 @@ export async function PUT(request: Request) {
     ? await prisma.duration.findMany({ where: { id: { in: dIds } }, include: { product: { select: { title: true } } } })
     : [];
   if (durationRows.length !== new Set(dIds).size) return jsonError("VALIDATION", "A selected duration no longer exists.", 400);
-  const durName = new Map(durationRows.map((d) => [d.id, `${d.product.title} ${d.version ? `${d.version} ` : ""}${d.label}`]));
+  const durName = new Map(durationRows.map((d) => [d.id, `${d.product.title} ${d.label}`]));
 
   for (const [slot, p] of prizes.entries()) {
     const autoLabel =

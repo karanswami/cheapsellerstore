@@ -1,8 +1,8 @@
 import {
   looksLikeObjectId,
-  normalizeApiCode,
+  parseCatalogNumber,
 } from "@/lib/seller-api/codes";
-import { getEffectiveStockByDuration } from "@/lib/supplier/stock";
+import { countAvailableKeysByDuration } from "@/lib/keys";
 import { MICROCENTS_PER_USD, microcentsToUsdString } from "@/lib/currencies";
 import { prisma } from "@/lib/prisma";
 import { getSpecialPricesForUser, resolveUnitPrice } from "@/lib/pricing";
@@ -20,15 +20,15 @@ export const PRICE_TIERS_NOTE =
 export type PriceTier = "retail" | "wholesale" | "special";
 
 export type ApiSku = {
-  apiCode: string;
+  /** Buyable SKU number (duration). Use as `sku` on pricing / stock / orders. */
+  sku: number;
   name: string;
   product: string;
-  productApiCode: string | null;
+  productNumber: number;
   category: string;
-  /** Optional version group when set on the duration (Lite / Brutal). */
-  version: string;
   label: string;
   days: number | null;
+  hours: number | null;
   imageUrl: string | null;
   description: string;
   price: number;
@@ -49,6 +49,9 @@ export type DurationLookupFail = {
 
 export type DurationLookupOk<T> = { ok: true; duration: T };
 
+/** Reserved sandbox SKU — real SKUs start at 500. */
+export const SANDBOX_SKU = 499;
+
 type DurationWithProduct = NonNullable<
   Awaited<ReturnType<typeof loadDurationByCodeOrId>>
 >;
@@ -68,15 +71,15 @@ async function loadDurationByCodeOrId(codeOrId: string) {
     if (byId) return byId;
   }
 
-  const code = normalizeApiCode(raw);
-  if (code === "SANDBOX-DEMO-30D" || code === "SANDBOX-DEMO") {
+  const number = parseCatalogNumber(raw);
+  if (number === null) return null;
+  if (number === SANDBOX_SKU) {
     return {
       id: "sandbox_demo_duration_id",
-      apiCode: "SANDBOX-DEMO-30D",
+      number: SANDBOX_SKU,
       label: "30 Days",
       days: 30,
-      version: "",
-      supplierProductId: null,
+      hours: null,
       requiresAndroidId: false,
       deviceIdName: "",
       productId: "sandbox_demo_product_id",
@@ -98,7 +101,7 @@ async function loadDurationByCodeOrId(codeOrId: string) {
         id: "sandbox_demo_product_id",
         title: "Sandbox Demo Product",
         description: "Fake catalog item for sandbox keys.",
-        apiCode: "SANDBOX-DEMO",
+        number: 0,
         rating: 5,
         imageUrl: null,
         demoUrl: null,
@@ -116,7 +119,7 @@ async function loadDurationByCodeOrId(codeOrId: string) {
     };
   }
   return prisma.duration.findUnique({
-    where: { apiCode: code },
+    where: { number },
     include: {
       product: { include: { category: true } },
       prices: { where: { currency: "USD" } },
@@ -128,7 +131,7 @@ export async function resolveDurationByCodeOrId(codeOrId: string) {
   return loadDurationByCodeOrId(codeOrId);
 }
 
-/** Resolve SKU (duration apiCode); if value is a product apiCode, return DURATION_REQUIRED. */
+/** Resolve SKU (duration number); if value is a product number, return DURATION_REQUIRED. */
 export async function resolveDurationForApi(
   codeOrId: string,
 ): Promise<DurationLookupOk<DurationWithProduct> | DurationLookupFail> {
@@ -138,22 +141,22 @@ export async function resolveDurationForApi(
       ok: false,
       code: "UNKNOWN_DURATION",
       message:
-        "SKU apiCode is required. Call GET /api/v1/products and use items[].apiCode (or body field sku).",
+        "SKU is required. Call GET /api/v1/products and use items[].sku (or body field sku).",
     };
   }
 
   const duration = await loadDurationByCodeOrId(raw);
-  if (duration?.apiCode && duration.product.isActive) {
+  if (duration && duration.product.isActive) {
     return { ok: true, duration };
   }
 
   const product = await resolveProductByCodeOrId(raw);
-  if (product?.apiCode && product.isActive) {
-    const sample = product.durations.find((d) => d.apiCode)?.apiCode;
+  if (product?.isActive) {
+    const sample = product.durations[0]?.number;
     return {
       ok: false,
       code: "DURATION_REQUIRED",
-      message: `"${product.apiCode}" is a product apiCode. Pass a SKU from items[].apiCode${sample ? ` (e.g. ${sample})` : ""} — not the product code.`,
+      message: `${product.number} is a product number. Pass a SKU from items[].sku${sample ? ` (e.g. ${sample})` : ""} — not the product number.`,
     };
   }
 
@@ -161,7 +164,7 @@ export async function resolveDurationForApi(
     ok: false,
     code: "UNKNOWN_DURATION",
     message:
-      "Unknown SKU. Call GET /api/v1/products and use items[].apiCode (not the product title or product apiCode).",
+      "Unknown SKU. Call GET /api/v1/products and use items[].sku (not the product title or product number).",
   };
 }
 
@@ -173,7 +176,7 @@ export async function resolveProductByCodeOrId(codeOrId: string) {
     category: true,
     durations: {
       include: { prices: { where: { currency: "USD" as const } } },
-      orderBy: { createdAt: "asc" as const },
+      orderBy: { number: "asc" as const },
     },
   };
 
@@ -185,9 +188,10 @@ export async function resolveProductByCodeOrId(codeOrId: string) {
     if (byId) return byId;
   }
 
-  const code = normalizeApiCode(raw);
+  const number = parseCatalogNumber(raw);
+  if (number === null) return null;
   return prisma.product.findUnique({
-    where: { apiCode: code },
+    where: { number },
     include,
   });
 }
@@ -213,12 +217,12 @@ function unitPriceForViewer(
 }
 
 function mapSku(input: {
-  apiCode: string;
+  sku: number;
   label: string;
-  version?: string;
   days: number | null;
+  hours?: number | null;
   productTitle: string;
-  productApiCode: string | null;
+  productNumber: number;
   categoryName: string | null;
   imageUrl: string | null;
   description: string;
@@ -228,19 +232,17 @@ function mapSku(input: {
   requiresAndroidId?: boolean;
   isMaintenance?: boolean;
 }): ApiSku {
-  const version = (input.version ?? "").trim();
-  const labelPart = version ? `${version} · ${input.label}` : input.label;
   const isMaintenance = Boolean(input.isMaintenance);
   const effectiveStock = isMaintenance ? 0 : input.stock;
   return {
-    apiCode: input.apiCode,
-    name: `${input.productTitle} — ${labelPart}`,
+    sku: input.sku,
+    name: `${input.productTitle} — ${input.label}`,
     product: input.productTitle,
-    productApiCode: input.productApiCode,
+    productNumber: input.productNumber,
     category: input.categoryName?.trim() || "Uncategorized",
-    version,
     label: input.label,
     days: input.days,
+    hours: input.hours ?? null,
     imageUrl: input.imageUrl,
     description: input.description,
     price: input.price,
@@ -258,15 +260,15 @@ type ProductRow = {
   title: string;
   description: string;
   imageUrl: string | null;
-  apiCode: string | null;
+  number: number;
   isMaintenance?: boolean;
   category: { name: string } | null;
   durations: {
     id: string;
-    apiCode: string | null;
+    number: number;
     label: string;
-    version?: string;
     days: number | null;
+    hours?: number | null;
     requiresAndroidId: boolean;
     prices: { price: number; resellerPrice: number }[];
   }[];
@@ -277,25 +279,22 @@ async function mapProductSkus(
   role?: UserRole,
   specialPrices?: Map<string, number>,
 ): Promise<ApiSku[]> {
-  const durationIds = p.durations
-    .filter((d) => d.apiCode)
-    .map((d) => d.id);
-  const stockMap = await getEffectiveStockByDuration(durationIds);
+  const durationIds = p.durations.map((d) => d.id);
+  const stockMap = await countAvailableKeysByDuration(durationIds);
   const out: ApiSku[] = [];
   for (const d of p.durations) {
-    if (!d.apiCode) continue;
     const priceRow = d.prices[0];
     const special = specialPrices?.get(d.id) ?? null;
     const price = unitPriceForViewer(priceRow, role, special);
     const stock = stockMap.get(d.id) ?? 0;
     out.push(
       mapSku({
-        apiCode: d.apiCode,
+        sku: d.number,
         label: d.label,
-        version: d.version,
         days: d.days,
+        hours: d.hours,
         productTitle: p.title,
-        productApiCode: p.apiCode,
+        productNumber: p.number,
         categoryName: p.category?.name ?? null,
         imageUrl: p.imageUrl,
         description: p.description,
@@ -313,14 +312,13 @@ async function mapProductSkus(
 /** Flat buyable SKU catalog. Public = retail; Bearer = account tier price. */
 export async function listApiCatalog(role?: UserRole, userId?: string) {
   const products = await prisma.product.findMany({
-    where: { isActive: true, apiCode: { not: null } },
-    orderBy: { title: "asc" },
+    where: { isActive: true },
+    orderBy: { number: "asc" },
     include: {
       category: true,
       durations: {
-        where: { apiCode: { not: null } },
         include: { prices: { where: { currency: "USD" } } },
-        orderBy: { createdAt: "asc" },
+        orderBy: { number: "asc" },
       },
     },
   });
@@ -342,13 +340,13 @@ export async function getApiProduct(
 ) {
   // Prefer product match; if code is a SKU, return that product + single item.
   const asProduct = await resolveProductByCodeOrId(codeOrId);
-  if (asProduct?.isActive && asProduct.apiCode) {
+  if (asProduct?.isActive) {
     const durationIds = asProduct.durations.map((d) => d.id);
     const specialPrices = await getSpecialPricesForUser(userId, durationIds);
     const items = await mapProductSkus(asProduct, role, specialPrices);
     return {
       product: {
-        apiCode: asProduct.apiCode,
+        productNumber: asProduct.number,
         title: asProduct.title,
         description: asProduct.description,
         imageUrl: asProduct.imageUrl,
@@ -360,11 +358,7 @@ export async function getApiProduct(
   }
 
   const asDuration = await loadDurationByCodeOrId(codeOrId);
-  if (
-    asDuration?.apiCode &&
-    asDuration.product.isActive &&
-    asDuration.product.apiCode
-  ) {
+  if (asDuration && asDuration.product.isActive) {
     const specialPrices = await getSpecialPricesForUser(userId, [
       asDuration.id,
     ]);
@@ -373,7 +367,7 @@ export async function getApiProduct(
         title: asDuration.product.title,
         description: asDuration.product.description,
         imageUrl: asDuration.product.imageUrl,
-        apiCode: asDuration.product.apiCode,
+        number: asDuration.product.number,
         category: asDuration.product.category,
         isMaintenance: asDuration.product.isMaintenance,
         durations: [asDuration],
@@ -383,7 +377,7 @@ export async function getApiProduct(
     );
     return {
       product: {
-        apiCode: asDuration.product.apiCode,
+        productNumber: asDuration.product.number,
         title: asDuration.product.title,
         description: asDuration.product.description,
         imageUrl: asDuration.product.imageUrl,
@@ -407,12 +401,12 @@ export async function getApiPricing(
   if (!resolved.ok) return resolved;
 
   const d = resolved.duration;
-  if (!d.apiCode || !d.product.isActive) {
+  if (!d.product.isActive) {
     return {
       ok: false as const,
       code: "UNKNOWN_DURATION" as const,
       message:
-        "Unknown SKU. Call GET /api/v1/products and use items[].apiCode.",
+        "Unknown SKU. Call GET /api/v1/products and use items[].sku.",
     };
   }
   const priceRow = d.prices[0];
@@ -427,7 +421,7 @@ export async function getApiPricing(
   const specialPrices = await getSpecialPricesForUser(userId, [d.id]);
   const special = specialPrices.get(d.id) ?? null;
   const price = unitPriceForViewer(priceRow, role, special);
-  const stockMap = await getEffectiveStockByDuration([d.id]);
+  const stockMap = await countAvailableKeysByDuration([d.id]);
   const rawStock = stockMap.get(d.id) ?? 0;
   const isMaintenance = Boolean(d.product.isMaintenance);
   const stock = isMaintenance ? 0 : rawStock;
@@ -436,13 +430,10 @@ export async function getApiPricing(
   return {
     ok: true as const,
     data: {
-      apiCode: d.apiCode,
-      name: `${d.product.title} — ${
-        d.version?.trim() ? `${d.version.trim()} · ${d.label}` : d.label
-      }`,
+      sku: d.number,
+      name: `${d.product.title} — ${d.label}`,
       product: d.product.title,
-      productApiCode: d.product.apiCode,
-      version: d.version?.trim() ?? "",
+      productNumber: d.product.number,
       label: d.label,
       price,
       priceUsd: microcentsToUsdString(price),
@@ -462,12 +453,12 @@ export async function getApiStock(codeOrId: string) {
   if (!resolved.ok) return resolved;
 
   const d = resolved.duration;
-  if (!d.apiCode || !d.product.isActive) {
+  if (!d.product.isActive) {
     return {
       ok: false as const,
       code: "UNKNOWN_DURATION" as const,
       message:
-        "Unknown SKU. Call GET /api/v1/products and use items[].apiCode.",
+        "Unknown SKU. Call GET /api/v1/products and use items[].sku.",
     };
   }
 
@@ -475,7 +466,7 @@ export async function getApiStock(codeOrId: string) {
     return {
       ok: true as const,
       data: {
-        apiCode: d.apiCode,
+        sku: d.number,
         stock: 0,
         inStock: false,
         busy: true,
@@ -485,12 +476,12 @@ export async function getApiStock(codeOrId: string) {
     };
   }
 
-  const stockMap = await getEffectiveStockByDuration([d.id]);
+  const stockMap = await countAvailableKeysByDuration([d.id]);
   const stock = stockMap.get(d.id) ?? 0;
   return {
     ok: true as const,
     data: {
-      apiCode: d.apiCode,
+      sku: d.number,
       stock,
       inStock: stock > 0,
       busy: stock <= 0,
@@ -508,15 +499,14 @@ export async function sandboxSkus(
   userId?: string,
 ): Promise<ApiSku[]> {
   const products = await prisma.product.findMany({
-    where: { isActive: true, apiCode: { not: null } },
+    where: { isActive: true },
     take: 10,
-    orderBy: { title: "asc" },
+    orderBy: { number: "asc" },
     include: {
       category: true,
       durations: {
-        where: { apiCode: { not: null } },
         include: { prices: { where: { currency: "USD" } } },
-        orderBy: { createdAt: "asc" },
+        orderBy: { number: "asc" },
       },
     },
   });
@@ -528,11 +518,12 @@ export async function sandboxSkus(
   const fallbackPriceTier = resolvePriceTier(role, null);
 
   const fallbackSku = mapSku({
-    apiCode: "SANDBOX-DEMO-30D",
+    sku: SANDBOX_SKU,
     label: "30 Days",
     days: 30,
+    hours: null,
     productTitle: "Sandbox Demo Product",
-    productApiCode: "SANDBOX-DEMO",
+    productNumber: 0,
     categoryName: "Sandbox",
     imageUrl: null,
     description: "Fake catalog item for sandbox keys.",
@@ -552,18 +543,17 @@ export async function sandboxSkus(
 
   for (const p of products) {
     for (const d of p.durations) {
-      if (!d.apiCode) continue;
       const priceRow = d.prices[0];
       const special = specialPrices?.get(d.id) ?? null;
       const price = unitPriceForViewer(priceRow, role, special);
       items.push(
         mapSku({
-          apiCode: d.apiCode,
+          sku: d.number,
           label: d.label,
-          version: d.version,
           days: d.days,
+          hours: d.hours,
           productTitle: p.title,
-          productApiCode: p.apiCode,
+          productNumber: p.number,
           categoryName: p.category?.name ?? null,
           imageUrl: p.imageUrl,
           description: p.description,
@@ -591,16 +581,15 @@ export async function sandboxCatalogProduct(
   userId?: string,
 ) {
   const skus = await sandboxSkus(role, userId);
+  const wanted = parseCatalogNumber(codeOrId);
   const matchedSku = skus.find(
-    (s) =>
-      s.apiCode.toLowerCase() === codeOrId.toLowerCase() ||
-      s.productApiCode?.toLowerCase() === codeOrId.toLowerCase(),
+    (s) => s.sku === wanted || s.productNumber === wanted,
   );
 
   if (matchedSku) {
     return {
       product: {
-        apiCode: matchedSku.productApiCode || "SANDBOX-DEMO",
+        productNumber: matchedSku.productNumber,
         title: matchedSku.product,
         description: matchedSku.description,
         imageUrl: matchedSku.imageUrl,
@@ -608,15 +597,15 @@ export async function sandboxCatalogProduct(
       },
       items: skus.filter(
         (s) =>
-          s.productApiCode === matchedSku.productApiCode ||
-          s.apiCode === matchedSku.apiCode,
+          s.productNumber === matchedSku.productNumber ||
+          s.sku === matchedSku.sku,
       ),
     };
   }
 
   return {
     product: {
-      apiCode: "SANDBOX-DEMO",
+      productNumber: 0,
       title: "Sandbox Demo Product",
       description: "Fake catalog item for sandbox keys.",
       imageUrl: null as string | null,

@@ -29,7 +29,6 @@ export type AdminSettings = {
   sellerProgram: SellerProgramConfig;
   developerProfitSharePercent: number;
   specialStockDeveloperSharePercent: number;
-  supplierBuyPricePercent: number;
   defaultProductDemoUrl: string;
   googleClientId: string;
   googleClientSecret: string;
@@ -52,7 +51,7 @@ export type AdminSettings = {
 
 export type AdminGateway = {
   id: string;
-  provider: "QRIS" | "UPI" | "BINANCE" | "ESEWA";
+  provider: "QRIS" | "UPI" | "BINANCE" | "ESEWA" | "NASIONALPAY";
   name: string;
   currency: string;
   enabled: boolean;

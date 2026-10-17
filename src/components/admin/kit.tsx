@@ -164,7 +164,7 @@ export function Chips<T extends string>({
 }: {
   value: T;
   onChange: (v: T) => void;
-  options: { v: T; label: string }[];
+  options: { v: T; label: string; count?: number }[];
 }) {
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -174,11 +174,14 @@ export function Chips<T extends string>({
           type="button"
           onClick={() => onChange(o.v)}
           className={cn(
-            "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
             value === o.v ? "border-primary bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
           )}
         >
           {o.label}
+          {o.count !== undefined ? (
+            <span className={cn("rounded-full px-1.5 text-[10px] font-semibold tabular-nums", value === o.v ? "bg-primary/20" : "bg-muted")}>{o.count}</span>
+          ) : null}
         </button>
       ))}
     </div>
@@ -253,9 +256,23 @@ type ListState<T> = { k: string; items: T[]; total: number; error: string | null
  * Re-fetches whenever the (stringified) params change; `reload()` refetches in place.
  * `loading` is derived (the stored result belongs to an older request), so no setState-in-effect.
  */
+/** Fired on window by the admin shell when store data changed; list hooks refetch silently. */
+export const ADMIN_LIVE_EVENT = "admin:live";
+
+function useLiveTick() {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const on = () => setN((v) => v + 1);
+    window.addEventListener(ADMIN_LIVE_EVENT, on);
+    return () => window.removeEventListener(ADMIN_LIVE_EVENT, on);
+  }, []);
+  return n;
+}
+
 export function useAdminList<T>(endpoint: string, key: string, params: Record<string, string | number | undefined>) {
   const [state, setState] = useState<ListState<T>>({ k: "", items: [], total: 0, error: null });
   const [tick, setTick] = useState(0);
+  const liveTick = useLiveTick();
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") qs.set(k, String(v));
   const reqKey = `${endpoint}?${qs}#${tick}`;
@@ -276,7 +293,7 @@ export function useAdminList<T>(endpoint: string, key: string, params: Record<st
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reqKey, endpoint, key]);
+  }, [reqKey, endpoint, key, liveTick]);
 
   return {
     items: state.items,
@@ -399,6 +416,7 @@ export function ToggleRow({
 export function useAdminQuery<T>(url: string | null) {
   const [res, setRes] = useState<{ k: string; data: T | null; error: string | null }>({ k: "", data: null, error: null });
   const [tick, setTick] = useState(0);
+  const liveTick = useLiveTick();
   const reqKey = url === null ? null : `${url}#${tick}`;
 
   useEffect(() => {
@@ -410,7 +428,7 @@ export function useAdminQuery<T>(url: string | null) {
     return () => {
       live = false;
     };
-  }, [url, reqKey]);
+  }, [url, reqKey, liveTick]);
 
   return {
     data: res.data,

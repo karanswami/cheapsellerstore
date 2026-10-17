@@ -166,8 +166,6 @@ export const SETTING_KEYS = {
   developerProfitSharePercent: "developer_profit_share_percent",
   /** Developer share of Special Stock revenue/profit, whole percent 0–100. Default 50. */
   specialStockDeveloperSharePercent: "special_stock_developer_share_percent",
-  /** Buy cost = supplier catalog list price × this % (0–100). Default 50. */
-  supplierBuyPricePercent: "supplier_buy_price_percent",
   /** Platform API global kill switch (1 = on). */
   apiPlatformEnabled: "api_platform_enabled",
   /** JSON { user, seller, reseller, admin: boolean } */
@@ -206,6 +204,8 @@ export const SETTING_KEYS = {
   mgcloudpayApiKey: "mgcloudpay_api_key",
   /** MGCloudPay API base URL. */
   mgcloudpayBaseUrl: "mgcloudpay_base_url",
+  /** NasionalPay (QRIS / DANA, IDR) store key. */
+  nasionalpayKey: "nasionalpay_key",
   /** FamGateway (UPI / INR) API key. */
   famgatewayApiKey: "famgateway_api_key",
   /** FamGateway base URL (defaults to https://famgateway.in). */
@@ -224,16 +224,6 @@ export const SETTING_KEYS = {
   telegramNotifications: "telegram_notifications",
   /** Fallback product Demo button URL when Product.demoUrl is empty. */
   defaultProductDemoUrl: "default_product_demo_url",
-  /** Upstream supplier key API master switch (1 = on). */
-  supplierApiEnabled: "supplier_api_enabled",
-  /** Upstream supplier Bearer API key (admin Settings; env fallback). */
-  supplierApiKey: "supplier_api_key",
-  /** Upstream supplier API base URL. */
-  supplierApiBaseUrl: "supplier_api_base_url",
-  /** Cached supplier catalog JSON for stock hints. */
-  supplierCatalogCache: "supplier_catalog_cache",
-  /** Cached supplier balance JSON for stock gating. */
-  supplierBalanceCache: "supplier_balance_cache",
   /** JSON PagesEnabledConfig — store page kill-switches (gift codes default off). */
   pagesEnabled: "pages_enabled",
   /** Web Push VAPID public key. */
@@ -342,20 +332,4 @@ export async function getSpecialStockDeveloperSharePercent(): Promise<number> {
 /** Fraction 0–1 for Special Stock developer share. */
 export async function getSpecialStockDeveloperShareRate(): Promise<number> {
   return (await getSpecialStockDeveloperSharePercent()) / 100;
-}
-
-/**
- * Percent of supplier catalog list price used as duration buy cost (default 50).
- * Example: 50 → buy = list × 0.5.
- */
-export async function getSupplierBuyPricePercent(): Promise<number> {
-  return clampPercent(
-    await getSettingInt(SETTING_KEYS.supplierBuyPricePercent, 50),
-    50,
-  );
-}
-
-/** Fraction 0–1 for supplier → buy cost fill. */
-export async function getSupplierBuyPriceFactor(): Promise<number> {
-  return (await getSupplierBuyPricePercent()) / 100;
 }

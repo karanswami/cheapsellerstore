@@ -33,7 +33,7 @@ export function buildOpenApiDocument(baseUrl: string): Record<string, unknown> {
         bearerAuth: {
           type: "http",
           scheme: "bearer",
-          bearerFormat: "drip_sk_live_… / drip_sk_test_…",
+          bearerFormat: "64-character hex key",
           description: "Create or rotate at /app/development (multiple keys per account, limit set by admin; default 5).",
         },
       },

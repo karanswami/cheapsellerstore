@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
 import { Flag, KeyRound, Loader2, Percent, ReceiptText, ShoppingBag, TrendingUp, Users, Wallet } from "lucide-react";
 import { Panel, StatusBadge, formatDate } from "@/components/app-ui";
-import { Chips, StatCard, adminFetch, errMsg } from "@/components/admin/kit";
+import { ADMIN_LIVE_EVENT, Chips, StatCard, adminFetch, errMsg } from "@/components/admin/kit";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatMoney, microcentsToUsd } from "@/lib/currencies";
@@ -32,6 +32,16 @@ export function AdminDashboardClient({
   const [period, setPeriod] = useState<StatisticsPeriod>("7");
   const [stats, setStats] = useState(initialStats);
   const [loading, setLoading] = useState(false);
+
+  // Silent refresh of the chart when the shell reports new data.
+  useEffect(() => {
+    const on = () =>
+      adminFetch<StatisticsPayload>(`/api/admin/statistics?period=${period}`)
+        .then(setStats)
+        .catch(() => {});
+    window.addEventListener(ADMIN_LIVE_EVENT, on);
+    return () => window.removeEventListener(ADMIN_LIVE_EVENT, on);
+  }, [period]);
 
   async function changePeriod(p: StatisticsPeriod) {
     setPeriod(p);

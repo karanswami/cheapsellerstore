@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
     }
 
     let body: {
-      sku?: string;
-      duration?: string;
+      sku?: string | number;
+      duration?: string | number;
       quantity?: number;
       price?: unknown;
     };
@@ -90,13 +90,13 @@ export async function POST(req: NextRequest) {
     // Security: ignore any client-supplied price fields.
     void body.price;
 
-    const sku = (body.sku ?? body.duration)?.trim() ?? "";
+    const sku = String(body.sku ?? body.duration ?? "").trim();
     const quantity = Number(body.quantity ?? 1);
     if (!sku) {
       return {
         error: {
           code: "UNKNOWN_DURATION",
-          message: "Field sku (apiCode) is required. Alias: duration.",
+          message: "Field sku (number from GET /api/v1/products) is required. Alias: duration.",
           status: 400,
         },
       };

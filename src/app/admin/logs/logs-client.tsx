@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, History, Truck } from "lucide-react";
+import { Activity, History } from "lucide-react";
 import { EmptyState, StatusBadge, formatDate } from "@/components/app-ui";
 import { Chips, Pager, SearchBox, TableSkeleton, useAdminList, useDebounced } from "@/components/admin/kit";
 import { Badge } from "@/components/ui/badge";
@@ -24,18 +24,12 @@ export function AdminLogsClient() {
         <TabsTrigger value="events">
           <History className="size-4" /> Store events
         </TabsTrigger>
-        <TabsTrigger value="supplier">
-          <Truck className="size-4" /> Supplier calls
-        </TabsTrigger>
       </TabsList>
       <TabsContent value="activity">
         <ActivityLogs />
       </TabsContent>
       <TabsContent value="events">
         <Events />
-      </TabsContent>
-      <TabsContent value="supplier">
-        <SupplierLogs />
       </TabsContent>
     </Tabs>
   );
@@ -198,109 +192,6 @@ function Events() {
         )}
       </div>
       <Pager page={page} pageSize={LIMIT} total={list.total} onPage={setPage} loading={list.loading} />
-    </div>
-  );
-}
-
-type SupplierLog = {
-  id: string;
-  endpoint: string;
-  method: string;
-  httpStatus: number;
-  ok: boolean;
-  productId: number | null;
-  quantity: number | null;
-  usedFallback: boolean;
-  errorCode: string | null;
-  errorMessage: string | null;
-  requestJson: string;
-  responseJson: string;
-  createdAt: string;
-};
-
-function SupplierLogs() {
-  const [ok, setOk] = useState("all");
-  const [page, setPage] = useState(1);
-  const list = useAdminList<SupplierLog>("/api/admin/supplier/logs", "rows", { page, limit: LIMIT, ok: ok === "all" ? undefined : ok, fallback: ok === "fallback" ? "true" : undefined });
-  const [open, setOpen] = useState<SupplierLog | null>(null);
-  const pretty = (s: string) => {
-    try {
-      return JSON.stringify(JSON.parse(s), null, 2);
-    } catch {
-      return s;
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <Chips value={ok} onChange={(v) => { setOk(v); setPage(1); }} options={[{ v: "all", label: "All" }, { v: "true", label: "OK" }, { v: "false", label: "Failed" }, { v: "fallback", label: "Used fallback" }]} />
-      <div className="rounded-xl border bg-card">
-        {list.loading && list.items.length === 0 ? (
-          <TableSkeleton />
-        ) : list.items.length === 0 ? (
-          <div className="p-6">
-            <EmptyState icon={Truck} title="No supplier calls" />
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>When</TableHead>
-                <TableHead>Endpoint</TableHead>
-                <TableHead>Result</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Error</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.items.map((l) => (
-                <TableRow key={l.id} className="cursor-pointer" onClick={() => setOpen(l)}>
-                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(l.createdAt, true)}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {l.method} {l.endpoint}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={l.ok ? "success" : "destructive"}>{l.httpStatus}</Badge>
-                    {l.usedFallback ? <Badge variant="warning" className="ml-1">fallback</Badge> : null}
-                  </TableCell>
-                  <TableCell className="text-sm">{l.productId != null ? `#${l.productId}${l.quantity ? ` ×${l.quantity}` : ""}` : "—"}</TableCell>
-                  <TableCell className="max-w-56 truncate text-xs text-muted-foreground">{l.errorMessage ?? l.errorCode ?? ""}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
-      <Pager page={page} pageSize={LIMIT} total={list.total} onPage={setPage} loading={list.loading} />
-      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
-        <DialogContent className="max-w-2xl">
-          {open ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  {open.method} {open.endpoint}
-                </DialogTitle>
-                <DialogDescription>
-                  {formatDate(open.createdAt, true)} · HTTP {open.httpStatus}
-                </DialogDescription>
-              </DialogHeader>
-              {open.errorMessage ? <p className="text-sm text-destructive">{open.errorMessage}</p> : null}
-              <div>
-                <p className="mb-1 text-xs text-muted-foreground">Request</p>
-                <ScrollArea className="max-h-40 rounded-lg border bg-muted/50">
-                  <pre className="p-3 text-xs">{pretty(open.requestJson)}</pre>
-                </ScrollArea>
-              </div>
-              <div>
-                <p className="mb-1 text-xs text-muted-foreground">Response</p>
-                <ScrollArea className="max-h-60 rounded-lg border bg-muted/50">
-                  <pre className="p-3 text-xs">{pretty(open.responseJson)}</pre>
-                </ScrollArea>
-              </div>
-            </>
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

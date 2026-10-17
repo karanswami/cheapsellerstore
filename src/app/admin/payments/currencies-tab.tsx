@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useSettingsSave, type AdminSettings } from "../settings/settings-kit";
 import { EditorDialog, EditorFooter, InlineDelete, ListRow, SectionHead } from "./payments-ui";
 
-const LOCKED = new Set(["USD", "INR", "IDR", "NPR"]);
+const LOCKED = new Set(["USD"]);
 
 type Cur = AdminSettings["depositCurrencies"][number];
 type Mins = AdminSettings["depositMins"];
@@ -115,7 +115,7 @@ export function CurrenciesTab({ list, setList, mins, setMins, quick, setQuick, u
               <InlineDelete
                 busy={busy}
                 disabled={LOCKED.has(editing.code) || (usage[editing.code] ?? 0) > 0}
-                title={LOCKED.has(editing.code) ? "Built-in currency" : (usage[editing.code] ?? 0) > 0 ? "In use by a payment method" : undefined}
+                title={LOCKED.has(editing.code) ? "Base currency" : (usage[editing.code] ?? 0) > 0 ? "In use by a payment method" : undefined}
                 onConfirm={async () => {
                   const nextQuick = { ...quick };
                   delete nextQuick[editing.code];

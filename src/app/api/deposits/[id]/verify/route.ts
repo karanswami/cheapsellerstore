@@ -89,7 +89,7 @@ export async function POST(request: Request, { params }: Params) {
   ) {
     return jsonError(
       "NOT_YET_CONFIRMED",
-      deposit.method === DepositMethod.QRIS
+      (deposit.method === DepositMethod.QRIS || deposit.method === DepositMethod.NASIONALPAY)
         ? "QRIS payment not confirmed yet. If you have already paid in your banking/e-wallet app, please wait a few seconds and tap Verify again."
         : "No matching transaction found in the last 5 minutes. Please verify your Order ID or Memo and try again.",
       400,
@@ -98,7 +98,7 @@ export async function POST(request: Request, { params }: Params) {
 
   return jsonError(
     "VERIFY_FAILED",
-    deposit.method === DepositMethod.QRIS
+    (deposit.method === DepositMethod.QRIS || deposit.method === DepositMethod.NASIONALPAY)
       ? "Unable to verify QRIS payment at this moment. Please wait a few moments and try again."
       : "Unable to verify transaction. Please ensure the payment was sent within the last 5 minutes.",
     400,

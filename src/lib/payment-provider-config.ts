@@ -184,3 +184,14 @@ export async function requireConfigured(
   }
   return value.trim();
 }
+
+const base_getNasionalpayKey = cache(async (): Promise<string> =>
+  settingOrEnv(SETTING_KEYS.nasionalpayKey, "NASIONALPAY_KEY"),
+);
+
+export const getNasionalpayKey = async (): Promise<string> => gatewayCred("nasionalpayKey") ?? (await base_getNasionalpayKey());
+
+/** "QRIS" (scan) or "FUNDS" (DANA pay link). */
+export async function getNasionalpayChannel(): Promise<"QRIS" | "FUNDS"> {
+  return gatewayCred("nasionalpayChannel") === "FUNDS" ? "FUNDS" : "QRIS";
+}

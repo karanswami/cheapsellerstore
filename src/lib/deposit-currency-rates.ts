@@ -137,7 +137,7 @@ export async function saveDepositCurrencies(
   }
   for (const locked of LOCKED_DEPOSIT_CURRENCY_CODES) {
     if (!normalized.some((c) => c.code === locked)) {
-      throw new Error(`${locked} is required for auto deposit rails.`);
+      throw new Error(`${locked} is the base currency and cannot be removed.`);
     }
   }
   await upsertSetting({
@@ -204,7 +204,7 @@ export function canDeleteDepositCurrency(
   ) {
     return {
       ok: false,
-      reason: `${normalized} is required for auto deposit rails.`,
+      reason: `${normalized} is the base currency and cannot be removed.`,
     };
   }
   if (usedByManualMethods.includes(normalized)) {

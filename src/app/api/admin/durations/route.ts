@@ -1,8 +1,8 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth/admin";
+import { nextCatalogNumber } from "@/lib/catalog-numbers";
 import { prisma } from "@/lib/prisma";
 import { Currency, usdToMicrocents } from "@/lib/currencies";
-import { allocateDurationApiCode } from "@/lib/seller-api/ensure-api-code";
 import { z } from "zod";
 
 const priceRow = z.object({
@@ -15,11 +15,8 @@ const priceRow = z.object({
 const schema = z.object({
   productId: z.string().min(1),
   label: z.string().trim().min(1).max(80),
-  /** Optional version group (Lite / Brutal). Empty = no storefront version step. */
-  version: z.string().trim().max(40).optional().default(""),
   days: z.number().int().positive().nullable().optional(),
-  apiCode: z.string().trim().max(64).optional().nullable(),
-  supplierProductId: z.number().int().positive().nullable().optional(),
+  hours: z.number().int().positive().nullable().optional(),
   requiresAndroidId: z.boolean().optional().default(false),
   deviceIdName: z.string().trim().max(80).optional().default(""),
   /** Admin sends USD decimals; stored as microcents. */
@@ -38,44 +35,26 @@ export async function POST(request: Request) {
 
   const product = await prisma.product.findUnique({
     where: { id: parsed.data.productId },
-    select: { id: true, apiCode: true, title: true },
+    select: { id: true },
   });
   if (!product) return jsonError("NOT_FOUND", "Product not found.", 404);
 
-  const version = parsed.data.version ?? "";
   const labelClash = await prisma.duration.findFirst({
-    where: {
-      productId: parsed.data.productId,
-      version,
-      label: parsed.data.label,
-    },
+    where: { productId: parsed.data.productId, label: parsed.data.label },
   });
   if (labelClash) {
-    return jsonError(
-      "CONFLICT",
-      "Duration label must be unique for this version on the product.",
-      409,
-    );
+    return jsonError("CONFLICT", "This product already has a duration with that label.", 409);
   }
-
-  const productCode = product.apiCode ?? product.title;
-  const apiCode = await allocateDurationApiCode({
-    productApiCode: productCode,
-    label: parsed.data.label,
-    days: parsed.data.days,
-    preferred: parsed.data.apiCode,
-  });
 
   const row = parsed.data.prices[0]!;
   try {
     const duration = await prisma.duration.create({
       data: {
         productId: parsed.data.productId,
+        number: await nextCatalogNumber("duration"),
         label: parsed.data.label,
-        version,
         days: parsed.data.days ?? null,
-        apiCode,
-        supplierProductId: parsed.data.supplierProductId ?? null,
+        hours: parsed.data.hours ?? null,
         requiresAndroidId: parsed.data.requiresAndroidId,
         deviceIdName: parsed.data.deviceIdName ?? "",
         prices: {
@@ -91,10 +70,6 @@ export async function POST(request: Request) {
     });
     return jsonOk(duration);
   } catch {
-    return jsonError(
-      "CONFLICT",
-      "Duration label must be unique for this version on the product.",
-      409,
-    );
+    return jsonError("CONFLICT", "This product already has a duration with that label.", 409);
   }
 }
