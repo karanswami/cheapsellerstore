@@ -15,6 +15,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  ShieldCheck,
   ShoppingBag,
   Trash2,
   UserPlus,
@@ -36,6 +37,10 @@ type Reseller = {
   email: string;
   walletBalance: number;
   banned: boolean;
+  /** Admin gave them their own deposit access: no delete/suspend, reclaim only seller-funded money. */
+  independent: boolean;
+  /** Microcents the seller may pull back right now. */
+  reclaimable: number;
   createdAt: string;
   orders: number;
   spent: number;
@@ -183,6 +188,7 @@ export function SellerClient({ resellers, walletBalance, active30, minUsd, can }
                 <span className="flex items-center gap-1.5">
                   <span className="truncate font-semibold">{r.name || r.username}</span>
                   {r.banned ? <span className="rounded-md bg-rose-400/15 px-1.5 py-0.5 text-[10px] font-bold text-rose-300">Suspended</span> : null}
+                  {r.independent ? <span className="rounded-md bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">Independent</span> : null}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">
                   @{r.username} · {r.orders} {r.orders === 1 ? "order" : "orders"}
@@ -322,6 +328,18 @@ function ResellerSheet({ r, can, walletBalance, onClose }: { r: Reseller | null;
             </div>
           </div>
 
+          {x.independent ? (
+            <div className="flex gap-3 rounded-2xl border border-amber-300/20 bg-amber-400/[0.06] p-3.5">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-300" />
+              <div className="text-sm">
+                <p className="font-semibold text-amber-100">Independent reseller</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  Admin gave @{x.username} their own deposit access. You can still fund them, but you can&apos;t suspend or delete them, and you can only reclaim what you funded ({formatMoney(x.reclaimable)}).
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           {can.fund ? (
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Move funds</p>
@@ -343,7 +361,8 @@ function ResellerSheet({ r, can, walletBalance, onClose }: { r: Reseller | null;
                 ))}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Fund moves money from your wallet ({formatMoney(walletBalance)}). Reclaim pulls it back from theirs.
+                Fund moves money from your wallet ({formatMoney(walletBalance)}). Reclaim pulls it back from theirs
+                {x.independent ? ` (up to ${formatMoney(x.reclaimable)})` : ""}.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <Button
@@ -356,7 +375,7 @@ function ResellerSheet({ r, can, walletBalance, onClose }: { r: Reseller | null;
                 <Button
                   size="lg"
                   variant="outline"
-                  disabled={!micro || micro > x.walletBalance || busy !== null}
+                  disabled={!micro || micro > x.reclaimable || busy !== null}
                   onClick={() => run("reclaim", () => api(`/api/seller/sub-sellers/${x.id}/credit`, "POST", { amountUsd: -n }), `Reclaimed ${formatMoney(micro)}.`)}
                 >
                   {busy === "reclaim" ? <Loader2 className="animate-spin" /> : <Minus />} Reclaim
@@ -365,7 +384,7 @@ function ResellerSheet({ r, can, walletBalance, onClose }: { r: Reseller | null;
             </div>
           ) : null}
 
-          {can.manage ? (
+          {can.manage && !x.independent ? (
             confirmDelete ? (
               <div className="rounded-2xl border border-rose-400/25 bg-rose-500/[0.07] p-4">
                 <p className="flex items-center gap-2 font-semibold text-rose-200">

@@ -38,6 +38,7 @@ const TYPE_CATEGORY: Record<string, NotificationCategory> = {
   seller_approved: "account",
   seller_rejected: "account",
   role_changed: "account",
+  deposit_access: "account",
   MIGRATION_ROLE_UPGRADE: "account",
   security: "account",
   welcome: "account",

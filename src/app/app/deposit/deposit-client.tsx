@@ -221,8 +221,12 @@ export function DepositClient({ canDeposit, rates, currencies, mins, quick, gate
       <EmptyState
         icon={Lock}
         title="Deposits are turned off for this account"
-        hint="Ask your seller or support to top up your balance."
-      />
+        hint="Your seller or support tops up your wallet. Want to deposit yourself? Ask admin for your own deposit access: money you deposit stays yours."
+      >
+        <Link href="/app/reports?new=general" className="tap inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+          Ask admin for deposit access
+        </Link>
+      </EmptyState>
     );
   }
 

@@ -230,7 +230,7 @@ function UserPanel({ user, onChanged, onDeleted }: { user: UserRow; onChanged: (
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Joined</p>
             <p className="font-medium">{formatDate(user.createdAt)}</p>
-            {user.referredBy ? <p className="text-xs text-muted-foreground">via @{user.referredBy.username}</p> : null}
+            {user.referredBy ? <p className="text-xs text-muted-foreground">{user.role === "RESELLER" ? "Seller" : "via"} @{user.referredBy.username}</p> : null}
           </div>
         </div>
 
@@ -296,14 +296,33 @@ function UserPanel({ user, onChanged, onDeleted }: { user: UserRow; onChanged: (
                   </SubmitButton>
                 </div>
               </Field>
-              <ToggleRow label="Can create resellers" checked={user.canCreateResellers} onChange={(v) => patch("f", { canCreateResellers: v })} />
-              <ToggleRow label="Can manage resellers" checked={user.canManageResellers} onChange={(v) => patch("f", { canManageResellers: v })} />
-              <ToggleRow label="Can fund resellers" checked={user.canFundResellers} onChange={(v) => patch("f", { canFundResellers: v })} />
+              {user.role === "SELLER" ? (
+                <ToggleRow
+                  label="Reseller system"
+                  hint="Create resellers, fund / reclaim, suspend and delete them."
+                  checked={user.canCreateResellers && user.canManageResellers && user.canFundResellers}
+                  onChange={(v) => patch("f", { resellerGate: v })}
+                />
+              ) : null}
             </>
           ) : null}
+          <ToggleRow
+            label={wholesale ? "Developer API" : "Platform API enabled"}
+            hint={wholesale ? "API keys, webhooks and orders over the Platform API." : undefined}
+            checked={user.apiEnabled}
+            onChange={(v) => patch("f", { apiEnabled: v })}
+          />
+          <ToggleRow
+            label={user.role === "RESELLER" ? "Own deposit access" : "Deposits enabled"}
+            hint={
+              user.role === "RESELLER"
+                ? `Independent reseller: ${user.referredBy ? `@${user.referredBy.username}` : "their seller"} can no longer suspend or delete them, or reclaim money they deposit themselves.`
+                : "Allow this user to self-deposit."
+            }
+            checked={user.depositsEnabled}
+            onChange={(v) => patch("f", { depositsEnabled: v })}
+          />
           <ToggleRow label="Email verified" checked={user.emailVerified} onChange={(v) => patch("f", { emailVerified: v })} />
-          <ToggleRow label="Platform API enabled" checked={user.apiEnabled} onChange={(v) => patch("f", { apiEnabled: v })} />
-          <ToggleRow label="Deposits enabled" hint="Allow this user to self-deposit." checked={user.depositsEnabled} onChange={(v) => patch("f", { depositsEnabled: v })} />
         </section>
 
         <Separator />

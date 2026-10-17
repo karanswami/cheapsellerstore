@@ -1,4 +1,5 @@
 import { jsonError, jsonOk } from "@/lib/api";
+import { RESELLER_GATE_ON } from "@/lib/resellers";
 import { requireAdmin } from "@/lib/auth/admin";
 import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/notifications";
@@ -32,7 +33,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (parsed.data.action === "approve") {
     await prisma.user.update({
       where: { id: existing.userId },
-      data: { role: UserRole.SELLER },
+      data: { role: UserRole.SELLER, ...RESELLER_GATE_ON },
     });
     const req = await prisma.resellerRequest.update({
       where: { id },

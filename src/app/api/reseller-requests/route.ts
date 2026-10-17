@@ -1,4 +1,5 @@
 import { jsonError, jsonOk } from "@/lib/api";
+import { RESELLER_GATE_ON } from "@/lib/resellers";
 import { getCurrentUser } from "@/lib/auth/customer";
 import { usdToMicrocents } from "@/lib/currencies";
 import { prisma } from "@/lib/prisma";
@@ -165,7 +166,7 @@ export async function POST(request: Request) {
   if (auto) {
     const claimed = await prisma.user.updateMany({
       where: { id: user.id, role: UserRole.USER },
-      data: { role: UserRole.SELLER },
+      data: { role: UserRole.SELLER, ...RESELLER_GATE_ON },
     });
     if (claimed.count === 0) {
       return jsonError("CONFLICT", "Your account is already upgraded.", 409);

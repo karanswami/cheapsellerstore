@@ -1,7 +1,7 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth/customer";
 import { prisma } from "@/lib/prisma";
-import { createReseller, sellerHasSellerPanel } from "@/lib/resellers";
+import { createReseller, getSellerFundedBalances, isIndependentReseller, sellerHasSellerPanel } from "@/lib/resellers";
 import { getResellerCreateMinFundingUsd } from "@/lib/settings";
 import { UserRole } from "@prisma/client";
 import { z } from "zod";
@@ -13,7 +13,7 @@ export async function GET() {
     return jsonError("FORBIDDEN", "Not allowed.", 403);
   }
 
-  const [resellers, createMinFundingUsd] = await Promise.all([
+  const [rows, createMinFundingUsd] = await Promise.all([
     prisma.user.findMany({
       where: {
         referredById: user.id,
@@ -26,13 +26,20 @@ export async function GET() {
         name: true,
         username: true,
         email: true,
+        role: true,
         walletBalance: true,
         banned: true,
+        depositsEnabled: true,
         createdAt: true,
       },
     }),
     getResellerCreateMinFundingUsd(),
   ]);
+  const funded = await getSellerFundedBalances(rows.filter(isIndependentReseller));
+  const resellers = rows.map(({ role, depositsEnabled, ...r }) => {
+    const independent = isIndependentReseller({ role, depositsEnabled });
+    return { ...r, independent, reclaimable: independent ? (funded.get(r.id) ?? 0) : r.walletBalance };
+  });
 
   return jsonOk({
     resellers,

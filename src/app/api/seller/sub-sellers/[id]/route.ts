@@ -39,6 +39,9 @@ export async function PATCH(request: Request, { params }: Params) {
     if (code === "FORBIDDEN") {
       return jsonError("FORBIDDEN", "Manage not allowed.", 403);
     }
+    if (code === "INDEPENDENT") {
+      return jsonError(code, "This reseller has their own deposit access from admin, so you can't suspend or delete them.", 403);
+    }
     return jsonError(code, "Failed to update status.", 400);
   }
 }
@@ -65,6 +68,9 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
     if (code === "FORBIDDEN") {
       return jsonError("FORBIDDEN", "Manage not allowed.", 403);
+    }
+    if (code === "INDEPENDENT") {
+      return jsonError(code, "This reseller has their own deposit access from admin, so you can't suspend or delete them.", 403);
     }
     if (code === "INSUFFICIENT_BALANCE") {
       return jsonError(code, "Could not reclaim wallet balance.", 400);

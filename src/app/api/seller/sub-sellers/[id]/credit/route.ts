@@ -40,6 +40,9 @@ export async function POST(request: Request, { params }: Params) {
     if (code === "FORBIDDEN") {
       return jsonError("FORBIDDEN", "Funding not allowed.", 403);
     }
+    if (code === "RECLAIM_OWN_FUNDS") {
+      return jsonError(code, "You can only reclaim what you funded. The rest is the reseller's own deposit.", 400);
+    }
     if (code === "INSUFFICIENT_BALANCE") {
       return jsonError(
         code,

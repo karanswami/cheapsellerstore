@@ -133,8 +133,10 @@ export async function executeBulkSellersAction(params: {
   }
 
   const userIds = matchedUsers.map((u) => u.id);
+  // Reseller caps only ever apply to sellers — resellers can never create children.
+  const sellerIds = matchedUsers.filter((u) => u.role === UserRole.SELLER).map((u) => u.id);
   let actionSummary = "";
-  let auditDetails: Record<string, unknown> = {
+  const auditDetails: Record<string, unknown> = {
     target: payload.target,
     action: payload.action,
     matchedCount: matchedUsers.length,
@@ -143,7 +145,7 @@ export async function executeBulkSellersAction(params: {
   switch (payload.action) {
     case "GRANT_ALL_CAPS": {
       const result = await prisma.user.updateMany({
-        where: { id: { in: userIds } },
+        where: { id: { in: sellerIds } },
         data: {
           canCreateResellers: true,
           canManageResellers: true,
@@ -157,7 +159,7 @@ export async function executeBulkSellersAction(params: {
 
     case "REVOKE_ALL_CAPS": {
       const result = await prisma.user.updateMany({
-        where: { id: { in: userIds } },
+        where: { id: { in: sellerIds } },
         data: {
           canCreateResellers: false,
           canManageResellers: false,
@@ -172,7 +174,7 @@ export async function executeBulkSellersAction(params: {
     case "SET_CAN_CREATE_RESELLERS": {
       const val = payload.booleanValue ?? true;
       const result = await prisma.user.updateMany({
-        where: { id: { in: userIds } },
+        where: { id: { in: sellerIds } },
         data: { canCreateResellers: val },
       });
       actionSummary = `${val ? "Enabled" : "Disabled"} 'Can Create Resellers' for ${result.count} accounts`;
@@ -184,7 +186,7 @@ export async function executeBulkSellersAction(params: {
     case "SET_CAN_MANAGE_RESELLERS": {
       const val = payload.booleanValue ?? true;
       const result = await prisma.user.updateMany({
-        where: { id: { in: userIds } },
+        where: { id: { in: sellerIds } },
         data: { canManageResellers: val },
       });
       actionSummary = `${val ? "Enabled" : "Disabled"} 'Can Manage Resellers' for ${result.count} accounts`;
@@ -196,7 +198,7 @@ export async function executeBulkSellersAction(params: {
     case "SET_CAN_FUND_RESELLERS": {
       const val = payload.booleanValue ?? true;
       const result = await prisma.user.updateMany({
-        where: { id: { in: userIds } },
+        where: { id: { in: sellerIds } },
         data: { canFundResellers: val },
       });
       actionSummary = `${val ? "Enabled" : "Disabled"} 'Can Fund Resellers' for ${result.count} accounts`;

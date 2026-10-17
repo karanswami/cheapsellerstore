@@ -25,6 +25,73 @@ export function sellerHasSellerPanel(user: {
   );
 }
 
+/** All three reseller caps together = the admin "Reseller system" gate (on by default for sellers). */
+export const RESELLER_GATE_ON = {
+  canCreateResellers: true,
+  canManageResellers: true,
+  canFundResellers: true,
+} as const;
+export const RESELLER_GATE_OFF = {
+  canCreateResellers: false,
+  canManageResellers: false,
+  canFundResellers: false,
+} as const;
+
+/**
+ * Independent reseller = admin turned on self-deposit for them. From then on the
+ * seller can't delete/suspend them and can only reclaim what the seller funded.
+ */
+export function isIndependentReseller(user: { role: UserRole | string; depositsEnabled?: boolean | null }) {
+  return user.role === UserRole.RESELLER && user.depositsEnabled === true;
+}
+
+const SELLER_IN = ["reseller:", "reseller-credit:"];
+const SELLER_OUT = "reseller-cut:";
+
+/**
+ * How much of each reseller's wallet still came from their seller. Replays the
+ * ledger: seller transfers fill the seller bucket, everything else credited
+ * (deposits, refunds, rewards) fills the reseller's own bucket, and spending
+ * drains the seller bucket first so the reseller's own money stays protected.
+ */
+export async function getSellerFundedBalances(resellers: { id: string; walletBalance: number }[]) {
+  const out = new Map<string, number>();
+  if (!resellers.length) return out;
+  const txs = await prisma.transaction.findMany({
+    where: { userId: { in: resellers.map((r) => r.id) }, status: "COMPLETED" },
+    orderBy: { createdAt: "asc" },
+    select: { userId: true, amount: true, reference: true },
+  });
+  const bucket = new Map<string, { seller: number; own: number }>();
+  for (const t of txs) {
+    const b = bucket.get(t.userId) ?? { seller: 0, own: 0 };
+    const ref = t.reference ?? "";
+    if (t.amount > 0) {
+      // Reclaim rollbacks (reseller-cut: credit) give seller money back to the seller bucket.
+      if (SELLER_IN.some((p) => ref.startsWith(p)) || ref.startsWith(SELLER_OUT)) b.seller += t.amount;
+      else b.own += t.amount;
+    } else if (ref.startsWith(SELLER_OUT)) {
+      b.seller = Math.max(0, b.seller + t.amount);
+    } else {
+      const spend = -t.amount;
+      const fromSeller = Math.min(b.seller, spend);
+      b.seller -= fromSeller;
+      b.own = Math.max(0, b.own - (spend - fromSeller));
+    }
+    bucket.set(t.userId, b);
+  }
+  for (const r of resellers) {
+    out.set(r.id, Math.max(0, Math.min(r.walletBalance, Math.round(bucket.get(r.id)?.seller ?? 0))));
+  }
+  return out;
+}
+
+/** Max the seller may pull back right now: all of it, or only seller-funded money once independent. */
+async function reclaimableFrom(reseller: { id: string; walletBalance: number; role: UserRole; depositsEnabled: boolean }) {
+  if (!isIndependentReseller(reseller)) return reseller.walletBalance;
+  return (await getSellerFundedBalances([reseller])).get(reseller.id) ?? 0;
+}
+
 async function requireOwnReseller(sellerId: string, resellerId: string) {
   const reseller = await prisma.user.findUnique({ where: { id: resellerId } });
   if (
@@ -153,8 +220,11 @@ export async function creditOwnReseller(input: {
   if (!seller || seller.role !== UserRole.SELLER || !seller.canFundResellers) {
     throw new Error("FORBIDDEN");
   }
-  await requireOwnReseller(input.sellerId, input.resellerId);
+  const reseller = await requireOwnReseller(input.sellerId, input.resellerId);
   const amount = usdToMicrocents(Math.abs(input.amountUsd));
+  if (input.amountUsd < 0 && amount > (await reclaimableFrom(reseller)) + 1_000_000) {
+    throw new Error(isIndependentReseller(reseller) ? "RECLAIM_OWN_FUNDS" : "INSUFFICIENT_BALANCE");
+  }
   await transferWallet(
     input.amountUsd > 0
       ? {
@@ -190,7 +260,8 @@ export async function setOwnResellerBanned(input: {
   if (!seller || seller.role !== UserRole.SELLER || !seller.canManageResellers) {
     throw new Error("FORBIDDEN");
   }
-  await requireOwnReseller(input.sellerId, input.resellerId);
+  const reseller = await requireOwnReseller(input.sellerId, input.resellerId);
+  if (isIndependentReseller(reseller)) throw new Error("INDEPENDENT");
   const updated = await prisma.user.update({
     where: { id: input.resellerId },
     data: {
@@ -219,6 +290,7 @@ export async function deleteOwnReseller(input: {
     throw new Error("FORBIDDEN");
   }
   const reseller = await requireOwnReseller(input.sellerId, input.resellerId);
+  if (isIndependentReseller(reseller)) throw new Error("INDEPENDENT");
   if (reseller.walletBalance > 0) {
     await transferWallet({
       fromUserId: reseller.id,

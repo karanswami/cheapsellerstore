@@ -314,13 +314,13 @@ type BulkStats = {
 };
 
 const ACTIONS: { v: string; label: string; kind: "none" | "bool" | "amount" | "ban" | "notify" }[] = [
-  { v: "GRANT_ALL_CAPS", label: "Grant all reseller capabilities", kind: "none" },
-  { v: "REVOKE_ALL_CAPS", label: "Revoke all reseller capabilities", kind: "none" },
+  { v: "GRANT_ALL_CAPS", label: "Reseller system: turn ON (sellers)", kind: "none" },
+  { v: "REVOKE_ALL_CAPS", label: "Reseller system: turn OFF (sellers)", kind: "none" },
   { v: "SET_CAN_CREATE_RESELLERS", label: "Set: can create resellers", kind: "bool" },
   { v: "SET_CAN_MANAGE_RESELLERS", label: "Set: can manage resellers", kind: "bool" },
   { v: "SET_CAN_FUND_RESELLERS", label: "Set: can fund resellers", kind: "bool" },
-  { v: "SET_DEPOSITS_ENABLED", label: "Set: deposits enabled", kind: "bool" },
-  { v: "SET_API_ENABLED", label: "Set: Platform API enabled", kind: "bool" },
+  { v: "SET_DEPOSITS_ENABLED", label: "Set: own deposit access", kind: "bool" },
+  { v: "SET_API_ENABLED", label: "Set: Developer API", kind: "bool" },
   { v: "SET_EMAIL_VERIFIED", label: "Set: email verified", kind: "bool" },
   { v: "WALLET_ADJUST", label: "Adjust every wallet (± USD)", kind: "amount" },
   { v: "SEND_NOTIFICATION", label: "Send notification", kind: "notify" },

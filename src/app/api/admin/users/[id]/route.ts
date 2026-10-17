@@ -28,6 +28,8 @@ const patchSchema = z.object({
   canCreateResellers: z.boolean().optional(),
   canManageResellers: z.boolean().optional(),
   canFundResellers: z.boolean().optional(),
+  /** "Reseller system" gate: sets create + manage + fund together. */
+  resellerGate: z.boolean().optional(),
   emailVerified: z.boolean().optional(),
   apiEnabled: z.boolean().optional(),
   depositsEnabled: z.boolean().optional(),
@@ -240,13 +242,23 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const nextRole = parsed.data.role;
-  let canCreate = parsed.data.canCreateResellers;
-  let canManage = parsed.data.canManageResellers;
-  let canFund = parsed.data.canFundResellers;
-  if (nextRole && nextRole !== UserRole.SELLER) {
-    canCreate = false;
-    canManage = false;
-    canFund = false;
+  const gate = parsed.data.resellerGate;
+  let canCreate = gate ?? parsed.data.canCreateResellers;
+  let canManage = gate ?? parsed.data.canManageResellers;
+  let canFund = gate ?? parsed.data.canFundResellers;
+  const finalRole = nextRole ?? existing.role;
+  if (finalRole !== UserRole.SELLER) {
+    // Only sellers can ever hold reseller caps — resellers never create children.
+    if (nextRole || canCreate !== undefined || canManage !== undefined || canFund !== undefined) {
+      canCreate = false;
+      canManage = false;
+      canFund = false;
+    }
+  } else if (nextRole && existing.role !== UserRole.SELLER) {
+    // New sellers start with the reseller system + Developer API on; admin can turn either off.
+    canCreate ??= true;
+    canManage ??= true;
+    canFund ??= true;
   }
 
   // Role → RESELLER: self-deposit off by default (seller-funded). Leaving RESELLER: turn on unless admin sent an explicit flag.
@@ -319,6 +331,35 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (becomingBanned) {
     await revokeUserApiKeysOnBan(id).catch(() => 0);
+  }
+
+  // Reseller self-deposit toggled: they become (or stop being) independent of their seller.
+  if (
+    user.role === UserRole.RESELLER &&
+    existing.role === UserRole.RESELLER &&
+    depositsEnabled !== undefined &&
+    depositsEnabled !== existing.depositsEnabled
+  ) {
+    void notifyUser({
+      userId: id,
+      type: "deposit_access",
+      title: depositsEnabled ? "You can now deposit yourself" : "Self-deposit turned off",
+      message: depositsEnabled
+        ? "Admin gave you your own deposit access. Money you deposit is yours: your seller can't take it back."
+        : "Your seller tops up your wallet again. Ask support if you need your own deposit access.",
+      actionUrl: depositsEnabled ? "/app/deposit" : "/app",
+    }).catch(() => {});
+    if (existing.referredById) {
+      void notifyUser({
+        userId: existing.referredById,
+        type: "deposit_access",
+        title: depositsEnabled ? `@${user.username} is now an independent reseller` : `@${user.username} is seller-funded again`,
+        message: depositsEnabled
+          ? "Admin gave them their own deposit access. You can still fund them, but can't suspend or delete them, and can only reclaim what you funded."
+          : "Their self-deposit is off again. Full reseller controls are back.",
+        actionUrl: "/app/seller",
+      }).catch(() => {});
+    }
   }
 
   if (banToggling) {

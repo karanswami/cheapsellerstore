@@ -4,7 +4,7 @@ import { Surface, IconTile } from "@/components/app-kit";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/customer";
 import { prisma } from "@/lib/prisma";
-import { sellerHasSellerPanel } from "@/lib/resellers";
+import { getSellerFundedBalances, isIndependentReseller, sellerHasSellerPanel } from "@/lib/resellers";
 import { getResellerCreateMinFundingUsd } from "@/lib/settings";
 import { SellerClient } from "./seller-client";
 
@@ -41,20 +41,23 @@ export default async function SellerPage() {
     prisma.user.findMany({
       where: { referredById: user.id, role: "RESELLER", NOT: { username: { startsWith: "del_" } } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, name: true, username: true, email: true, walletBalance: true, banned: true, createdAt: true },
+      select: { id: true, name: true, username: true, email: true, role: true, walletBalance: true, banned: true, depositsEnabled: true, createdAt: true },
     }),
     getResellerCreateMinFundingUsd(),
   ]);
 
-  const stats = rows.length
-    ? await prisma.order.groupBy({
-        by: ["userId"],
-        where: { userId: { in: rows.map((r) => r.id) }, status: { in: ["PAID", "FULFILLED"] } },
-        _count: { _all: true },
-        _sum: { total: true },
-        _max: { createdAt: true },
-      })
-    : [];
+  const [stats, funded] = await Promise.all([
+    rows.length
+      ? prisma.order.groupBy({
+          by: ["userId"],
+          where: { userId: { in: rows.map((r) => r.id) }, status: { in: ["PAID", "FULFILLED"] } },
+          _count: { _all: true },
+          _sum: { total: true },
+          _max: { createdAt: true },
+        })
+      : [],
+    getSellerFundedBalances(rows.filter(isIndependentReseller)),
+  ]);
   const byUser = new Map(stats.map((s) => [s.userId, s]));
   const active30 = countActiveSince(stats.map((s) => s._max.createdAt), 30);
 
@@ -62,10 +65,13 @@ export default async function SellerPage() {
     <SellerClient
       walletBalance={user.walletBalance}
       active30={active30}
-      resellers={rows.map((r) => {
+      resellers={rows.map(({ role, depositsEnabled, ...r }) => {
         const s = byUser.get(r.id);
+        const independent = isIndependentReseller({ role, depositsEnabled });
         return {
           ...r,
+          independent,
+          reclaimable: independent ? (funded.get(r.id) ?? 0) : r.walletBalance,
           createdAt: r.createdAt.toISOString(),
           orders: s?._count._all ?? 0,
           spent: s?._sum.total ?? 0,
