@@ -33,7 +33,6 @@ export async function getAdminLiveStamp(): Promise<string> {
       prisma.duration.findFirst(upd),
       prisma.durationPrice.findFirst(upd),
       prisma.developerSettlementDay.findFirst(upd),
-      prisma.specialStockSettlementDay.findFirst(upd),
       prisma.appSetting.findFirst(upd),
       prisma.banner.findFirst(upd),
       prisma.flashSale.findFirst(upd),

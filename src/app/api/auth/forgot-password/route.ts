@@ -1,16 +1,15 @@
 import { clientIpFromHeaders, rateLimitAll, tooManyRequests } from "@/lib/rate-limit";
 import { jsonError, jsonOk } from "@/lib/api";
-import { createPasswordResetOtp } from "@/lib/auth/password-reset";
-import { sendPasswordResetOtpEmail } from "@/lib/email";
+import { createPasswordResetLink, discardPasswordResetLink } from "@/lib/auth/password-reset-link";
+import { sendPasswordResetLinkEmail } from "@/lib/email";
+import { getEnv } from "@/lib/env";
 import { isResendConfigured } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
 import { forgotPasswordSchema } from "@/lib/validations";
 
 /** Generic success copy — never reveal whether the email exists. */
 const SUCCESS_MESSAGE =
-  "If an account exists for that email, check your inbox for a 6-digit reset code.";
-const REUSED_MESSAGE =
-  "If an account exists for that email, use the 6-digit code already sent (valid until it expires).";
+  "If an account exists for that email, we sent a password reset link to it.";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -49,37 +48,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const created = await createPasswordResetOtp(email);
-
-  // Reuse path: never send mail (plaintext OTP is not stored).
-  if (created.status === "reused") {
-    return jsonOk({ message: REUSED_MESSAGE, reused: true });
-  }
-
-  const code = created.code;
-  if (!/^\d{6}$/.test(code)) {
-    await prisma.passwordResetOtp.deleteMany({ where: { email } });
-    return jsonError(
-      "EMAIL_FAILED",
-      "Could not send reset email. Try again shortly.",
-      502,
-    );
-  }
+  const token = await createPasswordResetLink(email);
+  // Built from the configured site URL, never the Host header, so a forged Host can't poison the link.
+  const base = getEnv().appUrl.replace(/\/$/, "");
+  const link = `${base}/reset-password?email=${encodeURIComponent(email)}&token=${token}`;
 
   try {
-    await sendPasswordResetOtpEmail({
-      to: email,
-      code,
-      name: user.name,
-    });
+    await sendPasswordResetLinkEmail({ to: email, link, name: user.name });
   } catch {
-    await prisma.passwordResetOtp.deleteMany({ where: { email } });
-    return jsonError(
-      "EMAIL_FAILED",
-      "Could not send reset email. Try again shortly.",
-      502,
-    );
+    await discardPasswordResetLink(email);
+    return jsonError("EMAIL_FAILED", "Could not send reset email. Try again shortly.", 502);
   }
 
-  return jsonOk({ message: SUCCESS_MESSAGE, reused: false });
+  return jsonOk({ message: SUCCESS_MESSAGE });
 }

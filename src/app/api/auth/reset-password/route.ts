@@ -2,7 +2,7 @@ import { clientIpFromHeaders, rateLimitAll, tooManyRequests } from "@/lib/rate-l
 import { jsonError, jsonOk } from "@/lib/api";
 import { logActivity } from "@/lib/activity-log";
 import { hashPassword, revokeUserSessions } from "@/lib/auth/customer";
-import { consumePasswordResetOtp } from "@/lib/auth/password-reset";
+import { consumePasswordResetLink } from "@/lib/auth/password-reset-link";
 import { prisma } from "@/lib/prisma";
 import { resetPasswordSchema } from "@/lib/validations";
 
@@ -31,24 +31,22 @@ export async function POST(request: Request) {
   if (limited) return tooManyRequests(limited, "Too many attempts. Try again later.");
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    return jsonError("INVALID_CODE", "Invalid or expired reset code.", 400);
+    return jsonError("INVALID_CODE", "Invalid or expired reset link.", 400);
   }
 
-  const result = await consumePasswordResetOtp(email, parsed.data.code);
+  const result = await consumePasswordResetLink(email, parsed.data.token);
   if (!result.ok) {
     const message =
       result.reason === "EXPIRED"
-        ? "Reset code expired. Request a new one."
-        : result.reason === "LOCKED"
-          ? "Too many attempts. Request a new code."
-          : "Invalid or expired reset code.";
+        ? "This reset link has expired. Request a new one."
+        : "Invalid or expired reset link.";
     return jsonError("INVALID_CODE", message, 400);
   }
 
   const passwordHash = await hashPassword(parsed.data.password);
   await prisma.user.update({
     where: { id: user.id },
-    // Receiving the OTP proves the mailbox, so the address counts as verified from now on.
+    // Opening the emailed link proves the mailbox, so the address counts as verified from now on.
     data: { passwordHash, emailVerified: true },
   });
   // A reset must kill every session an attacker may already hold.

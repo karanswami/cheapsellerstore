@@ -58,7 +58,6 @@ export type IssueReportKeyDetails = {
   androidId?: string | null;
   buyerEmail?: string | null;
   buyerDiscord?: string | null;
-  isSpecialInventory?: boolean;
 };
 
 export type IssueReportRow = {
@@ -217,7 +216,6 @@ async function fetchKeyDetailsMap(keyIds: string[]) {
           status: true,
           soldAt: true,
           createdAt: true,
-          isSpecialInventory: true,
         },
       },
       order: { select: { total: true, status: true, buyerEmail: true, buyerDiscord: true } },
@@ -242,7 +240,6 @@ async function fetchKeyDetailsMap(keyIds: string[]) {
         androidId: oi.androidId ?? null,
         buyerEmail: oi.order?.buyerEmail ?? null,
         buyerDiscord: oi.order?.buyerDiscord ?? null,
-        isSpecialInventory: oi.key?.isSpecialInventory ?? false,
       });
     }
   }
@@ -258,7 +255,6 @@ async function fetchKeyDetailsMap(keyIds: string[]) {
         soldAt: true,
         createdAt: true,
         orderId: true,
-        isSpecialInventory: true,
         order: { select: { total: true, status: true, buyerEmail: true, buyerDiscord: true } },
         duration: {
           select: {
@@ -287,7 +283,6 @@ async function fetchKeyDetailsMap(keyIds: string[]) {
         orderStatus: k.order?.status ?? null,
         buyerEmail: k.order?.buyerEmail ?? null,
         buyerDiscord: k.order?.buyerDiscord ?? null,
-        isSpecialInventory: k.isSpecialInventory,
       });
     }
   }

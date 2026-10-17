@@ -60,7 +60,7 @@ const send = <T = unknown,>(url: string, body: object, method = "POST") =>
 
 const tap = () => feedbackTap({ impact: "selection", silent: true });
 
-type Sheet = "name" | "photo" | "password" | null;
+type Sheet = "name" | "photo" | "password" | "email" | null;
 
 export function ProfileClient({
   user,
@@ -102,7 +102,7 @@ export function ProfileClient({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
       <div className="min-w-0 space-y-6 lg:sticky lg:top-6">
-        <IdentityCard user={user} stats={stats} onEditName={() => open("name")} onEditPhoto={() => open("photo")} />
+        <IdentityCard user={user} stats={stats} onEditName={() => open("name")} onVerifyEmail={() => open("email")} onEditPhoto={() => open("photo")} />
         <div className="hidden lg:block">{activity}</div>
       </div>
 
@@ -123,6 +123,7 @@ export function ProfileClient({
 
       <NameSheet open={sheet === "name"} onClose={close} current={user.name} />
       <PhotoSheet open={sheet === "photo"} onClose={close} user={user} />
+      <EmailSheet open={sheet === "email"} onClose={close} email={user.email} />
       <PasswordSheet open={sheet === "password"} onClose={close} hasPassword={user.hasPassword} />
     </div>
   );
@@ -134,11 +135,13 @@ function IdentityCard({
   user,
   stats,
   onEditName,
+  onVerifyEmail,
   onEditPhoto,
 }: {
   user: SafeUser;
   stats: { orders: number; spent: number };
   onEditName: () => void;
+  onVerifyEmail: () => void;
   onEditPhoto: () => void;
 }) {
   const tier = tierForSpend(stats.spent);
@@ -189,7 +192,13 @@ function IdentityCard({
               <BadgeCheck className="size-3.5" /> Verified
             </span>
           ) : (
-            <span className="rounded-full bg-amber-400/15 px-2.5 py-1 text-amber-300 ring-1 ring-inset ring-amber-300/20">Unverified</span>
+            <button
+              type="button"
+              onClick={onVerifyEmail}
+              className="tap rounded-full bg-amber-400/15 px-2.5 py-1 text-amber-300 ring-1 ring-inset ring-amber-300/20"
+            >
+              Unverified · Verify
+            </button>
           )}
           <span className="rounded-full bg-white/10 px-2.5 py-1 text-white/70 ring-1 ring-inset ring-white/10">Since {since}</span>
         </div>
@@ -300,10 +309,11 @@ function SecurityCard({
 
         <div className="p-1.5">
           <SettingRow
+            onClick={user.emailVerified ? undefined : () => onOpen("email")}
             icon={Mail}
             tone={user.emailVerified ? "emerald" : "amber"}
             title="Email"
-            subtitle={user.email}
+            subtitle={user.emailVerified ? user.email : `${user.email} · Tap to verify`}
             trailing={<StatusPill ok={user.emailVerified} on="Verified" off="Unverified" />}
           />
           <SettingRow
@@ -523,6 +533,82 @@ function NameSheet({ open, onClose, current }: { open: boolean; onClose: () => v
       {/* remount per open so the field starts from the saved name */}
       {open ? <NameForm current={current} onDone={onClose} /> : null}
     </BottomSheet>
+  );
+}
+
+function EmailSheet({ open, onClose, email }: { open: boolean; onClose: () => void; email: string }) {
+  return (
+    <BottomSheet open={open} onClose={onClose} title="Verify email" subtitle={email} icon={<IconTile icon={Mail} tone="amber" />}>
+      {open ? <EmailVerifyForm onDone={onClose} /> : null}
+    </BottomSheet>
+  );
+}
+
+function EmailVerifyForm({ onDone }: { onDone: () => void }) {
+  const router = useRouter();
+  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function sendCode() {
+    setBusy(true);
+    try {
+      const r = await send<{ message: string }>("/api/auth/verify-email/send", {});
+      toast.success(r.message);
+      setSent(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirm(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await send("/api/auth/verify-email/confirm", { code });
+      feedbackTap({ impact: "success", silent: true });
+      toast.success("Email verified.");
+      router.refresh();
+      onDone();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not verify.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!sent) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">We will email you a 6-digit code to confirm this address.</p>
+        <Button size="lg" className="w-full rounded-xl" onClick={sendCode} disabled={busy}>
+          {busy ? <Loader2 className="animate-spin" /> : <Mail />} Send code
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={confirm} className="space-y-4">
+      <Input
+        autoFocus
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+        placeholder="000000"
+        className="h-12 rounded-xl text-center font-mono text-xl tracking-[0.4em]"
+        aria-label="Verification code"
+      />
+      <Button type="submit" size="lg" className="w-full rounded-xl" disabled={busy || code.length !== 6}>
+        {busy ? <Loader2 className="animate-spin" /> : <Check />} Verify
+      </Button>
+      <button type="button" onClick={sendCode} disabled={busy} className="tap w-full text-center text-xs text-muted-foreground hover:text-foreground">
+        Resend code
+      </button>
+    </form>
   );
 }
 

@@ -414,7 +414,6 @@ function Detail({ report: r, onUpdated }: { report: IssueReportRow; onUpdated: (
                   <p className="text-xs text-muted-foreground">{k.durationLabel || "—"}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {k.isSpecialInventory ? <Badge variant="highlight">Special stock</Badge> : null}
                   {k.keyStatus ? <StatusBadge status={k.keyStatus} /> : null}
                 </div>
               </div>

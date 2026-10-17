@@ -100,7 +100,7 @@ const NAV: NavGroup[] = [
   {
     label: "System",
     items: [
-      { href: "/admin/settlements", label: "Finance", icon: BadgeDollarSign, badge: (b) => b.pendingDevSettlements + b.pendingSpecialSettlements },
+      { href: "/admin/settlements", label: "Finance", icon: BadgeDollarSign, badge: (b) => b.pendingDevSettlements },
       { href: "/admin/cron", label: "Cron jobs", icon: Clock },
       { href: "/admin/logs", label: "Logs", icon: ScrollText },
       { href: "/admin/settings", label: "Settings", icon: Settings },

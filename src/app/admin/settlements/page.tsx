@@ -4,7 +4,7 @@ import { AdminFinanceClient } from "./finance-client";
 export default function AdminSettlementsPage() {
   return (
     <>
-      <PageHeader title="Finance" subtitle="Developer settlements and special stock." />
+      <PageHeader title="Finance" subtitle="Developer settlements." />
       <AdminFinanceClient />
     </>
   );

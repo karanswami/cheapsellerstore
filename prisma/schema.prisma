@@ -420,15 +420,11 @@ model Key {
   orderId    String?   @db.ObjectId
   order      Order?    @relation(fields: [orderId], references: [id])
   orderItem          OrderItem?
-  /// When true, key belongs to temporary isolated special inventory (excluded from developer settlements & stats share).
-  isSpecialInventory Boolean   @default(false)
-  specialBatchTag    String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   @@index([durationId, status])
   @@index([orderId])
-  @@index([isSpecialInventory, status])
 }
 
 model Order {
@@ -927,23 +923,6 @@ model ApiDeveloperMarginDay {
   note      String?
   createdAt DateTime                  @default(now())
   updatedAt DateTime                  @updatedAt
-
-  @@index([status, dateKey])
-}
-
-/// Special Stock 50-50 developer-share settlement (ops ledger; no wallet side effects).
-model SpecialStockSettlementDay {
-  id        String                     @id @default(auto()) @map("_id") @db.ObjectId
-  /// UTC calendar day `YYYY-MM-DD`
-  dateKey   String                     @unique
-  status    DeveloperSettlementStatus  @default(PENDING)
-  /// Developer share snapshot at mark-paid time (USD microcents). Live rows recompute from special stock sales.
-  amount    Float                      @default(0)
-  paidAt    DateTime?
-  paidById  String?                    @db.ObjectId
-  note      String?
-  createdAt DateTime                   @default(now())
-  updatedAt DateTime                   @updatedAt
 
   @@index([status, dateKey])
 }

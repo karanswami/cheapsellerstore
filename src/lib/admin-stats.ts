@@ -303,11 +303,6 @@ export async function getStatisticsStats(period: StatisticsPeriod = "today") {
               durationLabel: true,
               durationId: true,
               unitPrice: true,
-              key: {
-                select: {
-                  isSpecialInventory: true,
-                },
-              },
             },
           },
         },
@@ -381,19 +376,14 @@ export async function getStatisticsStats(period: StatisticsPeriod = "today") {
 
     let orderProfit = 0;
     for (const item of order.items) {
-      const isSpecial = item.key?.isSpecialInventory === true;
       const catalog = priceByDuration.get(item.durationId);
       const listPrice = catalog?.price ?? item.unitPrice;
-      // Special inventory has 0 buy cost basis
-      const cost = isSpecial ? 0 : catalog?.buyPrice ?? 0;
+      const cost = catalog?.buyPrice ?? 0;
       const discount = Math.max(0, listPrice - item.unitPrice);
       const profit = item.unitPrice - cost;
-      // Special inventory gives 0 developer share, 100% to owner
-      const split = isSpecial
-        ? { owner: profit, developer: 0 }
-        : splitGrossProfit(profit, shareRate);
+      const split = splitGrossProfit(profit, shareRate);
 
-      if (!isSpecial && (!catalog || cost <= 0)) missingCost += 1;
+      if (!catalog || cost <= 0) missingCost += 1;
       totalCost += cost;
       totalDiscount += discount;
       grossProfit += profit;
@@ -419,7 +409,7 @@ export async function getStatisticsStats(period: StatisticsPeriod = "today") {
       cur.profit += profit;
       cur.developer += split.developer;
       cur.owner += split.owner;
-      if (!isSpecial && (!catalog || cost <= 0)) cur.missingCost += 1;
+      if (!catalog || cost <= 0) cur.missingCost += 1;
       productMap.set(key, cur);
     }
     profitByDay.set(day, (profitByDay.get(day) ?? 0) + orderProfit);

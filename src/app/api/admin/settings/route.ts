@@ -82,7 +82,6 @@ import {
   getSellerPurchasePercent,
   getSettingInt,
   getSettingText,
-  getSpecialStockDeveloperSharePercent,
   isResellerAutoApprove,
   isResellerProgramEnabled,
   SETTING_KEYS,
@@ -254,7 +253,6 @@ export async function GET() {
     resellerAutoApprove: await isResellerAutoApprove(),
     sellerProgram: await getSellerProgramConfig(),
     developerProfitSharePercent: await getDeveloperProfitSharePercent(),
-    specialStockDeveloperSharePercent: await getSpecialStockDeveloperSharePercent(),
     defaultProductDemoUrl: await getDefaultProductDemoUrl(),
     googleClientId: await getGoogleClientId(),
     googleClientSecret: await getGoogleClientSecret(),
@@ -320,7 +318,6 @@ const schema = z.object({
     })
     .optional(),
   developerProfitSharePercent: z.number().min(0).max(100).optional(),
-  specialStockDeveloperSharePercent: z.number().min(0).max(100).optional(),
   defaultProductDemoUrl: z
     .string()
     .trim()
@@ -550,12 +547,6 @@ export async function PATCH(request: Request) {
     await upsertSetting({
       key: SETTING_KEYS.developerProfitSharePercent,
       intValue: Math.round(d.developerProfitSharePercent),
-    });
-  }
-  if (d.specialStockDeveloperSharePercent !== undefined) {
-    await upsertSetting({
-      key: SETTING_KEYS.specialStockDeveloperSharePercent,
-      intValue: Math.round(d.specialStockDeveloperSharePercent),
     });
   }
   if (d.defaultProductDemoUrl !== undefined) {

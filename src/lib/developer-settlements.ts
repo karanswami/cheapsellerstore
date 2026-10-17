@@ -92,11 +92,6 @@ async function buildDailyAggregates(since: Date): Promise<Map<string, DayAgg>> {
         select: {
           durationId: true,
           unitPrice: true,
-          key: {
-            select: {
-              isSpecialInventory: true,
-            },
-          },
         },
       },
     },
@@ -126,10 +121,6 @@ async function buildDailyAggregates(since: Date): Promise<Map<string, DayAgg>> {
     let hasEligibleItems = false;
 
     for (const item of order.items) {
-      if (item.key?.isSpecialInventory) {
-        // Excluded from developer commission / settlement
-        continue;
-      }
       hasEligibleItems = true;
       const cost = buyByDuration.get(item.durationId) ?? 0;
       orderEligibleSales += item.unitPrice;

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ComponentType } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, AtSign, Eye, EyeOff, Loader2, Lock, Mail, User, UserRound } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -175,6 +176,13 @@ export function AuthForm({
             </div>
           );
         })}
+        {mode === "login" ? (
+          <div className="-mt-1 text-right">
+            <Link href="/forgot-password" className="text-xs font-semibold text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+        ) : null}
         {mode === "register" && referralCode ? <input type="hidden" name="referralCode" value={referralCode} /> : null}
 
         {error ? (

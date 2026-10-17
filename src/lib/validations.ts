@@ -30,10 +30,7 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   email: z.string().trim().email("Invalid email").max(120),
-  code: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/, "Enter the 6-digit code from your email"),
+  token: z.string().trim().regex(/^[a-f0-9]{64}$/, "Invalid or expired reset link"),
   password: z.string().min(6, "Password must be at least 6 characters").max(128),
 });
 

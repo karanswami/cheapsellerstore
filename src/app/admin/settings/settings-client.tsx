@@ -4,7 +4,6 @@ import { Bell, Building2, Percent, Plug, ShieldCheck, Store } from "lucide-react
 import { TableSkeleton, useAdminQuery } from "@/components/admin/kit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BrandingSection, GeneralSection } from "./section-general";
-import { IconsSection } from "./section-icons";
 import { CommerceSection } from "./section-commerce";
 import { IntegrationsSection, NotificationsSection } from "./section-integrations";
 import { SellersSection } from "./section-sellers";
@@ -44,7 +43,6 @@ export function AdminSettingsClient({ defaultTab = "general" }: { defaultTab?: s
           <TabsContent value="general" className="space-y-6">
             <GeneralSection s={data} />
             <BrandingSection />
-            <IconsSection />
           </TabsContent>
           <TabsContent value="commerce" className="space-y-6">
             <CommerceSection s={data} />

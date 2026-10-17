@@ -214,8 +214,6 @@ export const SETTING_KEYS = {
   depositQuickAmounts: "deposit_quick_amounts",
   /** Developer share of order gross profit (sale − buy), whole percent 0–100. Default 10. */
   developerProfitSharePercent: "developer_profit_share_percent",
-  /** Developer share of Special Stock revenue/profit, whole percent 0–100. Default 50. */
-  specialStockDeveloperSharePercent: "special_stock_developer_share_percent",
   /** Platform API global kill switch (1 = on). */
   apiPlatformEnabled: "api_platform_enabled",
   /** JSON { user, seller, reseller, admin: boolean } */
@@ -371,17 +369,4 @@ export async function getDeveloperProfitSharePercent(): Promise<number> {
 /** Fraction 0–1 for order developer share. */
 export async function getDeveloperProfitShareRate(): Promise<number> {
   return (await getDeveloperProfitSharePercent()) / 100;
-}
-
-/** Special Stock profit developer share % (default 50). */
-export async function getSpecialStockDeveloperSharePercent(): Promise<number> {
-  return clampPercent(
-    await getSettingInt(SETTING_KEYS.specialStockDeveloperSharePercent, 50),
-    50,
-  );
-}
-
-/** Fraction 0–1 for Special Stock developer share. */
-export async function getSpecialStockDeveloperShareRate(): Promise<number> {
-  return (await getSpecialStockDeveloperSharePercent()) / 100;
 }
