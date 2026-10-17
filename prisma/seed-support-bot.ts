@@ -264,7 +264,6 @@ const STEPS: SeedStep[] = [
     buttons: [
       { id: "login", label: "🔐 Can't log in", type: "step", row: 1, targetSlug: "account_login" },
       { id: "forgot", label: "🔑 Forgot password", type: "step", row: 1, targetSlug: "account_forgot" },
-      { id: "2fa", label: "📱 Two-factor", type: "step", row: 2, targetSlug: "account_2fa" },
       { id: "google", label: "🔵 Google sign-in", type: "step", row: 2, targetSlug: "account_google" },
       { id: "banned", label: "🚫 Banned?", type: "step", row: 3, targetSlug: "account_banned" },
       { id: "profile", label: "👤 Open Profile", type: "link", row: 3, href: "/app/profile" },
@@ -275,11 +274,10 @@ const STEPS: SeedStep[] = [
     slug: "account_login",
     title: "Can't log in",
     messageText:
-      "Try this:\n\n1. Correct email + password (check Caps Lock)\n2. If 2FA is on → authenticator or backup code\n3. Forgot password → email OTP reset\n4. Google login only if Google verified your email\n\nStill stuck? Type a short message from the main menu after trying the steps above.",
+      "Try this:\n\n1. Correct email + password (check Caps Lock)\n2. Forgot password → email OTP reset\n3. Google login only if Google verified your email\n\nStill stuck? Type a short message from the main menu after trying the steps above.",
     sortOrder: 51,
     buttons: [
       { id: "forgot", label: "🔑 Forgot password", type: "step", row: 1, targetSlug: "account_forgot" },
-      { id: "2fa", label: "📱 2FA help", type: "step", row: 1, targetSlug: "account_2fa" },
       { id: "back", label: "◀️ Account", type: "step", row: 2, targetSlug: "account_menu" },
     ],
   },
@@ -291,17 +289,6 @@ const STEPS: SeedStep[] = [
     sortOrder: 52,
     buttons: [
       { id: "shop", label: "🏪 Back to Store", type: "link", row: 1, href: "/" },
-      { id: "back", label: "◀️ Account", type: "step", row: 2, targetSlug: "account_menu" },
-    ],
-  },
-  {
-    slug: "account_2fa",
-    title: "Two-factor auth",
-    messageText:
-      "Enable 2FA from Profile (authenticator app + backup codes).\n\nSave backup codes offline. Lose phone + backups → recovery may be limited — contact support with proof of ownership.\n\nAt login, enter the 6-digit code when prompted.",
-    sortOrder: 53,
-    buttons: [
-      { id: "profile", label: "👤 Open Profile", type: "link", row: 1, href: "/app/profile" },
       { id: "back", label: "◀️ Account", type: "step", row: 2, targetSlug: "account_menu" },
     ],
   },

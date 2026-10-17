@@ -1,4 +1,5 @@
 import { jsonError, jsonOk } from "@/lib/api";
+import { getSellerProgramConfig, saveSellerProgramConfig } from "@/lib/seller-program";
 import {
   MAINTENANCE_COOKIE,
   maintenanceCookieOptions,
@@ -240,6 +241,7 @@ export async function GET() {
     resellerApplyMinBalance: await getResellerApplyMinBalanceUsd(),
     resellerCreateMinFunding: await getResellerCreateMinFundingUsd(),
     resellerAutoApprove: await isResellerAutoApprove(),
+    sellerProgram: await getSellerProgramConfig(),
     developerProfitSharePercent: await getDeveloperProfitSharePercent(),
     specialStockDeveloperSharePercent: await getSpecialStockDeveloperSharePercent(),
     supplierBuyPricePercent: await getSupplierBuyPricePercent(),
@@ -297,6 +299,15 @@ const schema = z.object({
   resellerApplyMinBalance: z.number().min(0).optional(),
   resellerCreateMinFunding: z.number().min(0).optional(),
   resellerAutoApprove: z.boolean().optional(),
+  sellerProgram: z
+    .object({
+      headline: z.string().max(80),
+      closedMessage: z.string().max(300),
+      perks: z.array(z.string().max(120)).max(8),
+      fields: z.record(z.string(), z.enum(["required", "optional", "hidden"])),
+      reapplyCooldownDays: z.number().int().min(0).max(365),
+    })
+    .optional(),
   developerProfitSharePercent: z.number().min(0).max(100).optional(),
   specialStockDeveloperSharePercent: z.number().min(0).max(100).optional(),
   supplierBuyPricePercent: z.number().min(0).max(100).optional(),
@@ -518,6 +529,9 @@ export async function PATCH(request: Request) {
       key: SETTING_KEYS.resellerAutoApprove,
       intValue: d.resellerAutoApprove ? 1 : 0,
     });
+  }
+  if (d.sellerProgram !== undefined) {
+    await saveSellerProgramConfig(d.sellerProgram);
   }
   if (d.developerProfitSharePercent !== undefined) {
     await upsertSetting({

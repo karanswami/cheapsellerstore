@@ -25,7 +25,7 @@ Cheap Seller (“we”, “us”) operates a digital product storefront. This Pr
 • Order data — products purchased and key delivery records.
 • Support chats — messages you send to our assistant or team.
 • Technical data — browser type, IP address, and basic device info needed for security and session management.
-• Optional — Google account email if you sign in with Google; 2FA setup data if you enable it.
+• Optional — Google account email if you sign in with Google.
 
 2. How we use your information
 • To create and secure your account.
@@ -48,11 +48,10 @@ We use secure session cookies to keep you signed in and protect your account. Th
 We keep account, order, and wallet records as long as needed to operate the store, meet legal obligations, and resolve disputes. You may request account-related updates via Support.
 
 6. Security
-We use industry-standard practices (hashed passwords, httpOnly session cookies, optional 2FA). No method of transmission is 100% secure — protect your login and never share keys or OTPs.
+We use industry-standard practices (hashed passwords, httpOnly session cookies). No method of transmission is 100% secure — protect your login and never share keys or OTPs.
 
 7. Your choices
 • Update profile details from your account.
-• Enable or disable 2FA.
 • Contact Support to ask about your data or close an account when eligible.
 
 8. Contact
@@ -116,7 +115,7 @@ Welcome to Cheap Seller. By creating an account or buying from our store, you ag
 
 1. Eligibility
 • You must be able to form a binding agreement and comply with applicable laws where you live.
-• You are responsible for keeping your login, 2FA codes, and purchased keys confidential.
+• You are responsible for keeping your login and purchased keys confidential.
 
 2. Accounts
 • One person should use one account unless we approve otherwise.

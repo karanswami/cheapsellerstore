@@ -340,9 +340,9 @@ export async function completeDepositOnce(options: {
   void notifyUser({
     userId: deposit.userId,
     type: "deposit_credited",
-    title: "💰 Deposit Credited!",
-    message: `Your wallet has been credited with ${formatMoney(credit)} via ${getDepositProviderLabel(method)}.`,
-    actionUrl: "/app/wallet",
+    title: "Money added to your wallet",
+    message: `${formatMoney(credit)} was credited via ${getDepositProviderLabel(method)}. Happy shopping!`,
+    actionUrl: `/app/deposit/${deposit.id}`,
   }).catch((err) => {
     console.warn("[deposit-credit] Failed to send user notification:", err);
   });

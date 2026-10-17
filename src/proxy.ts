@@ -155,9 +155,11 @@ export async function proxy(request: NextRequest) {
     if (forcingAuthDialog) {
       const url = request.nextUrl.clone();
       const next = url.searchParams.get("next");
+      const googleError = url.searchParams.get("google_error");
       url.pathname = authMode === "register" ? "/register" : "/login";
       url.search = "";
       if (next) url.searchParams.set("next", next);
+      if (googleError) url.searchParams.set("google_error", googleError.slice(0, 32));
       return NextResponse.redirect(url);
     }
 

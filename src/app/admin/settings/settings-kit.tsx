@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { SubmitButton, adminFetch, errMsg } from "@/components/admin/kit";
+import type { SellerProgramConfig } from "@/types/seller-program";
 
 export type AdminSettings = {
   maintenanceMode: boolean;
@@ -25,6 +26,7 @@ export type AdminSettings = {
   resellerApplyMinBalance: number;
   resellerCreateMinFunding: number;
   resellerAutoApprove: boolean;
+  sellerProgram: SellerProgramConfig;
   developerProfitSharePercent: number;
   specialStockDeveloperSharePercent: number;
   supplierBuyPricePercent: number;

@@ -1,5 +1,6 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { logActivity } from "@/lib/activity-log";
+import { notifyUser } from "@/lib/notifications";
 import {
   getSessionUserId,
   hashPassword,
@@ -63,6 +64,14 @@ export async function POST(request: Request) {
     message: `Password ${user.passwordHash ? "changed" : "set"} (@${user.username})`,
     user,
   });
+
+  void notifyUser({
+    userId: user.id,
+    type: "security",
+    title: user.passwordHash ? "Your password was changed" : "Password set",
+    message: "If this wasn't you, reset your password right away and contact support.",
+    actionUrl: "/app/profile",
+  }).catch(() => {});
 
   return jsonOk({
     message: user.passwordHash ? "Password updated." : "Password set.",

@@ -7,7 +7,13 @@ import {
   isResellerAutoApprove,
   isResellerProgramEnabled,
 } from "@/lib/settings";
+import { getSellerProgramConfig } from "@/lib/seller-program";
 import { notifyTelegram } from "@/lib/telegram-notify";
+import {
+  reapplyAvailableAt,
+  SELLER_FIELDS,
+  type SellerProgramConfig,
+} from "@/types/seller-program";
 import { ResellerRequestStatus, UserRole } from "@prisma/client";
 import { z } from "zod";
 
@@ -54,63 +60,48 @@ export async function GET() {
   });
 }
 
-const optionalUrl = (label: string) =>
+const text = (label: string, min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .min(min, min <= 1 ? `${label} is required.` : `${label} is too short.`)
+    .max(max, `${label} is too long.`);
+
+const url = (label: string) =>
   z
     .string()
     .trim()
     .max(300, `${label} is too long.`)
     .refine((v) => v === "" || z.string().url().safeParse(v).success, {
       message: `${label} must be a valid link starting with https://`,
-    })
-    .optional();
+    });
 
-const schema = z.object({
-  fullName: z
-    .string()
-    .trim()
-    .min(1, "Full name is required.")
-    .max(120, "Full name is too long."),
-  phone: z
-    .string()
-    .trim()
-    .min(6, "Phone number is too short.")
-    .max(40, "Phone number is too long."),
-  country: z
-    .string()
-    .trim()
-    .min(1, "Country is required.")
-    .max(80, "Country is too long."),
-  facebookUrl: z
-    .string()
-    .trim()
-    .min(1, "Facebook profile link is required.")
-    .url("Facebook profile link must be a valid link starting with https://")
-    .max(300, "Facebook profile link is too long."),
-  telegram: z
-    .string()
-    .trim()
-    .min(1, "Telegram username is required.")
-    .max(80, "Telegram username is too long."),
-  youtubeUrl: optionalUrl("YouTube channel"),
-  telegramChannelUrl: optionalUrl("Telegram channel/group"),
-  websiteUrl: optionalUrl("Website"),
-  followerCount: z
-    .string()
-    .trim()
-    .min(1, "Members / followers is required.")
-    .max(40, "Members / followers is too long."),
-  experience: z.string().trim().max(120, "Experience is too long.").optional(),
-  sellingPlatform: z
-    .string()
-    .trim()
-    .min(1, "Selling platform is required.")
-    .max(120, "Selling platform is too long."),
+const core = {
+  fullName: text("Full name", 1, 120),
+  phone: text("Phone number", 6, 40),
+  country: text("Country", 1, 80),
+  telegram: text("Telegram username", 1, 80),
   reason: z
     .string()
     .trim()
     .min(10, "Please explain in at least 10 characters why you want to join.")
     .max(2000, "Reason is too long (max 2000 characters)."),
-});
+};
+
+/** Form schema shaped by the admin's field modes (required / optional / hidden). */
+function buildSchema(fields: SellerProgramConfig["fields"]) {
+  const shape: Record<string, z.ZodType<string | undefined>> = { ...core };
+  for (const f of SELLER_FIELDS) {
+    const mode = fields[f.key];
+    if (mode === "hidden") continue;
+    const base = f.url ? url(f.label) : text(f.label, 0, 120);
+    shape[f.key] =
+      mode === "required"
+        ? base.refine((v) => v.length > 0, { message: `${f.label} is required.` })
+        : base.optional();
+  }
+  return z.object(shape);
+}
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -140,8 +131,23 @@ export async function POST(request: Request) {
     return jsonError("CONFLICT", "You already have a pending request.", 409);
   }
 
+  const config = await getSellerProgramConfig();
+  const latest = await prisma.resellerRequest.findFirst({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    select: { status: true, reviewedAt: true },
+  });
+  const retryAt = reapplyAvailableAt(latest, config.reapplyCooldownDays);
+  if (retryAt) {
+    return jsonError(
+      "COOLDOWN",
+      `You can apply again on ${retryAt.toUTCString().slice(5, 16)}.`,
+      429
+    );
+  }
+
   const body = await request.json().catch(() => null);
-  const parsed = schema.safeParse(body);
+  const parsed = buildSchema(config.fields).safeParse(body);
   if (!parsed.success) {
     return jsonError(
       "VALIDATION",
@@ -150,7 +156,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const d = parsed.data;
+  const d = parsed.data as Record<string, string | undefined>;
+  const opt = (k: string) => d[k] || null;
   const auto = await isResellerAutoApprove();
 
   // Auto-approve: claim the role first (atomic, only succeeds once) so a
@@ -175,18 +182,19 @@ export async function POST(request: Request) {
       data: {
         userId: user.id,
         status,
-        fullName: d.fullName,
-        phone: d.phone,
-        country: d.country,
-        facebookUrl: d.facebookUrl,
-        telegram: d.telegram.replace(/^@+/, ""),
-        youtubeUrl: d.youtubeUrl || null,
-        telegramChannelUrl: d.telegramChannelUrl || null,
-        websiteUrl: d.websiteUrl || null,
-        followerCount: d.followerCount,
-        experience: d.experience || null,
-        sellingPlatform: d.sellingPlatform,
-        reason: d.reason,
+        fullName: d.fullName!,
+        phone: d.phone!,
+        country: d.country!,
+        telegram: d.telegram!.replace(/^@+/, ""),
+        reason: d.reason!,
+        // Required columns; empty when the admin hides the field.
+        facebookUrl: d.facebookUrl ?? "",
+        followerCount: d.followerCount ?? "",
+        sellingPlatform: d.sellingPlatform ?? "",
+        youtubeUrl: opt("youtubeUrl"),
+        telegramChannelUrl: opt("telegramChannelUrl"),
+        websiteUrl: opt("websiteUrl"),
+        experience: opt("experience"),
         reviewedAt: auto ? new Date() : null,
       },
     });

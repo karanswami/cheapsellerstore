@@ -5,7 +5,7 @@ import {
   createBroadcast,
   listBroadcastsAdmin,
 } from "@/lib/broadcasts";
-import { notifyMany } from "@/lib/notifications";
+import { notifyBulk } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { broadcastWebPush } from "@/lib/web-push";
 import { z } from "zod";
@@ -68,11 +68,11 @@ export async function POST(request: Request) {
   const targetUserIds = targetUsers.map((u) => u.id);
 
   if (parsed.data.notify && targetUserIds.length > 0) {
-    sent = await notifyMany(targetUserIds, {
+    sent = await notifyBulk(targetUserIds, {
       type: "broadcast",
       title: parsed.data.title,
       message: parsed.data.message,
-      actionUrl: parsed.data.actionUrl ?? "/app/broadcast",
+      actionUrl: parsed.data.actionUrl || "/app/broadcast",
       skipWebPush: Boolean(parsed.data.sendWebPush && parsed.data.active),
     });
   }

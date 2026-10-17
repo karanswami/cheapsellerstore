@@ -54,30 +54,6 @@ export const changePasswordSchema = z
     },
   );
 
-export const twoFactorCodeSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .min(6, "Enter your authenticator or backup code")
-    .max(20),
-});
-
-export const twoFactorEnableSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/, "Enter the 6-digit code from your authenticator"),
-});
-
-export const twoFactorDisableSchema = z
-  .object({
-    password: z.string().max(128).optional(),
-    code: z.string().trim().min(6).max(20).optional(),
-  })
-  .refine((data) => Boolean(data.password?.trim() || data.code?.trim()), {
-    message: "Password or authenticator code is required.",
-  });
-
 const socialLinkSchema = z.object({
   telegram: z.string().trim().max(100).optional(),
   discord: z.string().trim().max(100).optional(),

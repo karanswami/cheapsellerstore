@@ -257,3 +257,60 @@ export async function getUserActivityHistory(
   });
   return page.items;
 }
+
+export type ActivitySummary = {
+  /** Completed deposits, all time (USD microcents). */
+  deposited: number;
+  /** Paid / fulfilled orders, all time. */
+  spent: number;
+  orders: number;
+  deposits: number;
+  /** Last 14 UTC days, oldest first. */
+  days: { date: string; in: number; out: number }[];
+};
+
+const SUMMARY_DAYS = 14;
+
+/** All-time totals plus a 14-day in/out series for the statement card. */
+export async function getUserActivitySummary(userId: string): Promise<ActivitySummary> {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const since = new Date(today.getTime() - (SUMMARY_DAYS - 1) * 86_400_000);
+  const paid = { in: ["PAID", "FULFILLED"] as ("PAID" | "FULFILLED")[] };
+
+  const [dep, ord, recentDeps, recentOrders] = await Promise.all([
+    prisma.deposit.aggregate({ where: { userId, status: "COMPLETED" }, _sum: { amount: true }, _count: true }),
+    prisma.order.aggregate({ where: { userId, status: paid }, _sum: { total: true }, _count: true }),
+    prisma.deposit.findMany({
+      where: { userId, status: "COMPLETED", createdAt: { gte: since } },
+      select: { amount: true, createdAt: true },
+    }),
+    prisma.order.findMany({
+      where: { userId, status: paid, createdAt: { gte: since } },
+      select: { total: true, createdAt: true },
+    }),
+  ]);
+
+  const days = Array.from({ length: SUMMARY_DAYS }, (_, i) => ({
+    date: new Date(since.getTime() + i * 86_400_000).toISOString().slice(0, 10),
+    in: 0,
+    out: 0,
+  }));
+  const index = new Map(days.map((d, i) => [d.date, i]));
+  for (const d of recentDeps) {
+    const i = index.get(d.createdAt.toISOString().slice(0, 10));
+    if (i != null) days[i].in += d.amount;
+  }
+  for (const o of recentOrders) {
+    const i = index.get(o.createdAt.toISOString().slice(0, 10));
+    if (i != null) days[i].out += Math.abs(o.total);
+  }
+
+  return {
+    deposited: dep._sum.amount ?? 0,
+    spent: Math.abs(ord._sum.total ?? 0),
+    orders: ord._count,
+    deposits: dep._count,
+    days,
+  };
+}

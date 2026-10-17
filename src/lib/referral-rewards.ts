@@ -1,6 +1,7 @@
 import { Currency, formatMoney } from "@/lib/currencies";
 import { prisma } from "@/lib/prisma";
 import { getReferralPercentForBuyerRole, isReferralCommissionEnabled } from "@/lib/settings";
+import { notifyUser } from "@/lib/notifications";
 import { adjustWallet } from "@/lib/wallet";
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { TransactionType, UserRole } from "@prisma/client";
@@ -55,6 +56,14 @@ export async function creditReferralReward(input: {
       note,
       reference: input.orderId,
     });
+
+    void notifyUser({
+      userId: parent.id,
+      type: "referral_commission",
+      title: `You earned ${formatMoney(reward)}`,
+      message: `@${buyer.username} made a purchase, so ${percent}% came back to your wallet.`,
+      actionUrl: "/app/history",
+    }).catch(() => {});
 
     void notifyTelegram(
       "referral",

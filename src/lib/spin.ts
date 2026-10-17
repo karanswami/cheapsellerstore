@@ -236,7 +236,7 @@ export async function grantSpinForDeposit(input: { userId: string; depositId: st
     void notifyUser({
       userId: parent.id,
       type: "referral_spin",
-      title: "🎡 You earned a free spin!",
+      title: "You earned a free spin",
       message: `@${friend.username} made their first deposit. Spin the wheel to win keys, wallet credit and more.`,
       actionUrl: "/app/referral",
     }).catch(() => {});
@@ -449,7 +449,7 @@ export async function performSpin(userId: string): Promise<SpinOutcome> {
     void notifyUser({
       userId,
       type: "referral_spin_win",
-      title: "🎉 Spin reward!",
+      title: "You won on the spin wheel",
       message:
         prize.kind === "KEY"
           ? `You won ${prize.quantity}× ${prize.label}. Tap to reveal your key.`

@@ -120,6 +120,8 @@ export const SETTING_KEYS = {
   /** Min USD funding when a Seller/Admin creates a child reseller. */
   resellerCreateMinFunding: "reseller_create_min_funding",
   resellerAutoApprove: "reseller_auto_approve",
+  /** JSON SellerProgramConfig (apply page copy, form fields, reapply cooldown) */
+  sellerProgramConfig: "seller_program_config",
   siteName: "site_name",
   siteTagline: "site_tagline",
   siteSeoDescription: "site_seo_description",

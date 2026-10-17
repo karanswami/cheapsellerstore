@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { PageHeader } from "@/components/app-ui";
 import { getCurrentUser } from "@/lib/auth/customer";
 import { getReferralDashboard } from "@/lib/referrals";
 import { isReferralCommissionEnabled } from "@/lib/settings";
@@ -24,19 +23,17 @@ export default async function ReferralPage() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  // The wheel and invite ticket carry the page title.
   return (
-    <>
-      <PageHeader title="Invite & spin" subtitle="Every friend's first deposit gives you a free spin on the reward wheel." />
-      <ReferralClient
-        data={data}
-        spin={spin}
-        totals={totals}
-        earnedFriendIds={[...earned]}
-        commission={commission}
-        role={user.role}
-        isAdmin={user.role === "ADMIN"}
-        origin={`${proto}://${host}`}
-      />
-    </>
+    <ReferralClient
+      data={data}
+      spin={spin}
+      totals={totals}
+      earnedFriendIds={[...earned]}
+      commission={commission}
+      role={user.role}
+      isAdmin={user.role === "ADMIN"}
+      origin={`${proto}://${host}`}
+    />
   );
 }

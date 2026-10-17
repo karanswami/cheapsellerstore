@@ -1,8 +1,4 @@
 import { logActivity } from "@/lib/activity-log";
-import {
-  clearTwoFactorChallengeCookie,
-  setTwoFactorChallengeCookie,
-} from "@/lib/auth/challenge";
 import { getSessionUserId, setCustomerSessionCookie } from "@/lib/auth/customer";
 import {
   consumeGoogleOAuthState,
@@ -89,45 +85,19 @@ export async function GET(request: Request) {
       const token = await createNativeAuthHandoff({
         userId: user.id,
         role,
-        needs2fa: Boolean(user.twoFactorEnabled),
         next: nextPath,
       });
       logActivity({
         request,
-        action: user.twoFactorEnabled ? "LOGIN_2FA" : "GOOGLE_LOGIN",
+        action: "GOOGLE_LOGIN",
         category: "AUTH",
-        message: user.twoFactorEnabled
-          ? `Google 2FA handoff (@${user.username})`
-          : `Google native handoff (@${user.username})`,
+        message: `Google native handoff (@${user.username})`,
         user,
-        metadata: {
-          method: "google",
-          stage: user.twoFactorEnabled
-            ? "native_2fa_handoff"
-            : "native_handoff",
-        },
+        metadata: { method: "google", stage: "native_handoff" },
       });
       return nativeOAuthBridgeResponse(nativeOAuthSuccessUrl(token));
     }
 
-    if (user.twoFactorEnabled) {
-      await setTwoFactorChallengeCookie(user.id);
-      logActivity({
-        request,
-        action: "LOGIN_2FA",
-        category: "AUTH",
-        message: `Google 2FA challenge (@${user.username})`,
-        user,
-        metadata: { method: "google", stage: "challenge" },
-      });
-      const base = getEnv().appUrl.replace(/\/$/, "");
-      const dest = new URL("/", base);
-      dest.searchParams.set("auth", "2fa");
-      if (nextPath) dest.searchParams.set("next", nextPath);
-      return NextResponse.redirect(dest);
-    }
-
-    await clearTwoFactorChallengeCookie();
     await setCustomerSessionCookie(user.id, role);
     logActivity({
       request,

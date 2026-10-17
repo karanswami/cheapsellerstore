@@ -588,9 +588,9 @@ export async function createAndFulfillOrder(input: CreateOrderInput) {
     void notifyUser({
       userId: input.userId,
       type: "order_fulfilled",
-      title: "🎉 Keys Delivered!",
-      message: `Your license key for ${itemsSummary}${extraCount} is ready in your vault.`,
-      actionUrl: "/app/keys",
+      title: "Purchase complete, keys delivered",
+      message: `Your key for ${itemsSummary}${extraCount} is ready in your vault.`,
+      actionUrl: `/app/order/${fulfilled.id}`,
     }).catch((err) => {
       console.warn("[orders] Failed to send user notification:", err);
     });
@@ -702,7 +702,12 @@ export async function getOrderForViewer(orderId: string, token: string | undefin
   return prisma.order.findFirst({
     where: token ? { id: orderId, accessToken: token } : { id: orderId, userId },
     include: {
-      items: { include: { key: true } },
+      items: {
+        include: {
+          key: true,
+          duration: { select: { productId: true, deviceIdName: true, product: { select: { imageUrl: true } } } },
+        },
+      },
       promoCode: { select: { code: true } },
     },
   });

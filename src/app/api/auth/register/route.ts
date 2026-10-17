@@ -14,6 +14,7 @@ import {
 } from "@/lib/referrals";
 import { isReservedProfileUsername } from "@/lib/profile";
 import { registerSchema } from "@/lib/validations";
+import { notifyUser } from "@/lib/notifications";
 import { notifyTelegram } from "@/lib/telegram-notify";
 
 export async function POST(request: Request) {
@@ -93,6 +94,15 @@ export async function POST(request: Request) {
   });
 
   await ensureReferralCode(user.id);
+
+  void notifyUser({
+    userId: user.id,
+    type: "welcome",
+    title: `Welcome, ${name.split(" ")[0]}!`,
+    message: "Add money to your wallet to buy keys instantly. Turn on notifications so you never miss a delivery.",
+    actionUrl: "/app/deposit",
+    skipWebPush: true,
+  }).catch(() => {});
 
   if (referrer) {
     await prisma.notification

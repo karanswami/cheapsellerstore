@@ -614,7 +614,18 @@ const STARS = [
 
 type Tween = { from: number; to: number; t0: number; dur: number; ease: (t: number) => number; done: () => void };
 
-export function SpinWheel({ initial, onState, bare }: { initial: SpinState; onState?: (s: SpinState) => void; bare?: boolean }) {
+export function SpinWheel({
+  initial,
+  onState,
+  bare,
+  hideHistory,
+}: {
+  initial: SpinState;
+  onState?: (s: SpinState) => void;
+  bare?: boolean;
+  /** The page renders its own prize history. */
+  hideHistory?: boolean;
+}) {
   const [state, setStateRaw] = useState(initial);
   const setState = (v: SpinState | ((s: SpinState) => SpinState)) =>
     setStateRaw((prev) => {
@@ -658,6 +669,15 @@ export function SpinWheel({ initial, onState, bare }: { initial: SpinState; onSt
     timers.current.push(window.setTimeout(fn, ms));
   }
   useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+
+  // Live update: adopt fresh server state (new spins, edited prizes) unless a spin is in flight.
+  const seenInitial = useRef(initial);
+  useEffect(() => {
+    if (seenInitial.current === initial) return;
+    seenInitial.current = initial;
+    if (modeRef.current !== "spin" && !busy.current) setState(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial]);
 
   // One frame loop drives the rotor, the motion blur and the pointer's peg physics.
   useEffect(() => {
@@ -835,7 +855,7 @@ export function SpinWheel({ initial, onState, bare }: { initial: SpinState; onSt
   const stage = (
     <div
       className={cn(
-        "relative isolate overflow-hidden rounded-2xl border border-white/10 px-4 pb-6 pt-4 text-white",
+        "relative isolate overflow-hidden rounded-[1.75rem] border border-white/10 px-4 pb-6 pt-4 text-white shadow-[0_24px_60px_-24px_rgb(124_58_237/0.55)]",
         "bg-[radial-gradient(120%_85%_at_50%_0%,#3b1d6e_0%,#1b1038_48%,#0b0718_100%)]",
       )}
     >
@@ -957,7 +977,7 @@ export function SpinWheel({ initial, onState, bare }: { initial: SpinState; onSt
   const muteText = bare ? "text-white/50" : "text-muted-foreground";
   const linkTone = bare ? "text-amber-300 hover:text-amber-200" : "text-primary hover:underline";
   const won = state.history.filter((h) => h.prizeKind);
-  const history = won.length ? (
+  const history = won.length && !hideHistory ? (
     <div className={cn("mt-5 border-t pt-4", bare && "border-white/10 px-2 text-white/85")}>
       <p className={cn("mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide", muteText)}>
         <Gift className="size-3.5" /> Recent spins

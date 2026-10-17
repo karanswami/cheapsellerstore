@@ -1,12 +1,13 @@
 "use client";
 
-import { Bell, Building2, Percent, Plug, Truck } from "lucide-react";
+import { Bell, Building2, Percent, Plug, Store, Truck } from "lucide-react";
 import { TableSkeleton, useAdminQuery } from "@/components/admin/kit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BrandingSection, GeneralSection } from "./section-general";
 import { IconsSection } from "./section-icons";
 import { CommerceSection } from "./section-commerce";
 import { IntegrationsSection, NotificationsSection } from "./section-integrations";
+import { SellersSection } from "./section-sellers";
 import { SupplierSection } from "./section-supplier";
 import type { AdminSettings } from "./settings-kit";
 
@@ -21,6 +22,9 @@ export function AdminSettingsClient({ defaultTab = "general" }: { defaultTab?: s
         </TabsTrigger>
         <TabsTrigger value="commerce">
           <Percent className="size-4" /> Commerce
+        </TabsTrigger>
+        <TabsTrigger value="sellers">
+          <Store className="size-4" /> Sellers
         </TabsTrigger>
         <TabsTrigger value="integrations">
           <Plug className="size-4" /> Integrations
@@ -44,6 +48,9 @@ export function AdminSettingsClient({ defaultTab = "general" }: { defaultTab?: s
           </TabsContent>
           <TabsContent value="commerce" className="space-y-6">
             <CommerceSection s={data} />
+          </TabsContent>
+          <TabsContent value="sellers" className="space-y-6">
+            <SellersSection s={data} />
           </TabsContent>
           <TabsContent value="integrations" className="space-y-6">
             <IntegrationsSection s={data} />

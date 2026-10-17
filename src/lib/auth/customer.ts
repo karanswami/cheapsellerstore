@@ -27,7 +27,6 @@ export function toSafeUser(user: User): SafeUser {
     emailVerified: user.emailVerified ?? false,
     hasPassword: Boolean(user.passwordHash),
     hasGoogle: Boolean(user.googleId),
-    twoFactorEnabled: user.twoFactorEnabled ?? false,
     canCreateResellers: user.canCreateResellers ?? false,
     canManageResellers: user.canManageResellers ?? false,
     canFundResellers: user.canFundResellers ?? false,

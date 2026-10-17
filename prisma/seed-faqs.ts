@@ -146,13 +146,6 @@ const FAQS: SeedFaq[] = [
   },
   {
     category: "Account",
-    sortOrder: 420,
-    question: "How does two-factor authentication (2FA) work?",
-    answer:
-      "Enable 2FA in Profile with an authenticator app. Save backup codes offline. At login you will be asked for a 6-digit code (or backup code). Losing both device and backups can make recovery difficult.",
-  },
-  {
-    category: "Account",
     sortOrder: 430,
     question: "Can I sign in with Google?",
     answer:

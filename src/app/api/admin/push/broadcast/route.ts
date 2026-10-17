@@ -1,5 +1,6 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth/admin";
+import { notifyBulk } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { broadcastWebPush, getWebPushConfig } from "@/lib/web-push";
 import { z } from "zod";
@@ -60,10 +61,18 @@ export async function POST(request: Request) {
     url: url || "/",
   });
 
+  // Push-only sends still land in every signed-up user's bell, so nobody misses them.
+  const users = await prisma.user.findMany({ where: { banned: false }, select: { id: true } });
+  const inApp = await notifyBulk(
+    users.map((u) => u.id),
+    { type: "broadcast", title, message: pushBody, actionUrl: url || null, skipWebPush: true },
+  );
+
   const totalSubs = await prisma.pushSubscription.count();
 
   return jsonOk({
     ...result,
+    inApp,
     totalSubs,
   });
 }

@@ -41,7 +41,6 @@ export type SafeUser = {
   emailVerified: boolean;
   hasPassword: boolean;
   hasGoogle: boolean;
-  twoFactorEnabled: boolean;
   canCreateResellers: boolean;
   canManageResellers: boolean;
   canFundResellers: boolean;

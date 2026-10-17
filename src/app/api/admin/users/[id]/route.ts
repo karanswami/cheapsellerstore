@@ -6,7 +6,9 @@ import {
   revokeUserApiKeysOnBan,
 } from "@/lib/admin-users";
 import { requireAdmin } from "@/lib/auth/admin";
-import { isUserRole, userCanSelfDeposit } from "@/lib/roles";
+import { isUserRole, roleLabel, userCanSelfDeposit } from "@/lib/roles";
+import { formatMoney } from "@/lib/currencies";
+import { notifyUser } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { adjustWallet } from "@/lib/wallet";
 import { notifyTelegram } from "@/lib/telegram-notify";
@@ -184,12 +186,24 @@ export async function PATCH(request: Request, { params }: Params) {
   if (parsed.data.walletAdjust) {
     try {
       const { usdToMicrocents } = await import("@/lib/currencies");
-      await adjustWallet({
+      const micro = usdToMicrocents(parsed.data.walletAdjust.amount);
+      const updatedWallet = await adjustWallet({
         userId: id,
-        amount: usdToMicrocents(parsed.data.walletAdjust.amount),
+        amount: micro,
         type: TransactionType.ADMIN_ADJUSTMENT,
         note: parsed.data.walletAdjust.note ?? "Admin wallet adjustment",
       });
+      const adminNote = parsed.data.walletAdjust.note?.trim();
+      void notifyUser({
+        userId: id,
+        type: micro > 0 ? "wallet_credit" : "wallet_debit",
+        title: micro > 0 ? `${formatMoney(micro)} added to your wallet` : `${formatMoney(-micro)} deducted from your wallet`,
+        message: [
+          adminNote ? `Note from the team: ${adminNote}` : micro > 0 ? "The team added balance to your wallet." : "The team adjusted your wallet balance.",
+          `New balance: ${formatMoney(updatedWallet.walletBalance)}.`,
+        ].join(" "),
+        actionUrl: "/app/history",
+      }).catch(() => {});
       logActivity({
         request,
         action: "WALLET_ADJUST",
@@ -355,6 +369,16 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   if (nextRole && nextRole !== existing.role) {
+    void notifyUser({
+      userId: id,
+      type: "role_changed",
+      title: `Your account is now ${roleLabel(nextRole)}`,
+      message:
+        nextRole === UserRole.SELLER || nextRole === UserRole.RESELLER
+          ? "Wholesale prices and seller tools are now unlocked for you."
+          : `Your account role changed from ${roleLabel(existing.role)} to ${roleLabel(nextRole)}.`,
+      actionUrl: nextRole === UserRole.SELLER ? "/app/seller" : "/app",
+    }).catch(() => {});
     logActivity({
       request,
       action: "USER_ROLE_CHANGE",

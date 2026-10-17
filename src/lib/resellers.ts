@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isReservedProfileUsername } from "@/lib/profile";
 import { ensureReferralCode, generateReferralCodeCandidate } from "@/lib/referral-code";
 import { getResellerCreateMinFundingUsd } from "@/lib/settings";
+import { notifyUser } from "@/lib/notifications";
 import { adjustWallet, transferWallet } from "@/lib/wallet";
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { TransactionType, UserRole } from "@prisma/client";
@@ -171,6 +172,13 @@ export async function creditOwnReseller(input: {
           reference: `reseller-cut:${input.resellerId}`,
         },
   );
+  void notifyUser({
+    userId: input.resellerId,
+    type: input.amountUsd > 0 ? "wallet_credit" : "wallet_debit",
+    title: input.amountUsd > 0 ? `${formatMoney(amount)} added by @${seller.username}` : `${formatMoney(amount)} reclaimed by @${seller.username}`,
+    message: input.amountUsd > 0 ? "Your seller topped up your wallet." : "Your seller moved balance back from your wallet.",
+    actionUrl: "/app/history",
+  }).catch(() => {});
 }
 
 export async function setOwnResellerBanned(input: {

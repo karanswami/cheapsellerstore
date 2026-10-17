@@ -44,7 +44,6 @@ export type GoogleOAuthState = {
 export type NativeAuthHandoff = {
   userId: string;
   role: UserRole;
-  needs2fa: boolean;
   next: string | null;
 };
 
@@ -150,14 +149,12 @@ export async function consumeGoogleOAuthState(
 export async function createNativeAuthHandoff(opts: {
   userId: string;
   role: UserRole;
-  needs2fa: boolean;
   next?: string | null;
 }): Promise<string> {
   const next = safeNextPath(opts.next);
   return new SignJWT({
     purpose: "native_auth_handoff",
     role: opts.role,
-    needs2fa: opts.needs2fa,
     ...(next ? { next } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -181,7 +178,6 @@ export async function consumeNativeAuthHandoff(
     return {
       userId,
       role,
-      needs2fa: payload.needs2fa === true,
       next: safeNextPath(payload.next),
     };
   } catch {

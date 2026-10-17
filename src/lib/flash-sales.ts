@@ -1,4 +1,4 @@
-import { notifyMany } from "@/lib/notifications";
+import { notifyBulk } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import type { FlashSaleScope, PromoAudience, UserRole } from "@prisma/client";
 import { PromoAudience as PromoAudienceEnum } from "@prisma/client";
@@ -132,7 +132,7 @@ export async function notifyFlashSaleAudience(opts: {
         ? " on a selected duration"
         : " storewide";
 
-  return notifyMany(
+  return notifyBulk(
     users.map((u) => u.id),
     {
       type: "flash_sale",

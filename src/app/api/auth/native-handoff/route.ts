@@ -1,8 +1,4 @@
 import { logActivity } from "@/lib/activity-log";
-import {
-  clearTwoFactorChallengeCookie,
-  setTwoFactorChallengeCookie,
-} from "@/lib/auth/challenge";
 import { setCustomerSessionCookie } from "@/lib/auth/customer";
 import { consumeNativeAuthHandoff } from "@/lib/auth/google";
 import { getEnv } from "@/lib/env";
@@ -38,23 +34,6 @@ export async function GET(request: Request) {
   const role = user.role ?? handoff.role;
   const nextPath = handoff.next;
 
-  if (handoff.needs2fa || user.twoFactorEnabled) {
-    await setTwoFactorChallengeCookie(user.id);
-    logActivity({
-      request,
-      action: "LOGIN_2FA",
-      category: "AUTH",
-      message: `Native Google 2FA challenge (@${user.username})`,
-      user,
-      metadata: { method: "google", stage: "native_challenge" },
-    });
-    const dest = new URL("/", base);
-    dest.searchParams.set("auth", "2fa");
-    if (nextPath) dest.searchParams.set("next", nextPath);
-    return NextResponse.redirect(dest);
-  }
-
-  await clearTwoFactorChallengeCookie();
   await setCustomerSessionCookie(user.id, role);
   logActivity({
     request,

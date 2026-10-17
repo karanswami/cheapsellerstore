@@ -72,7 +72,6 @@ function ProductCardImpl({ product: p, loggedIn, balance, onPaid }: Props) {
       className={cn(
         "relative flex flex-col rounded-2xl border bg-card shadow-sm transition-shadow duration-200 hover:shadow-lg",
         p.isMaintenance && "border-dashed border-foreground/30",
-        !menuOpen && "cv-auto",
         menuOpen && "z-30",
       )}
     >

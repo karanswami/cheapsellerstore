@@ -63,7 +63,6 @@ export function AuthForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needs2fa, setNeeds2fa] = useState(false);
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const fields = mode === "login" ? LOGIN_FIELDS : REGISTER_FIELDS;
@@ -92,11 +91,6 @@ export function AuthForm({
         toast.error(message);
         return;
       }
-      if (json.data?.requires2fa) {
-        setNeeds2fa(true);
-        toast.info(json.data.message);
-        return;
-      }
       toast.success(mode === "login" ? "Signed in successfully. Welcome back!" : "Account created. Welcome!");
       router.replace(safeNext(next) ?? json.data?.redirectTo ?? "/app");
       router.refresh();
@@ -108,16 +102,7 @@ export function AuthForm({
     }
   }
 
-  if (needs2fa) {
-    return (
-      <p className="rounded-[14px] border bg-card p-4 text-sm text-muted-foreground">
-        Two-factor sign-in is enabled on this account. Enter the code from your authenticator app to continue.
-      </p>
-    );
-  }
-
   const strength = passwordStrength(password);
-  const delay = (i: number) => ({ "--d": `${120 + i * 70}ms` }) as React.CSSProperties;
 
   return (
     <div className="space-y-5">
@@ -125,84 +110,91 @@ export function AuthForm({
         <>
           <a
             href={referralCode ? `/api/auth/google?ref=${encodeURIComponent(referralCode)}` : "/api/auth/google"}
-            style={delay(0)}
-            className="anim-fade-up flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border bg-background/60 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:bg-accent"
+            className="tap flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl bg-white text-sm font-bold text-[#0b1020] shadow-lg shadow-black/25 transition-shadow hover:shadow-xl"
           >
             <GoogleMark /> Continue with Google
           </a>
-          <div style={delay(1)} className="anim-fade-up flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> or continue with email <span className="h-px flex-1 bg-border" />
+          <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
+            <span className="h-px flex-1 bg-white/[0.08]" /> or with email <span className="h-px flex-1 bg-white/[0.08]" />
           </div>
         </>
       ) : null}
 
       <form onSubmit={onSubmit} noValidate className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-        {fields.map((f, i) => {
+        {fields.map((f) => {
           const Icon = f.icon;
           const isPw = f.type === "password";
           return (
-            <div key={f.name} style={delay(i + 2)} className={`anim-fade-up ${mode === "register" && (f.name === "name" || f.name === "username") ? "" : "sm:col-span-2"}`}>
-              <label htmlFor={`${mode}-${f.name}`} className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <div key={f.name}>
+              <label htmlFor={`${mode}-${f.name}`} className="mb-1.5 block px-0.5 text-xs font-semibold text-muted-foreground">
                 {f.label}
               </label>
               <div className="group relative">
-                <Icon className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                <Icon className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground/70 transition-colors group-focus-within:text-primary" />
                 <Input
                   id={`${mode}-${f.name}`}
                   name={f.name}
                   type={isPw && showPw ? "text" : f.type}
                   placeholder={f.placeholder}
                   autoComplete={f.autoComplete}
+                  autoCapitalize={f.name === "name" ? "words" : "none"}
+                  autoCorrect="off"
+                  spellCheck={false}
                   required={f.required}
                   aria-invalid={error ? true : undefined}
-                  onChange={isPw && mode === "register" ? (e) => setPassword(e.target.value) : undefined}
-                  className={`h-12 rounded-xl bg-background/60 pl-11 ${isPw ? "pr-12" : ""}`}
+                  onChange={(e) => {
+                    if (error) setError(null);
+                    if (isPw && mode === "register") setPassword(e.target.value);
+                  }}
+                  className={`h-12 rounded-2xl border-white/[0.08] bg-background/60 pl-11 text-[15px] ${isPw ? "pr-12" : ""}`}
                 />
                 {isPw ? (
                   <button
                     type="button"
                     onClick={() => setShowPw((v) => !v)}
                     aria-label={showPw ? "Hide password" : "Show password"}
-                    className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    className="tap absolute right-2 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
-                    {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    {showPw ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
                   </button>
                 ) : null}
               </div>
               {isPw && mode === "register" && password ? (
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-2 flex items-center gap-2 px-0.5">
                   <div className="flex flex-1 gap-1">
                     {[1, 2, 3, 4].map((n) => (
                       <span
                         key={n}
-                        className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${n <= strength.score ? strength.color : "bg-border"}`}
+                        className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${n <= strength.score ? strength.color : "bg-white/[0.08]"}`}
                       />
                     ))}
                   </div>
-                  <span className="text-xs text-muted-foreground">{strength.label}</span>
+                  <span className="w-16 text-right text-xs font-semibold text-muted-foreground">{strength.label}</span>
                 </div>
               ) : null}
             </div>
           );
         })}
-        </div>
         {mode === "register" && referralCode ? <input type="hidden" name="referralCode" value={referralCode} /> : null}
 
-        <div style={delay(fields.length + 2)} className="anim-fade-up">
-          <Button
-            type="submit"
-            size="lg"
-            disabled={loading}
-            className="btn-sheen group glow-primary h-12 w-full overflow-hidden rounded-xl text-base"
-          >
-            {loading ? <Loader2 className="animate-spin" /> : null}
-            {mode === "login" ? "Sign in" : "Create account"}
-            {!loading ? <ArrowRight className="transition-transform group-hover:translate-x-1" /> : null}
-          </Button>
-        </div>
+        {error ? (
+          <p role="alert" key={error} className="anim-shake rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+
+        <Button
+          type="submit"
+          size="lg"
+          disabled={loading}
+          className="tap btn-sheen group glow-primary h-13 w-full overflow-hidden rounded-2xl text-base font-bold"
+        >
+          {loading ? <Loader2 className="animate-spin" /> : null}
+          {loading ? (mode === "login" ? "Signing in…" : "Creating account…") : mode === "login" ? "Sign in" : "Create account"}
+          {!loading ? <ArrowRight className="transition-transform group-hover:translate-x-1" /> : null}
+        </Button>
         {mode === "register" ? (
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="text-center text-xs leading-relaxed text-muted-foreground">
             By creating an account you agree to our terms of service and privacy policy.
           </p>
         ) : null}
@@ -218,7 +210,7 @@ function passwordStrength(pw: string) {
   if (/\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw) || pw.length >= 14) score++;
   const labels = ["Too short", "Weak", "Okay", "Good", "Strong"];
-  const colors = ["bg-border", "bg-destructive", "bg-warning", "bg-primary", "bg-success"];
+  const colors = ["bg-white/[0.08]", "bg-destructive", "bg-warning", "bg-primary", "bg-success"];
   return { score, label: labels[score], color: colors[score] };
 }
 

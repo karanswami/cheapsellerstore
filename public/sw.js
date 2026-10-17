@@ -102,14 +102,24 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      icon: payload.icon,
-      badge: payload.badge,
-      data: payload.data,
-      tag: payload.tag,
-      vibrate: [100, 50, 100],
-    }),
+    Promise.all([
+      self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: payload.icon,
+        badge: payload.badge,
+        data: payload.data,
+        tag: payload.tag,
+        renotify: true,
+        timestamp: Date.now(),
+        vibrate: [100, 50, 100],
+      }),
+      // Let open tabs refresh their bell right away instead of waiting for the next poll.
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({ type: "push-notification", title: payload.title, body: payload.body, data: payload.data });
+        }
+      }),
+    ]),
   );
 });
 
@@ -117,9 +127,20 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const rawUrl = event.notification.data?.url || "/";
   const targetUrl = new URL(rawUrl, self.location.origin).href;
+  const notificationId = event.notification.data?.notificationId;
+
+  // Opening it from the system tray counts as reading it.
+  const markRead = notificationId
+    ? fetch("/api/notifications", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [notificationId] }),
+      }).catch(() => {})
+    : Promise.resolve();
 
   event.waitUntil(
-    self.clients
+    Promise.all([markRead, self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
@@ -133,7 +154,7 @@ self.addEventListener("notificationclick", (event) => {
         if (self.clients.openWindow) {
           return self.clients.openWindow(targetUrl);
         }
-      }),
+      })]),
   );
 });
 

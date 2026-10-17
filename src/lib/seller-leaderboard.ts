@@ -17,9 +17,12 @@ export type SellerLeaderboardEntry = {
   emojiStatus: string | null;
 };
 
+export type SellerBoardMetric = "volume" | "referrals" | "earnings";
+
 export async function getSellerLeaderboard(
   limit = 50,
   viewerId?: string | null,
+  by: SellerBoardMetric = "earnings",
 ): Promise<SellerLeaderboardEntry[]> {
   const sellers = await prisma.user.findMany({
     where: {
@@ -100,6 +103,7 @@ export async function getSellerLeaderboard(
     };
   });
 
-  rows.sort((a, b) => b.earnings - a.earnings || b.sales - a.sales);
+  const key = by === "volume" ? "sales" : by;
+  rows.sort((a, b) => b[key] - a[key] || b.sales - a.sales || b.referrals - a.referrals);
   return rows.slice(0, limit);
 }

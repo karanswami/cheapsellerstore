@@ -3,7 +3,7 @@ import "server-only";
 import { logActivity } from "@/lib/activity-log";
 import { revokeUserApiKeysOnBan } from "@/lib/admin-users";
 import { formatMoney, usdToMicrocents } from "@/lib/currencies";
-import { notifyMany } from "@/lib/notifications";
+import { notifyBulk, notifyUser } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { adjustWallet } from "@/lib/wallet";
@@ -281,13 +281,20 @@ export async function executeBulkSellersAction(params: {
 
       for (const u of matchedUsers) {
         try {
-          await adjustWallet({
+          const updated = await adjustWallet({
             userId: u.id,
             amount: microcents,
             type: TransactionType.ADMIN_ADJUSTMENT,
             note: `${note} (One-Click All Sellers)`,
           });
           successfulAdjustments += 1;
+          void notifyUser({
+            userId: u.id,
+            type: microcents > 0 ? "wallet_credit" : "wallet_debit",
+            title: microcents > 0 ? `${formatMoney(microcents)} added to your wallet` : `${formatMoney(-microcents)} deducted from your wallet`,
+            message: `${note}. New balance: ${formatMoney(updated.walletBalance)}.`,
+            actionUrl: "/app/history",
+          }).catch(() => {});
         } catch (err) {
           failedUsers.push(u.username);
         }
@@ -310,7 +317,7 @@ export async function executeBulkSellersAction(params: {
         throw new Error("Notification title and message are required.");
       }
 
-      const sentCount = await notifyMany(userIds, {
+      const sentCount = await notifyBulk(userIds, {
         type: "SELLER_ANNOUNCEMENT",
         title,
         message,

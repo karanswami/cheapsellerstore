@@ -267,6 +267,14 @@
   from { opacity: 0; transform: translateY(28px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+@keyframes bell-ring {
+  0%, 12%, 100% { transform: rotate(0); }
+  2% { transform: rotate(14deg); }
+  4% { transform: rotate(-12deg); }
+  6% { transform: rotate(8deg); }
+  8% { transform: rotate(-5deg); }
+  10% { transform: rotate(2deg); }
+}
 @keyframes pop-in {
   from { opacity: 0; transform: translateY(-6px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -366,7 +374,7 @@
   .sw-flash { animation: sw-flash 0.7s ease-out forwards; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sw-rays, .sw-letter, .sw-wheel-shake, .sw-rain, .sw-wobble, .sw-halo, .sw-hub-breathe, .sw-glow-pulse { animation: none; }
+  .sw-rays, .sw-letter, .sw-wheel-shake, .sw-rain, .sw-wobble, .sw-halo, .sw-hub-breathe, .sw-glow-pulse, .anim-bell { animation: none; }
 }
 
 @layer utilities {
@@ -374,6 +382,8 @@
   .anim-heart-burst { animation: heart-burst 0.8s ease-out forwards; }
   .anim-sheet-up { animation: sheet-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
   .anim-pop-in { animation: pop-in 0.16s ease-out both; }
+  /* unread bell: a short ring every few seconds, pivoting from the top */
+  .anim-bell { transform-origin: 50% 8%; animation: bell-ring 5s ease-in-out 1s infinite; }
   .anim-success-pop { animation: success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
   .anim-ring-out { animation: ring-out 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) 0.35s both; }
   .anim-glow { animation: glow-in 0.9s ease-out both; }
@@ -393,8 +403,6 @@
   .draw-ring { stroke-dasharray: 190; stroke-dashoffset: 190; animation: draw 0.55s ease-out 0.05s forwards; }
   .draw-check { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw 0.35s ease-out 0.5s forwards; }
   .confetti-bit { animation: confetti 1s cubic-bezier(0.15, 0.7, 0.3, 1) var(--cd, 0.45s) both; }
-  /* Skip rendering offscreen cards entirely -> smooth scrolling on long catalogs */
-  .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 440px; }
 }
 
 /* App feel: page enter, title swap, press feedback, skeleton shimmer */
@@ -437,10 +445,30 @@
     background-size: 200% 100%;
     animation: shimmer 1.3s linear infinite;
   }
+  /* Deposit keypad: instant press state (no 300ms tap delay, no blue flash) */
+  .keypad-key {
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.12s;
+  }
+  .keypad-key:active { transform: scale(0.92); background-color: color-mix(in oklab, var(--primary) 22%, transparent); }
+  .anim-caret { animation: caret-blink 1.05s steps(1) infinite; }
+  .anim-orbit { animation: orbit 1.6s linear infinite; }
+  .anim-breathe { animation: breathe 2.4s ease-in-out infinite; }
+}
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+@keyframes orbit {
+  to { transform: rotate(360deg); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.85; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-page-in, .anim-title-in, .skeleton { animation: none !important; }
+  .anim-page-in, .anim-title-in, .skeleton, .anim-orbit, .anim-breathe { animation: none !important; }
+  .keypad-key:active { transform: none; }
   .tap:active { transform: none; }
 }
 
@@ -452,4 +480,54 @@
   .anim-heart-pop, .anim-heart-burst, .anim-sheet-up, .anim-pop-in, .anim-success-pop, .anim-ping, .anim-pay-sweep, .confetti-bit, .anim-ring-out, .anim-glow, .anim-twinkle, .anim-sheen-loop::after { animation: none !important; }
   .draw-ring, .draw-check { animation: none !important; stroke-dashoffset: 0; }
   .anim-fade-up, .anim-blob, .anim-float, .anim-grid, .anim-shake { animation: none !important; }
+}
+
+/* Page-top hero card. Tint per page with --hero-a (main glow) / --hero-b (counter glow).
+   Layers: color mesh over a tinted near-black base, a glass top highlight, a grid that fades out
+   from the top-right corner (::before) and a fine film grain (::after). */
+@layer components {
+  .hero-card {
+    --hero-a: var(--primary);
+    --hero-b: var(--highlight);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: #fff;
+    border-radius: 1.75rem;
+    border: 1px solid color-mix(in oklab, var(--hero-a) 28%, rgb(255 255 255 / 0.08));
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 32%),
+      radial-gradient(75% 85% at 0% 0%, color-mix(in oklab, var(--hero-a) 48%, transparent), transparent 70%),
+      radial-gradient(55% 60% at 100% 0%, color-mix(in oklab, var(--hero-a) 22%, transparent), transparent 75%),
+      radial-gradient(70% 90% at 100% 100%, color-mix(in oklab, var(--hero-b) 40%, transparent), transparent 70%),
+      linear-gradient(155deg, color-mix(in oklab, var(--hero-a) 24%, #06080f) 0%, #06070d 55%, color-mix(in oklab, var(--hero-b) 16%, #06070d) 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.14),
+      inset 0 -1px 0 rgb(0 0 0 / 0.3),
+      0 28px 60px -30px color-mix(in oklab, var(--hero-a) 70%, transparent),
+      0 10px 24px -14px rgb(0 0 0 / 0.6);
+  }
+  .hero-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.07) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-position: -1px -1px;
+    mask-image: radial-gradient(90% 80% at 100% 0%, #000 0%, transparent 70%);
+  }
+  .hero-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.18;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
 }

@@ -129,12 +129,10 @@ export function WalletCard({
   return (
     <section
       aria-label="Wallet"
-      className="relative isolate overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0b1020] p-5 text-white shadow-[0_24px_60px_-20px_color-mix(in_oklab,var(--primary)_55%,transparent)] sm:p-6"
+      className="hero-card p-5 sm:p-6"
     >
       {/* light play */}
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(120%_120%_at_0%_0%,color-mix(in_oklab,var(--primary)_55%,transparent),transparent_55%),radial-gradient(90%_110%_at_100%_100%,color-mix(in_oklab,var(--highlight)_45%,transparent),transparent_60%)]" />
       <div aria-hidden className="anim-blob absolute -right-16 -top-20 -z-10 size-56 rounded-full bg-white/10 blur-3xl" />
-      <div aria-hidden className="absolute inset-0 -z-10 opacity-[0.07] [background-image:repeating-linear-gradient(115deg,#fff_0_1px,transparent_1px_14px)]" />
       <div aria-hidden className="anim-sheen-loop pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit]" />
 
       <div className="flex items-start justify-between gap-3">

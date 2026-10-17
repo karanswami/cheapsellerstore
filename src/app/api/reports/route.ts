@@ -46,7 +46,9 @@ export async function GET(request: Request) {
     return jsonOk({ keys });
   }
 
-  const result = await listUserIssueReports(user.id, { page, limit });
+  const statusParam = url.searchParams.get("status");
+  const status = statusParam === "open" || statusParam === "done" ? statusParam : undefined;
+  const result = await listUserIssueReports(user.id, { page, limit, status });
   return jsonOk(result);
 }
 

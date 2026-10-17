@@ -306,6 +306,15 @@ export async function createManualMethodDeposit(input: {
     ].join("\n"),
   );
 
+  void notifyUser({
+    userId: input.userId,
+    type: "deposit_review",
+    title: "Deposit received, under review",
+    message: `We got your ${formatMoney(amountMicrocents)} payment via ${manualMethod.name}. You'll be notified as soon as it's credited.`,
+    actionUrl: `/app/deposit/${deposit.id}`,
+    skipWebPush: true,
+  }).catch(() => {});
+
   logActivity({
     action: "DEPOSIT_CREATE",
     category: "WALLET",
@@ -646,6 +655,7 @@ export async function getDepositStatusForUser(depositId: string, userId: string)
       status: deposit.status,
       method: deposit.method,
       manualMethodKey: deposit.manualMethodKey,
+      gatewayKey: deposit.gatewayKey,
       amount: deposit.amount,
       currency: deposit.currency,
       payCurrency: deposit.payCurrency,

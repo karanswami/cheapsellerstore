@@ -30,7 +30,6 @@ function toPublicSafeUser(
     emailVerified: boolean;
     passwordHash: string | null;
     googleId: string | null;
-    twoFactorEnabled: boolean;
     canCreateResellers: boolean;
     canManageResellers: boolean;
     canFundResellers: boolean;
@@ -71,7 +70,6 @@ function toPublicSafeUser(
       emailVerified: user.emailVerified,
       hasPassword: false,
       hasGoogle: false,
-      twoFactorEnabled: false,
       canCreateResellers: false,
       canManageResellers: false,
       canFundResellers: false,
@@ -112,7 +110,6 @@ function toPublicSafeUser(
     emailVerified: user.emailVerified,
     hasPassword: isOwner ? Boolean(user.passwordHash) : false,
     hasGoogle: isOwner ? Boolean(user.googleId) : false,
-    twoFactorEnabled: isOwner ? user.twoFactorEnabled : false,
     canCreateResellers: isOwner ? user.canCreateResellers : false,
     canManageResellers: isOwner ? user.canManageResellers : false,
     canFundResellers: isOwner ? user.canFundResellers : false,

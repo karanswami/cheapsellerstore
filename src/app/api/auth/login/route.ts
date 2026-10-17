@@ -1,10 +1,6 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { logActivity } from "@/lib/activity-log";
 import {
-  clearTwoFactorChallengeCookie,
-  setTwoFactorChallengeCookie,
-} from "@/lib/auth/challenge";
-import {
   setCustomerSessionCookie,
   toSafeUser,
   verifyPassword,
@@ -98,23 +94,6 @@ export async function POST(request: Request) {
   const maint = await maintenanceLoginBlock(role);
   if (maint) return maint;
 
-  if (user.twoFactorEnabled) {
-    await setTwoFactorChallengeCookie(user.id);
-    logActivity({
-      request,
-      action: "LOGIN_2FA",
-      category: "AUTH",
-      message: `2FA challenge started (@${user.username})`,
-      user,
-      metadata: { stage: "challenge" },
-    });
-    return jsonOk({
-      requires2fa: true as const,
-      message: "Enter the code from your authenticator app.",
-    });
-  }
-
-  await clearTwoFactorChallengeCookie();
   await setCustomerSessionCookie(user.id, role);
 
   logActivity({
@@ -127,7 +106,6 @@ export async function POST(request: Request) {
   });
 
   return jsonOk({
-    requires2fa: false as const,
     user: toSafeUser(user),
     redirectTo: homePathForRole(role),
   });

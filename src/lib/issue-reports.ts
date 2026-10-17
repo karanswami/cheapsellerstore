@@ -661,13 +661,15 @@ export async function createIssueReport(input: {
 
 export async function listUserIssueReports(
   userId: string,
-  opts?: { page?: number; limit?: number },
+  opts?: { page?: number; limit?: number; status?: "open" | "done" },
 ) {
   const page = Math.max(1, opts?.page ?? 1);
   const limit = Math.min(40, Math.max(1, opts?.limit ?? 15));
   const skip = (page - 1) * limit;
 
   const where: Prisma.IssueReportWhereInput = { userId };
+  if (opts?.status === "open") where.status = { in: ["OPEN", "IN_PROGRESS"] };
+  else if (opts?.status === "done") where.status = { in: ["RESOLVED", "CLOSED"] };
   const [rows, total] = await Promise.all([
     prisma.issueReport.findMany({
       where,
@@ -702,6 +704,22 @@ export async function listUserIssueReports(
     limit,
     total,
     hasMore: skip + rows.length < total,
+  };
+}
+
+/** Ticket totals for the customer's help-center header. */
+export async function getUserIssueReportCounts(userId: string) {
+  const grouped = await prisma.issueReport.groupBy({
+    by: ["status"],
+    where: { userId },
+    _count: { _all: true },
+  });
+  const by = (s: IssueReportStatus[]) =>
+    grouped.filter((g) => s.includes(g.status)).reduce((n, g) => n + g._count._all, 0);
+  return {
+    total: by(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]),
+    open: by(["OPEN", "IN_PROGRESS"]),
+    done: by(["RESOLVED", "CLOSED"]),
   };
 }
 
@@ -869,12 +887,16 @@ export async function updateIssueReportStatus(
 
     void notifyUser({
       userId: row.userId,
-      type: "issue_report_update",
-      title: input.status === "RESOLVED" ? "✅ Support Report Resolved" : "📋 Support Report Update",
+      type: input.adminNote ? "support_reply" : "issue_report_update",
+      title: input.adminNote
+        ? `Support replied: ${row.subject}`
+        : input.status === "RESOLVED"
+          ? "Your report was resolved"
+          : "Report status updated",
       message: input.adminNote
-        ? `Admin response: ${input.adminNote}`
-        : `Your support report "${row.subject}" is now ${input.status.toLowerCase().replace("_", " ")}.`,
-      actionUrl: "/app/reports",
+        ? input.adminNote
+        : `Your report "${row.subject}" is now ${input.status.toLowerCase().replace("_", " ")}.`,
+      actionUrl: `/app/reports?id=${row.id}`,
     }).catch((err) => {
       console.warn("[issue-reports] Failed to notify user:", err);
     });

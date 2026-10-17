@@ -36,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         spins,
         pendingDeposits: badges?.pendingDeposits ?? 0,
         activeReports: badges?.activeReports ?? 0,
+        unreadNotifications: badges?.unreadNotifications ?? 0,
       }}
     >
       {children}

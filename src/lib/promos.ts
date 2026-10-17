@@ -8,7 +8,7 @@ import {
   parseFlashExpiresAt,
   parseFlashStartsAt,
 } from "@/lib/flash-sales";
-import { notifyMany } from "@/lib/notifications";
+import { notifyBulk } from "@/lib/notifications";
 import {
   calcCartPromoDiscount,
   calcDiscount,
@@ -93,7 +93,7 @@ export async function notifyPromoAudience(opts: {
     opts.description?.trim() ||
     `New promo code ${opts.code} — ${discountLabel}. Use it at checkout.`;
 
-  return notifyMany(
+  return notifyBulk(
     users.map((u) => u.id),
     {
       type: "promo",

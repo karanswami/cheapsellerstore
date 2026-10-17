@@ -44,12 +44,12 @@ export function TierBadge({ tier, className }: { tier: Tier; className?: string 
 }
 
 const ACH_STYLE: Record<AchievementId, { icon: LucideIcon; cls: string }> = {
-  champion: { icon: Crown, cls: "border-amber-400/50 bg-amber-400/15 text-amber-600" },
-  podium: { icon: Trophy, cls: "border-orange-400/50 bg-orange-400/15 text-orange-600" },
-  elite: { icon: Flame, cls: "border-rose-400/50 bg-rose-400/15 text-rose-600" },
-  collector: { icon: KeyRound, cls: "border-sky-400/50 bg-sky-400/15 text-sky-600" },
-  loyal: { icon: Repeat, cls: "border-violet-400/50 bg-violet-400/15 text-violet-600" },
-  verified: { icon: BadgeCheck, cls: "border-emerald-400/50 bg-emerald-400/15 text-emerald-600" },
+  champion: { icon: Crown, cls: "border-amber-400/50 bg-amber-400/15 text-amber-300" },
+  podium: { icon: Trophy, cls: "border-orange-400/50 bg-orange-400/15 text-orange-300" },
+  elite: { icon: Flame, cls: "border-rose-400/50 bg-rose-400/15 text-rose-300" },
+  collector: { icon: KeyRound, cls: "border-sky-400/50 bg-sky-400/15 text-sky-300" },
+  loyal: { icon: Repeat, cls: "border-violet-400/50 bg-violet-400/15 text-violet-300" },
+  verified: { icon: BadgeCheck, cls: "border-emerald-400/50 bg-emerald-400/15 text-emerald-300" },
 };
 
 /** Small achievement chips. `compact` shows icons only. */

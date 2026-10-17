@@ -1,6 +1,7 @@
 import { jsonError, jsonOk } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth/admin";
 import { prisma } from "@/lib/prisma";
+import { notifyUser } from "@/lib/notifications";
 import { notifyTelegram } from "@/lib/telegram-notify";
 import { ResellerRequestStatus, UserRole } from "@prisma/client";
 import { z } from "zod";
@@ -46,6 +47,15 @@ export async function PATCH(request: Request, { params }: Params) {
       where: { id: existing.userId },
       select: { username: true, email: true },
     });
+    void notifyUser({
+      userId: existing.userId,
+      type: "seller_approved",
+      title: "You're a Seller now!",
+      message: parsed.data.adminNote
+        ? `Your seller application was approved. ${parsed.data.adminNote}`
+        : "Your seller application was approved. Wholesale prices and the seller panel are unlocked.",
+      actionUrl: "/app/seller",
+    }).catch(() => {});
     void notifyTelegram(
       "ownerReseller",
       [
@@ -95,6 +105,16 @@ export async function PATCH(request: Request, { params }: Params) {
     where: { id: existing.userId },
     select: { username: true, email: true },
   });
+
+  void notifyUser({
+    userId: existing.userId,
+    type: "seller_rejected",
+    title: existing.status === ResellerRequestStatus.APPROVED ? "Seller access removed" : "Seller application not approved",
+    message: parsed.data.adminNote
+      ? `Reason: ${parsed.data.adminNote}`
+      : "Your seller application was not approved this time. Contact support if you have questions.",
+    actionUrl: "/app/become-seller",
+  }).catch(() => {});
 
   void notifyTelegram(
     "ownerReseller",
